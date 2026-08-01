@@ -31,15 +31,16 @@ export type ExtensionNode = Node<ExtensionNodeData>;
 // ─── View State ────────────────────────────────────────────────────────────
 
 export type StudioView =
-  | 'home'           // landing — create new or browse
-  | 'universe'       // consumer marketplace (v0.4)
-  | 'wizard'         // experience creation wizard
-  | 'editor'         // graph editor + inspector + preview
-  | 'experiences'    // browse published experiences
-  | 'creator'        // creator profile
-  | 'world'          // World Engine dashboard (v0.2)
-  | 'civ'            // Civilization Engine dashboard (v0.3)
-  | 'kernel-dev';    // kernel developer playground (from v0.1)
+  | 'home'
+  | 'universe'
+  | 'identity'
+  | 'wizard'
+  | 'editor'
+  | 'experiences'
+  | 'creator'
+  | 'world'
+  | 'civ'
+  | 'kernel-dev';
 
 // ─── Wizard State ──────────────────────────────────────────────────────────
 

@@ -137,6 +137,16 @@ export async function quickPlay(params: {
     ? JSON.parse(session.telemetry.tokensEmittedJson)
     : {};
 
+  // ── Identity Layer integration ──────────────────────────────────────
+  // Award XP, skills, and check achievements
+  const { processPlaySessionRewards } = await import('@/lib/identity/achievement-service');
+  await processPlaySessionRewards({
+    userId,
+    score: session.score,
+    tokensEarned,
+    durationMs,
+  }).catch(() => {});
+
   return {
     result: {
       sessionId,

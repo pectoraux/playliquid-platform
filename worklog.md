@@ -252,3 +252,46 @@ Stage Summary:
   - World Engine (v0.2): economy + discovery + evolution
   - Civilization Engine (v0.3): autonomous worlds
   - Universe (v0.4): consumer marketplace
+
+---
+Task ID: 6
+Agent: main (Z.ai Code)
+Task: Build PlayLiquid Identity Layer v0.45 — persistent identity, AI companion, achievements, inventory, world passport, reputation graph
+
+Work Log:
+- Enhanced PlayerProfile with: playerLevel, playerXP, skillsJson, reputationJson, inventoryJson, worldPassportJson, companionStateJson
+- Enhanced CreatorRecord with: creatorLevel, creatorXP, creatorGenomeJson, reputationJson
+- Added 4 Prisma models: AchievementRecord, InventoryItemRecord, WorldVisitRecord, CompanionMessageRecord
+- Added Identity types: FullPlayerIdentity, PlayerReputation, Achievement, InventoryItem, WorldPassport, AICompanionState, CompanionMessage, CreatorIdentity
+- Built Player Identity Service: computes full identity (level, XP, skills, reputation, achievements, inventory, passport, companion state) from play history
+- Built Achievement & Progression Service: 9-achievement catalog (First Steps → Living Legend), automatic check+award, XP rewards, skill updates, inventory badge creation
+- Built AI Companion Service: LLM-powered proactive insights ("You've got impressive farming and trading skills but haven't explored building or combat yet"), conversational chat with message history, rule-based fallback
+- Built Inventory Service: persistent items with rarity tiers (common→mythic), world origin tracking, quantity management
+- Built World Passport Service: visit tracking, citizenship status (visitor→leader), cross-world identity
+- Built 10 API routes: player, companion (insight/chat/messages), achievements (catalog/check), inventory, passport, creator
+- Built Identity Dashboard with 5 tabs: AI Companion (insight + chat), Achievements (catalog with earned/locked states), Inventory (rarity-colored grid), Passport (world visits), Reputation (8-dimensional graph)
+- Integrated play flow with identity: quickPlay now awards XP, updates skills, checks achievements automatically
+- Added "Identity" to front door navigation (Play/Create/Community/Identity)
+
+Browser Verification:
+- Identity overview: Demo Player, Level 5, XP 1260/500, 21 sessions, 6 achievements, 22.5 Liquid
+- Skills: farming 94, trading 90, strategy 66, cooking 66
+- AI Companion insight: "You've got impressive farming and trading skills but haven't explored building or combat yet. Try building in Farm Kingdom v2..."
+- Achievements tab: 6 earned (First Steps, Strategist, Merchant, Master Player, Living Legend, Liquid Tycoon), 3 locked
+- Reputation tab: Trader 90, Competitor 65, Trust 50, Toxicity 0
+- Inventory: 6 badge items with rarity colors
+- Sticky footer verified, no console errors, lint clean
+
+Stage Summary:
+- Players are now citizens with persistent identity:
+  1. Level & XP progression ✓ (Level 5, 1260 XP)
+  2. Skills that grow from play ✓ (farming 94, trading 90)
+  3. Multi-dimensional reputation ✓ (8 dimensions)
+  4. Achievement system ✓ (9 achievements, 6 earned)
+  5. Persistent inventory ✓ (badge items with rarity)
+  6. AI Companion ✓ (proactive insights + conversational chat)
+  7. World passport ✓ (visit tracking, citizenship)
+  8. Creator identity ✓ (genome, reputation, level)
+
+- 6-layer architecture:
+  - Kernel (v0.1) → Studio (v0.1) → World Engine (v0.2) → Civilization (v0.3) → Universe (v0.4) → Identity (v0.45)

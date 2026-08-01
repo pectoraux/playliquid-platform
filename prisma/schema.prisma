@@ -185,6 +185,11 @@ model CreatorRecord {
   followers     Int      @default(0)
   totalLiquid   Int      @default(0)  // micro-Liquid earned
   playerHours   Int      @default(0)  // total play time in seconds
+  // ── Identity Layer v0.45 ──────────────────────────────────────────────
+  creatorLevel  Int      @default(1)
+  creatorXP     Int      @default(0)
+  creatorGenomeJson String @default("{}")  // { strategy: 94, economy: 88, social: 71 }
+  reputationJson String  @default("{}")    // { quality: 94, innovation: 87, fairness: 98 }
   createdAt     DateTime @default(now())
 
   experiences   ExperienceRecord[]
@@ -230,6 +235,14 @@ model PlayerProfile {
   followingJson       String   @default("[]")  // userIds being followed
   friendsJson         String   @default("[]")  // bidirectional friend userIds
   liquidBalance       Int      @default(0)     // micro-Liquid earned as player
+  // ── Identity Layer v0.45 ──────────────────────────────────────────────
+  playerLevel         Int      @default(1)
+  playerXP            Int      @default(0)
+  skillsJson          String   @default("{}")  // { farming: 82, trading: 74, ... }
+  reputationJson      String   @default("{}")  // { builder: 90, trader: 85, ... }
+  inventoryJson       String   @default("[]")  // array of InventoryItem
+  worldPassportJson   String   @default("{}")  // { visited: [], citizenships: [] }
+  companionStateJson  String   @default("{}")  // AI companion memory + personality
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -464,4 +477,68 @@ model FriendRequestRecord {
   createdAt       DateTime @default(now())
 
   @@unique([fromUserId, toUserId])
+}
+
+// ─── Identity Layer v0.45 — Persistent Identity ───────────────────────────
+
+model AchievementRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  achievementId   String   // e.g. "first-play", "top-trader", "world-founder"
+  title           String
+  description     String
+  icon            String   @default("🏆")
+  category        String   // play | create | social | economy | exploration | mastery
+  rarity          String   @default("common")  // common | rare | epic | legendary
+  xpReward        Int      @default(10)
+  metadataJson    String   @default("{}")
+  earnedAt        DateTime @default(now())
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+model InventoryItemRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  itemId          String   // unique item identifier
+  name            String
+  description     String
+  icon            String   @default("📦")
+  type            String   // asset | reward | achievement | resource | cosmetic | tool
+  rarity          String   @default("common")  // common | rare | epic | legendary | mythic
+  quantity        Int      @default(1)
+  worldId         String?  // which world it came from (null = universal)
+  metadataJson    String   @default("{}")
+  acquiredAt      DateTime @default(now())
+
+  @@unique([userId, itemId])
+  @@index([userId])
+}
+
+model WorldVisitRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  worldId         String
+  worldName       String
+  visitCount      Int      @default(1)
+  firstVisitAt    DateTime @default(now())
+  lastVisitAt     DateTime @default(now())
+  citizenshipStatus String @default("visitor")  // visitor | resident | citizen | leader
+  metadataJson    String   @default("{}")
+
+  @@unique([userId, worldId])
+  @@index([userId])
+}
+
+model CompanionMessageRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  role            String   // user | companion
+  content         String
+  messageType     String   @default("chat")  // chat | suggestion | alert | insight
+  metadataJson    String   @default("{}")
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
 }

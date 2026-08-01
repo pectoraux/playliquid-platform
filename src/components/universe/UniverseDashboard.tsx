@@ -42,7 +42,7 @@ export function UniverseDashboard() {
             <NavButton icon={Compass} label="Play" active />
             <NavButton icon={Zap} label="Create" onClick={() => setView('wizard')} />
             <NavButton icon={Users} label="Community" onClick={() => setView('world')} />
-            <NavButton icon={User} label="Profile" onClick={() => setView('creator')} />
+            <NavButton icon={User} label="Identity" onClick={() => setView('identity')} />
           </nav>
 
           <div className="ml-auto flex items-center gap-2">

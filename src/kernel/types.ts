@@ -610,6 +610,151 @@ export interface WorldHistoryEntry {
   timestamp: number;
 }
 
+// ─── Identity Layer v0.45 Types ────────────────────────────────────────────
+
+/** A player's full persistent identity in the universe */
+export interface FullPlayerIdentity {
+  userId: string;
+  displayName: string;
+  avatarUrl?: string;
+  bio?: string;
+  level: number;
+  xp: number;
+  xpToNextLevel: number;
+  // Skills (0-100, earned from play history)
+  skills: Record<string, number>;
+  // Multi-dimensional reputation
+  reputation: PlayerReputation;
+  // Achievements earned
+  achievements: Achievement[];
+  // Inventory items
+  inventory: InventoryItem[];
+  // World passport
+  worldPassport: WorldPassport;
+  // Economy
+  liquidBalance: number;
+  // Social
+  social: {
+    followers: number;
+    following: number;
+    friends: number;
+  };
+  // Play stats
+  totalSessions: number;
+  totalPlayTimeMs: number;
+  favoriteWorlds: string[];
+  // AI Companion
+  companion: AICompanionState;
+  createdAt: number;
+}
+
+export interface PlayerReputation {
+  builder: number;       // 0-100
+  trader: number;
+  explorer: number;
+  competitor: number;
+  creator: number;
+  social: number;
+  toxicity: number;      // 0-100 (lower is better)
+  trust: number;         // 0-100
+}
+
+export interface Achievement {
+  id: string;
+  achievementId: string;
+  title: string;
+  description: string;
+  icon: string;
+  category: 'play' | 'create' | 'social' | 'economy' | 'exploration' | 'mastery';
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  xpReward: number;
+  earnedAt: number;
+}
+
+export interface InventoryItem {
+  id: string;
+  itemId: string;
+  name: string;
+  description: string;
+  icon: string;
+  type: 'asset' | 'reward' | 'achievement' | 'resource' | 'cosmetic' | 'tool';
+  rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
+  quantity: number;
+  worldId?: string;
+  acquiredAt: number;
+}
+
+export interface WorldPassport {
+  visited: Array<{
+    worldId: string;
+    worldName: string;
+    visitCount: number;
+    firstVisitAt: number;
+    lastVisitAt: number;
+    citizenshipStatus: 'visitor' | 'resident' | 'citizen' | 'leader';
+  }>;
+  citizenships: string[];  // guild/society names
+  totalWorldsVisited: number;
+}
+
+/** AI Companion state — persisted per player */
+export interface AICompanionState {
+  personality: {
+    warmth: number;       // 0-100
+    directness: number;
+    playfulness: number;
+  };
+  memory: Array<{
+    tick: number;
+    observation: string;
+    insight: string;
+  }>;
+  lastInteraction: number;
+  conversationCount: number;
+  knownPreferences: string[];
+  suggestedActions: string[];
+}
+
+/** AI Companion message in the chat */
+export interface CompanionMessage {
+  id: string;
+  userId: string;
+  role: 'user' | 'companion';
+  content: string;
+  messageType: 'chat' | 'suggestion' | 'alert' | 'insight';
+  createdAt: number;
+}
+
+/** Creator's full identity */
+export interface CreatorIdentity {
+  creatorId: string;
+  handle: string;
+  displayName: string;
+  bio?: string;
+  avatarUrl?: string;
+  level: number;
+  xp: number;
+  creatorGenome: {
+    strategy: number;
+    economy: number;
+    social: number;
+    creativity: number;
+    innovation: number;
+  };
+  reputation: {
+    quality: number;
+    innovation: number;
+    fairness: number;
+    community: number;
+  };
+  totalSparks: number;
+  totalPlayers: number;
+  totalLiquid: number;
+  followers: number;
+  forks: number;
+  createdAt: number;
+}
+
 // ─── Studio Domain Types ───────────────────────────────────────────────────
 
 export type ExperienceKind = 'GAME' | 'SPARK' | 'SIMULATION' | 'CHALLENGE' | 'LEARNING';
