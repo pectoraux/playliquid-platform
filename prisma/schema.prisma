@@ -1059,3 +1059,83 @@ model WorldAICouncilRecord {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+// ─── v0.51 Living Civilizations — Time, Seasons, Events, Feed, Missions ───
+
+model CivilizationTickRecord {
+  id              String   @id @default(cuid())
+  worldId         String
+  worldName       String
+  tickNumber      Int
+  season          String   @default("spring")  // spring | summer | autumn | winter
+  seasonDay       Int      @default(1)  // day within the season (1-7)
+  populationBefore Int
+  populationAfter  Int
+  economyChange   Int      @default(0)  // delta in trade volume (micro-Liquid)
+  influenceChange Int      @default(0)
+  eventsGenerated Int      @default(0)
+  narrative       String   @default("")  // "Day 7: The harvest brought 200 new citizens..."
+  timestamp       DateTime @default(now())
+
+  @@index([worldId])
+  @@index([tickNumber])
+}
+
+model CivilizationFeedItemRecord {
+  id              String   @id @default(cuid())
+  worldId         String
+  worldName       String
+  type            String   // population | economy | culture | diplomacy | conflict | discovery | season | mission | migration | achievement
+  title           String
+  body            String
+  icon            String   @default("📰")
+  impact          String   @default("{}")  // { influence: +10, population: +50 }
+  isGlobal        Boolean  @default(false)  // appears in global multiverse feed
+  tickNumber      Int?
+  createdAt       DateTime @default(now())
+
+  @@index([worldId])
+  @@index([type])
+  @@index([isGlobal])
+}
+
+model CivilizationMissionRecord {
+  id              String   @id @default(cuid())
+  worldId         String
+  worldName       String
+  title           String
+  description     String
+  icon            String   @default("🎯")
+  type            String   // community | economic | cultural | competitive | expansion
+  goalType        String   // population | tradeVolume | influence | citizens | events
+  goalTarget      Int
+  goalCurrent     Int      @default(0)
+  rewardType      String   // influence | population | economy | asset | level
+  rewardAmount    Int
+  rewardDescription String
+  status          String   @default("ACTIVE")  // ACTIVE | COMPLETED | EXPIRED
+  participantsJson String  @default("[]")  // userIds who contributed
+  season          String?  // which season this mission belongs to
+  expiresAt       DateTime?
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+
+  @@index([worldId])
+  @@index([status])
+}
+
+model CivilizationSeasonRecord {
+  id              String   @id @default(cuid())
+  worldId         String
+  worldName       String
+  season          String   // spring | summer | autumn | winter
+  year            Int      @default(1)
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  effects         String   @default("{}")  // { populationGrowth: 1.2, tradeBonus: 1.1, ... }
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@index([worldId])
+  @@index([isActive])
+}

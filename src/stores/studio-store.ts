@@ -38,6 +38,7 @@ export type StudioView =
   | 'creator-intel'
   | 'asset-economy'
   | 'multiverse'
+  | 'living'
   | 'wizard'
   | 'editor'
   | 'experiences'

@@ -579,3 +579,45 @@ Stage Summary:
 
 The final flywheel is complete:
   Creator creates world → AI civilization forms → Players arrive → Players build identity → Assets gain value → Economy emerges → World gains culture → Civilizations connect → Multiverse expands
+
+---
+Task ID: 13
+Agent: main (Z.ai Code)
+Task: Build PlayLiquid v0.51 Living Civilizations — Time Engine, Event Generator, Seasons, Feed, Missions, "What Changed"
+
+Work Log:
+- Added 4 Prisma models: CivilizationTickRecord, CivilizationFeedItemRecord, CivilizationMissionRecord, CivilizationSeasonRecord
+- Built Civilization Time Engine: advances world time in ticks, cycles seasons (spring→summer→autumn→winter, 7 ticks each), tracks population/economy/influence changes per tick, generates narrative summaries
+- Built Event Generator: creates events from state changes — population milestones (50/100/500), economy surges (golden trade era, market boom), random cultural events (art festival, new discovery, legendary forge, migration wave, cultural renaissance, ancient ruins), season changes
+- Built Civilization Seasons: 4 seasons with distinct effects (spring: +15% pop growth, summer: +20% trade, autumn: +30% trade, winter: -5% pop, -10% trade), each season generates a themed mission
+- Built Civilization Feed: per-world and global news feed showing everything that happened — "Migration Wave to Farm Kingdom", "Farm Kingdom enters Summer", "New Mission: Summer Migration"
+- Built Civilization Missions: seasonal community objectives (Spring: Build Grand Garden, Summer: Establish Trade Routes, Autumn: Harvest Festival, Winter: Winter Tournament) with progress tracking, completion rewards (influence/population/economy), auto-generated on season change
+- Built "What Changed" feature (THE key feature): summarizes what happened while the player was away — "While you were away: population grew by 11, trade generated 1.2 Liquid, 5 events occurred, the season changed."
+- Built 6 API routes: advance, feed, timeline, missions, season, changed
+- Built Living Civilizations Dashboard with 5 tabs:
+  - What Changed: summary + quick stats + event list + mission updates
+  - Feed: scrollable news feed with event icons and timestamps
+  - Timeline: day-by-day history with population/economy/event data
+  - Missions: active community objectives with progress bars and rewards
+  - Season: current season with effects (pop growth %, trade bonus %, event rate %)
+- Time controls: Advance 1 Day / 1 Week / 2 Weeks
+
+Browser Verification:
+- Advanced 7 days: 4 events generated, season changed from Spring to Summer
+- "What Changed" tab: "While you were away: population grew by 11, trade generated 1.2 Liquid, 5 events occurred, the season changed."
+- Quick stats: +11 Population, +1.2L Trade, 5 Events
+- Events: Migration Wave, New Mission, Season Change to Summer
+- Missions tab: "Summer Migration" — Attract 10 new visitors, progress 0%, reward +15 citizens
+- Season tab: ☀️ Summer, Year 1, "Trade flourishes and civilizations expand their reach"
+- No console errors, lint clean
+
+Stage Summary:
+- The universe now has a heartbeat:
+  1. Time passes ✓ (advance days/weeks, ticks recorded)
+  2. Seasons cycle ✓ (spring/summer/autumn/winter with effects)
+  3. Events generate from state ✓ (population milestones, economy surges, cultural events)
+  4. Feed records everything ✓ (per-world + global)
+  5. Missions update seasonally ✓ (themed objectives with rewards)
+  6. "What Changed" works ✓ (the key retention feature — "something changed while you were away")
+
+- The question v0.51 answers: "I entered Farm Kingdom yesterday, and something changed when I came back today." ✓

@@ -23,7 +23,7 @@ import {
   ArrowLeft, Play, Users, Coins, GitFork, TrendingUp, Clock,
   Heart, Share2, Loader2, Globe, Home, Compass, Bell, User,
   Trophy, Zap, Bookmark, Eye, Bot, Star, Sparkles, Radio,
-  ChevronRight, Award, AlertCircle, CheckCircle2, Activity, Package,
+  ChevronRight, Award, AlertCircle, CheckCircle2, Activity, Package, Sunrise,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -70,6 +70,9 @@ export function ConsumerUniverse() {
             </Button>
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('multiverse')}>
               <Globe className="w-3.5 h-3.5" /> Multiverse
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('living')}>
+              <Sunrise className="w-3.5 h-3.5" /> Living
             </Button>
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('civ')}>
               <Globe className="w-3.5 h-3.5" /> Worlds
