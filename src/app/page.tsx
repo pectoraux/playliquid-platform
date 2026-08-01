@@ -1,31 +1,311 @@
-'use client'
+'use client';
+
+import { usePlaygroundStore } from '@/stores/playground-store';
+import { useExtensions, useCompile, useStartSession, useSettle, useTick, useAction } from '@/hooks/use-kernel';
+import { DEMOS } from '@/components/playground/demos';
+import { GraphEditor } from '@/components/playground/GraphEditor';
+import { RuntimeInspector } from '@/components/playground/RuntimeInspector';
+import { LedgerView } from '@/components/playground/LedgerView';
+import { TokenView } from '@/components/playground/TokenView';
+import { TelemetryView } from '@/components/playground/TelemetryView';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Play, Loader2, CheckCircle2, XCircle, Zap, Terminal, Coins, BookOpen, Activity } from 'lucide-react';
+import { toast } from 'sonner';
+import { useEffect, useRef } from 'react';
 
 export default function Home() {
+  const {
+    bundle,
+    sessionId,
+    sessionStatus,
+    compileResult,
+    activeTab,
+    isAutoTicking,
+    setBundle,
+    setSessionId,
+    setSessionStatus,
+    setCompileResult,
+    setActiveTab,
+    setAutoTicking,
+  } = usePlaygroundStore();
+
+  const extensions = useExtensions();
+  const compile = useCompile();
+  const startSession = useStartSession();
+  const settle = useSettle();
+  const tick = useTick();
+  const action = useAction();
+
+  // Auto-tick loop
+  const autoTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (isAutoTicking && sessionId && sessionStatus === 'active') {
+      autoTickRef.current = setInterval(() => {
+        tick.mutate({ sessionId, ticks: 1 });
+      }, 250);
+    } else if (autoTickRef.current) {
+      clearInterval(autoTickRef.current);
+      autoTickRef.current = null;
+    }
+    return () => {
+      if (autoTickRef.current) clearInterval(autoTickRef.current);
+    };
+  }, [isAutoTicking, sessionId, sessionStatus, tick]);
+
+  const handleCompile = async () => {
+    try {
+      const result = await compile.mutateAsync(bundle);
+      setCompileResult(result);
+      if (result.valid) {
+        toast.success('Graph compiled', {
+          description: `Execution order: ${result.executionOrder.join(' → ')} · deterministic: ${result.deterministic ? 'yes' : 'no'}`,
+        });
+      } else {
+        toast.error('Compilation failed', {
+          description: result.errors.map((e: any) => `[${e.code}] ${e.message}`).join('\n'),
+        });
+      }
+    } catch (e) {
+      toast.error('Compile error', { description: (e as Error).message });
+    }
+  };
+
+  const handleStart = async () => {
+    if (!compileResult?.valid) {
+      toast.error('Compile the graph first');
+      return;
+    }
+    setSessionStatus('starting');
+    try {
+      const result = await startSession.mutateAsync({
+        experienceId: bundle.name ?? 'experience',
+        bundle,
+        mode: 'PREVIEW',
+        userId: 'demo-user', // for v0.1 we attribute sessions to a demo user
+      });
+      if (result.valid && result.sessionId) {
+        setSessionId(result.sessionId);
+        setSessionStatus('active');
+        setActiveTab('inspector');
+        toast.success('Session started', { description: result.sessionId });
+      } else {
+        setSessionStatus('idle');
+        toast.error('Session start failed', {
+          description: result.errors?.map((e: any) => e.message).join('\n'),
+        });
+      }
+    } catch (e) {
+      setSessionStatus('idle');
+      toast.error('Session error', { description: (e as Error).message });
+    }
+  };
+
+  const handleSettle = async () => {
+    if (!sessionId) return;
+    setAutoTicking(false);
+    try {
+      await settle.mutateAsync(sessionId);
+      setSessionStatus('ended');
+      toast.success('Session settled', {
+        description: 'Liquid-backed tokens credited to player wallet',
+      });
+      setActiveTab('ledger');
+    } catch (e) {
+      toast.error('Settle error', { description: (e as Error).message });
+    }
+  };
+
+  const handleAction = async (act: string) => {
+    if (!sessionId) return;
+    // Send to the physics instance
+    await action.mutateAsync({ sessionId, instanceId: 'physics', action: act });
+  };
+
+  const loadDemo = (demo: typeof DEMOS[number]) => {
+    setBundle(JSON.parse(JSON.stringify(demo.bundle)));
+    setSessionId(null);
+    setSessionStatus('idle');
+    setCompileResult(null);
+    setActiveTab('graph');
+    toast.info(`Loaded ${demo.title}`);
+  };
+
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      gap: '2rem',
-      padding: '1rem'
-    }}>
-      <div style={{
-        position: 'relative',
-        width: '6rem',
-        height: '6rem'
-      }}>
-        <img
-          src="/logo.svg"
-          alt="Z.ai Logo"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain'
-          }}
-        />
-      </div>
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      {/* ── Header ───────────────────────────────────────────────────── */}
+      <header className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-30">
+        <div className="max-w-[1600px] mx-auto px-4 py-3 flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white font-bold text-sm">
+              PL
+            </div>
+            <div>
+              <h1 className="text-base font-semibold leading-tight">PlayLiquid Experience Kernel</h1>
+              <p className="text-xs text-muted-foreground leading-tight">v0.1 — the primitive is the Extension</p>
+            </div>
+          </div>
+
+          <Separator orientation="vertical" className="h-8" />
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs text-muted-foreground mr-1">Demos:</span>
+            {DEMOS.map((d) => (
+              <Button
+                key={d.id}
+                size="sm"
+                variant="outline"
+                onClick={() => loadDemo(d)}
+                className="h-7 text-xs"
+              >
+                {d.title.split('—')[0].trim()}
+              </Button>
+            ))}
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCompile}
+              disabled={compile.isPending}
+              className="h-8"
+            >
+              {compile.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Terminal className="w-3.5 h-3.5" />}
+              Compile
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleStart}
+              disabled={!compileResult?.valid || sessionStatus === 'active' || sessionStatus === 'starting'}
+              className="h-8 bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              {sessionStatus === 'starting' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+              Start Session
+            </Button>
+            {sessionStatus === 'active' && (
+              <Button size="sm" variant="destructive" onClick={handleSettle} className="h-8">
+                Settle & End
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Compile status bar */}
+        {compileResult && (
+          <div className="border-t border-border bg-muted/30">
+            <div className="max-w-[1600px] mx-auto px-4 py-1.5 flex items-center gap-3 text-xs">
+              {compileResult.valid ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="font-mono">valid</span>
+                  <Badge variant="secondary" className="text-[10px] h-4">
+                    {compileResult.executionOrder.join(' → ')}
+                  </Badge>
+                  <Badge variant={compileResult.deterministic ? 'default' : 'outline'} className="text-[10px] h-4">
+                    {compileResult.deterministic ? 'deterministic' : 'non-deterministic'}
+                  </Badge>
+                  {compileResult.contentHash && (
+                    <span className="text-muted-foreground font-mono">hash: {compileResult.contentHash}</span>
+                  )}
+                  {compileResult.declaredTokens.length > 0 && (
+                    <span className="text-muted-foreground">
+                      tokens: {compileResult.declaredTokens.map((t: any) => t.symbol).join(', ')}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <XCircle className="w-3.5 h-3.5 text-red-500" />
+                  <span className="font-mono text-red-500">
+                    {compileResult.errors.length} error{compileResult.errors.length !== 1 ? 's' : ''}
+                  </span>
+                  <span className="text-muted-foreground truncate">
+                    {compileResult.errors[0]?.message}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* ── Main ─────────────────────────────────────────────────────── */}
+      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 py-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+          <TabsList className="grid w-full grid-cols-5 max-w-md">
+            <TabsTrigger value="graph" className="text-xs gap-1.5">
+              <Zap className="w-3.5 h-3.5" /> Graph
+            </TabsTrigger>
+            <TabsTrigger value="inspector" className="text-xs gap-1.5">
+              <Activity className="w-3.5 h-3.5" /> Runtime
+            </TabsTrigger>
+            <TabsTrigger value="ledger" className="text-xs gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" /> Ledger
+            </TabsTrigger>
+            <TabsTrigger value="tokens" className="text-xs gap-1.5">
+              <Coins className="w-3.5 h-3.5" /> Tokens
+            </TabsTrigger>
+            <TabsTrigger value="telemetry" className="text-xs gap-1.5">
+              <Terminal className="w-3.5 h-3.5" /> Telemetry
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="graph" className="mt-4">
+            <GraphEditor />
+          </TabsContent>
+          <TabsContent value="inspector" className="mt-4">
+            <RuntimeInspector
+              sessionId={sessionId}
+              status={sessionStatus}
+              onTick={(n) => tick.mutate({ sessionId: sessionId!, ticks: n })}
+              onAction={handleAction}
+              onSettle={handleSettle}
+              onAutoTickToggle={() => setAutoTicking(!isAutoTicking)}
+              isAutoTicking={isAutoTicking}
+              isTicking={tick.isPending}
+            />
+          </TabsContent>
+          <TabsContent value="ledger" className="mt-4">
+            <LedgerView />
+          </TabsContent>
+          <TabsContent value="tokens" className="mt-4">
+            <TokenView sessionId={sessionId} />
+          </TabsContent>
+          <TabsContent value="telemetry" className="mt-4">
+            <TelemetryView />
+          </TabsContent>
+        </Tabs>
+      </main>
+
+      {/* ── Footer ──────────────────────────────────────────────────── */}
+      <footer className="mt-auto border-t border-border bg-card/50">
+        <div className="max-w-[1600px] mx-auto px-4 py-2 flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <span>
+              Bundle: <span className="font-mono">{bundle.name}</span> · {bundle.type}
+            </span>
+            <span>·</span>
+            <span>
+              {bundle.instances.length} instance{bundle.instances.length !== 1 ? 's' : ''} · {bundle.wires.length} wire{bundle.wires.length !== 1 ? 's' : ''}
+            </span>
+            {sessionId && (
+              <>
+                <span>·</span>
+                <span className="font-mono">{sessionId.slice(0, 20)}…</span>
+                <span>·</span>
+                <Badge variant="outline" className="text-[10px] h-4">{sessionStatus}</Badge>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span>Experiences are compositions of Extensions.</span>
+          </div>
+        </div>
+      </footer>
     </div>
-  )
+  );
 }

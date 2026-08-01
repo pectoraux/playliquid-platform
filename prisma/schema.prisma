@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// PlayLiquid Experience Kernel v0.1 — Prisma schema
+// The kernel persists: registered extensions, compiled bundles, sessions,
+// the double-entry ledger, token balances/events, and telemetry/genomes.
 
 generator client {
   provider = "prisma-client-js"
@@ -13,20 +11,164 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ─── Extensions & Bundles ───────────────────────────────────────────────────
+
+model ExtensionRecord {
+  id           String   @id // matches manifest.id, e.g. "pl.physics"
+  slug         String   @unique
+  name         String
+  description  String
+  author       String
+  category     String
+  kind         String
+  trustLevel   String
+  determinism  String
+  manifestJson String   // full manifest as JSON
+  createdAt    DateTime @default(now())
+
+  instances BundleInstance[]
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+model BundleRecord {
+  contentHash   String   @id // FNV-1a fingerprint from compiler
+  experienceId  String
+  type          String // GAME | SPARK
+  name          String?
+  bundleJson    String // full bundle spec as JSON
+  deterministic Boolean
+  createdAt     DateTime @default(now())
+
+  instances    BundleInstance[]
+  sessions     PlaySession[]
+  genome       ExperienceGenomeRecord?
+}
+
+model BundleInstance {
+  id            String   @id @default(cuid())
+  bundleHash    String
+  instanceId    String // local id within bundle
+  extensionId   String
+  role          String?
+  configJson    String  @default("{}")
+  bundle        BundleRecord   @relation(fields: [bundleHash], references: [contentHash])
+  extension     ExtensionRecord @relation(fields: [extensionId], references: [id])
+}
+
+// ─── Sessions ──────────────────────────────────────────────────────────────
+
+model PlaySession {
+  id            String   @id @default(cuid())
+  experienceId  String
+  bundleHash    String?
+  mode          String // PREVIEW | EARN
+  seed          String
+  userId        String?
+  status        String  @default("ACTIVE") // ACTIVE | ENDED | SUSPENDED
+  tickCount     Int      @default(0)
+  actionCount   Int      @default(0)
+  score         Int      @default(0)
+  startedAt     DateTime @default(now())
+  endedAt       DateTime?
+
+  bundle        BundleRecord? @relation(fields: [bundleHash], references: [contentHash])
+  tokenEvents   TokenEventRecord[]
+  tokenBalances TokenBalanceRecord[]
+  telemetry     ExperienceEventRecord?
+}
+
+// ─── Liquid Ledger (double-entry) ──────────────────────────────────────────
+
+model LedgerAccountRecord {
+  id        String   @id // e.g. "player:wallet:user_1"
+  kind      String
+  balance   BigInt   @default(0) // micro-Liquid
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  entries LedgerEntryRecord[]
+}
+
+model LedgerTxRecord {
+  id        String   @id @default(cuid())
+  memo      String?
+  createdAt DateTime @default(now())
+  entries   LedgerEntryRecord[]
+}
+
+model LedgerEntryRecord {
+  id        String   @id @default(cuid())
+  txId      String
+  account   String
+  debit     BigInt   @default(0)
+  credit    BigInt   @default(0)
+  memo      String?
+  lineNo    Int
+  createdAt DateTime @default(now())
+
+  tx        LedgerTxRecord     @relation(fields: [txId], references: [id])
+  accountRef LedgerAccountRecord @relation(fields: [account], references: [id])
+}
+
+// ─── Extension Tokens ──────────────────────────────────────────────────────
+
+model TokenBalanceRecord {
+  id        String   @id @default(cuid())
+  sessionId String
+  symbol    String
+  balance   Int      @default(0)
+  scope     String   @default("session")
+  session   PlaySession @relation(fields: [sessionId], references: [id])
+
+  @@unique([sessionId, symbol])
+}
+
+model TokenEventRecord {
+  id        String   @id @default(cuid())
+  sessionId String
+  kind      String   // EMIT | CONSUME | SETTLE | REJECT
+  symbol    String
+  amount    Int
+  instance  String?
+  reason    String?
+  tick      Int?
+  createdAt DateTime @default(now())
+  session   PlaySession @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId])
+}
+
+// ─── Telemetry & Genome ────────────────────────────────────────────────────
+
+model ExperienceEventRecord {
+  id                 String   @id @default(cuid())
+  experienceId       String
+  sessionId          String   @unique
+  bundleHash         String?
+  tickCount          Int
+  sessionDurationMs  Int
+  actions            Int
+  completion         Boolean
+  score              Int?
+  tokensEmittedJson  String   @default("{}")
+  tokensConsumedJson String   @default("{}")
+  extensionsJson     String   @default("[]")
+  createdAt          DateTime @default(now())
+
+  session            PlaySession @relation(fields: [sessionId], references: [id])
+}
+
+model ExperienceGenomeRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  bundleHash      String   @unique
+  extensionsJson  String
+  categoriesJson  String
+  mechanicsJson   String
+  compositionDepth Int
+  hasEconomy      Boolean
+  hasAI           Boolean
+  tokenCount      Int
+  computedAt      DateTime @default(now())
+
+  bundle          BundleRecord @relation(fields: [bundleHash], references: [contentHash])
 }
