@@ -23,7 +23,7 @@ import {
   ArrowLeft, Play, Users, Coins, GitFork, TrendingUp, Clock,
   Heart, Share2, Loader2, Globe, Home, Compass, Bell, User,
   Trophy, Zap, Bookmark, Eye, Bot, Star, Sparkles, Radio,
-  ChevronRight, Award, AlertCircle, CheckCircle2, Activity,
+  ChevronRight, Award, AlertCircle, CheckCircle2, Activity, Package,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -62,6 +62,9 @@ export function ConsumerUniverse() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('asset-economy')}>
+              <Package className="w-3.5 h-3.5" /> Assets
+            </Button>
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('creator-intel')}>
               <BarChart className="w-3.5 h-3.5" /> Studio
             </Button>

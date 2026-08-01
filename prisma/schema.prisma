@@ -855,3 +855,100 @@ model CreatorMarketplaceItemRecord {
   @@index([creatorId])
   @@index([type])
 }
+
+// ─── v0.49 Asset Economy Universe ──────────────────────────────────────────
+
+model AssetEconomyRecord {
+  id              String   @id @default(cuid())
+  assetId         String   @unique  // asset://type/name-v1
+  name            String
+  description     String
+  icon            String   @default("📦")
+  type            String   // character | mechanic | ai-agent | template | item | world-seed
+  assetClass      String   @default("creator")  // creator | player | platform
+  creatorId       String
+  creatorName     String
+  version         Int      @default(1)
+  parentAssetId   String?  // lineage: previous version
+  configJson      String   @default("{}")  // asset configuration/data
+  tagsJson        String   @default("[]")
+  royaltyBps      Int      @default(500)  // royalty in basis points
+  priceLiquid     Int      @default(0)  // purchase price in micro-Liquid (0 = free)
+  status          String   @default("PUBLISHED")  // DRAFT | PUBLISHED | ARCHIVED
+  // Reputation
+  qualityScore    Int      @default(50)
+  performanceScore Int     @default(50)
+  adoptionScore   Int      @default(0)
+  fairnessScore   Int      @default(50)
+  innovationScore Int      @default(50)
+  // Stats
+  installCount    Int      @default(0)
+  usageCount      Int      @default(0)
+  totalRevenue    Int      @default(0)  // micro-Liquid earned
+  rating          Float    @default(5.0)
+  ratingCount     Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([type])
+  @@index([creatorId])
+  @@index([assetClass])
+}
+
+model AssetOwnershipRecord {
+  id              String   @id @default(cuid())
+  assetId         String   // references AssetEconomyRecord.id
+  ownerId         String   // userId or creatorId
+  ownerType       String   // player | creator
+  acquiredAt      DateTime @default(now())
+  acquiredFrom    String?  // "marketplace" | "reward" | "creation" | "transfer"
+  pricePaid       Int      @default(0)  // micro-Liquid
+  metadataJson    String   @default("{}")
+
+  @@unique([assetId, ownerId])
+  @@index([ownerId])
+}
+
+model AssetInstallationRecord {
+  id              String   @id @default(cuid())
+  assetId         String
+  experienceId    String
+  experienceName  String
+  installedBy     String
+  installedAt     DateTime @default(now())
+  status          String   @default("ACTIVE")  // ACTIVE | REMOVED
+  usageDataJson   String   @default("{}")  // runtime usage stats
+
+  @@index([assetId])
+  @@index([experienceId])
+}
+
+model AssetRoyaltyRecord {
+  id              String   @id @default(cuid())
+  assetId         String
+  experienceId    String
+  experienceName  String
+  totalRevenue    Int      @default(0)  // micro-Liquid generated
+  assetCreatorShare Int    @default(0)  // micro-Liquid to asset creator
+  gameCreatorShare Int    @default(0)  // micro-Liquid to game creator
+  platformShare    Int    @default(0)  // micro-Liquid to platform
+  txId            String?  // ledger transaction ID
+  createdAt       DateTime @default(now())
+
+  @@index([assetId])
+  @@index([experienceId])
+}
+
+model AssetEventRecord {
+  id              String   @id @default(cuid())
+  assetId         String
+  eventType       String   // created | published | installed | used | evolved | forked | royalty_generated | transferred | rated
+  actorId         String
+  actorName       String
+  detail          String?
+  metadataJson    String   @default("{}")
+  createdAt       DateTime @default(now())
+
+  @@index([assetId])
+  @@index([eventType])
+}
