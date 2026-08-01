@@ -74,6 +74,7 @@ model PlaySession {
   tokenEvents   TokenEventRecord[]
   tokenBalances TokenBalanceRecord[]
   telemetry     ExperienceEventRecord?
+  player        PlayerProfile? @relation(fields: [userId], references: [userId])
 }
 
 // ─── Liquid Ledger (double-entry) ──────────────────────────────────────────
@@ -209,4 +210,97 @@ model ExperienceRecord {
   creator             CreatorRecord @relation(fields: [creatorId], references: [id])
   parent              ExperienceRecord? @relation("ForkTree", fields: [parentExperienceId], references: [id])
   forks               ExperienceRecord[] @relation("ForkTree")
+}
+
+// ─── World Engine v0.2 ─────────────────────────────────────────────────────
+
+model PlayerProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  displayName         String
+  playerGenomeJson    String   @default("{}")  // favorite genres, emotions, skill
+  creatorScore        Int      @default(0)
+  playerScore         Int      @default(0)
+  collaborationScore  Int      @default(0)
+  trustScore          Int      @default(50)    // 0-100
+  achievementsJson    String   @default("[]")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  follows             ExperienceFollow[]
+  comments            ExperienceComment[]
+  sessions            PlaySession[]
+}
+
+model ExperienceFollow {
+  id            String   @id @default(cuid())
+  userId        String
+  experienceId  String
+  createdAt     DateTime @default(now())
+
+  player        PlayerProfile @relation(fields: [userId], references: [userId])
+  @@unique([userId, experienceId])
+}
+
+model ExperienceComment {
+  id            String   @id @default(cuid())
+  experienceId  String
+  userId        String
+  body          String
+  createdAt     DateTime @default(now())
+
+  player        PlayerProfile @relation(fields: [userId], references: [userId])
+}
+
+model ExperienceMetrics {
+  id                String   @id @default(cuid())
+  experienceId      String   @unique
+  totalSessions     Int      @default(0)
+  totalPlayTimeMs   Int      @default(0)
+  completionRate    Float    @default(0)
+  averageScore      Float    @default(0)
+  averageDropOffMs  Int      @default(0)
+  retention1d       Float    @default(0)
+  retention7d       Float    @default(0)
+  frustrationEvents Int      @default(0)
+  achievementEvents Int      @default(0)
+  surpriseEvents    Int      @default(0)
+  socialMoments     Int      @default(0)
+  tokensEarned      Int      @default(0)
+  tokensSpent       Int      @default(0)
+  marketActions     Int      @default(0)
+  forks             Int      @default(0)
+  shares            Int      @default(0)
+  updatedAt         DateTime @updatedAt
+}
+
+model EvolutionProposal {
+  id              String   @id @default(cuid())
+  experienceId    String
+  analysisJson    String   @default("{}")  // AI reasoning, patterns found
+  proposedChangesJson String @default("{}")  // what to change in the graph
+  predictedLift   Float    @default(0)     // e.g. 0.18 = +18% retention
+  newBundleJson   String?  // the proposed fork bundle
+  status          String   @default("PENDING")  // PENDING | APPROVED | REJECTED | APPLIED
+  createdAt       DateTime @default(now())
+  reviewedAt      DateTime?
+}
+
+model SimulationRun {
+  id              String   @id @default(cuid())
+  experienceId    String
+  playerCount     Int
+  variantLabel    String?  // "A", "B", "C"
+  variantConfigJson String @default("{}")
+  metricsJson     String   @default("{}")
+  status          String   @default("RUNNING")  // RUNNING | COMPLETED
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+}
+
+model RoyaltyNode {
+  id              String   @id @default(cuid())
+  experienceId    String   @unique
+  sharesJson      String   @default("[]")  // [{creatorId, shareBps, role}]
+  updatedAt       DateTime @updatedAt
 }

@@ -44,11 +44,22 @@ export const prismaTelemetryRepo: TelemetryRepo = {
         bundleHash: genome.bundleHash ?? '',
         extensionsJson: JSON.stringify(genome.extensions),
         categoriesJson: JSON.stringify(genome.categories),
-        mechanicsJson: JSON.stringify(genome.mechanics),
         compositionDepth: genome.compositionDepth,
         hasEconomy: genome.hasEconomy,
         hasAI: genome.hasAI,
         tokenCount: genome.tokenCount,
+        mechanicsJson: JSON.stringify({
+          mechanics: genome.mechanics,
+          complexityScore: genome.complexityScore,
+          noveltyScore: genome.noveltyScore,
+          economyScore: genome.economyScore,
+          socialScore: genome.socialScore,
+          emotionScore: genome.emotionScore,
+          retentionPrediction: genome.retentionPrediction,
+          extensionDNA: genome.extensionDNA,
+          tokenDNA: genome.tokenDNA,
+          interactionDNA: genome.interactionDNA,
+        }),
       },
       update: {},
     });
@@ -59,18 +70,30 @@ export const prismaTelemetryRepo: TelemetryRepo = {
       orderBy: { computedAt: 'desc' },
       take: limit,
     });
-    return rows.map((r) => ({
-      experienceId: r.experienceId,
-      bundleHash: r.bundleHash || undefined,
-      extensions: JSON.parse(r.extensionsJson),
-      categories: JSON.parse(r.categoriesJson),
-      mechanics: JSON.parse(r.mechanicsJson),
-      compositionDepth: r.compositionDepth,
-      hasEconomy: r.hasEconomy,
-      hasAI: r.hasAI,
-      tokenCount: r.tokenCount,
-      computedAt: r.computedAt.getTime(),
-    }));
+    return rows.map((r) => {
+      const v2 = r.mechanicsJson ? JSON.parse(r.mechanicsJson) : {};
+      return {
+        experienceId: r.experienceId,
+        bundleHash: r.bundleHash || undefined,
+        extensions: JSON.parse(r.extensionsJson),
+        categories: JSON.parse(r.categoriesJson),
+        mechanics: v2.mechanics ?? JSON.parse(r.mechanicsJson),
+        compositionDepth: r.compositionDepth,
+        hasEconomy: r.hasEconomy,
+        hasAI: r.hasAI,
+        tokenCount: r.tokenCount,
+        computedAt: r.computedAt.getTime(),
+        complexityScore: v2.complexityScore ?? 0,
+        noveltyScore: v2.noveltyScore ?? 0,
+        economyScore: v2.economyScore ?? 0,
+        socialScore: v2.socialScore ?? 0,
+        emotionScore: v2.emotionScore ?? 0,
+        retentionPrediction: v2.retentionPrediction ?? 0,
+        extensionDNA: v2.extensionDNA ?? [],
+        tokenDNA: v2.tokenDNA ?? [],
+        interactionDNA: v2.interactionDNA ?? [],
+      };
+    });
   },
 };
 

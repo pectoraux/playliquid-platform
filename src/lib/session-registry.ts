@@ -209,7 +209,7 @@ export async function endSession(sessionId: string, reason = 'manual'): Promise<
   registry.delete(sessionId);
 }
 
-async function persistBundle(experienceId: string, bundle: ExperienceBundle, graph: CompiledGraph) {
+export async function persistBundle(experienceId: string, bundle: ExperienceBundle, graph: CompiledGraph) {
   if (!graph.contentHash) return;
   // Upsert bundle
   await db.bundleRecord.upsert({

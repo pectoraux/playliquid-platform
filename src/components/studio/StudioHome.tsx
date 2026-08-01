@@ -8,7 +8,7 @@ import { useCreateDraft } from '@/hooks/use-studio';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Plus, Gamepad2, BookOpen, User, Terminal, ArrowRight, Zap } from 'lucide-react';
+import { Sparkles, Plus, Gamepad2, BookOpen, User, Terminal, ArrowRight, Zap, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function StudioHome() {
@@ -61,6 +61,9 @@ export function StudioHome() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setView('world')} className="h-8 text-xs">
+              <Globe className="w-3.5 h-3.5" /> World
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => setView('experiences')} className="h-8 text-xs">
               <BookOpen className="w-3.5 h-3.5" /> Browse ({experienceCount})
             </Button>

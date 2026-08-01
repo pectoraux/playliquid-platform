@@ -358,6 +358,111 @@ export interface ExperienceGenome {
   hasAI: boolean;
   tokenCount: number;
   computedAt: number;
+  // ── Genome v2 scores (0-100) ──────────────────────────────────────────
+  complexityScore: number;
+  noveltyScore: number;
+  economyScore: number;
+  socialScore: number;
+  emotionScore: number;
+  retentionPrediction: number;
+  // ── DNA arrays (ordered fingerprints) ─────────────────────────────────
+  extensionDNA: string[];
+  tokenDNA: string[];
+  interactionDNA: string[];
+}
+
+// ─── World Engine Types ────────────────────────────────────────────────────
+
+/** A player's evolving identity, built from their play history */
+export interface PlayerGenome {
+  favoriteGenres: ExperienceKind[];
+  emotionPreferences: ExperienceEmotion[];
+  playedExtensions: string[];
+  completionRate: number;
+  averageSessionLength: number;
+  skillLevel: number;      // 0-100, derived from scores + completion
+  socialBehavior: 'solo' | 'social' | 'competitive';
+  creatorAffinity: string[]; // creator IDs they play most
+}
+
+export interface PlayerIdentity {
+  userId: string;
+  displayName: string;
+  playerGenome: PlayerGenome;
+  creatorScore: number;
+  playerScore: number;
+  collaborationScore: number;
+  trustScore: number;
+  achievements: string[];
+  sessionCount: number;
+  createdAt: number;
+}
+
+/** Aggregated metrics for an experience across all sessions */
+export interface ExperienceMetricsAggregate {
+  experienceId: string;
+  totalSessions: number;
+  totalPlayTimeMs: number;
+  completionRate: number;
+  averageScore: number;
+  averageDropOffMs: number;
+  retention1d: number;
+  retention7d: number;
+  frustrationEvents: number;
+  achievementEvents: number;
+  surpriseEvents: number;
+  socialMoments: number;
+  tokensEarned: number;
+  tokensSpent: number;
+  marketActions: number;
+  forks: number;
+  shares: number;
+}
+
+/** A single recommendation from the Discovery Engine */
+export interface ExperienceRecommendation {
+  experienceId: string;
+  title: string;
+  score: number;          // 0-100
+  reasons: string[];      // why this was recommended
+  predictedEnjoyment: number; // 0-100
+}
+
+/** A royalty share in the fork lineage graph */
+export interface RoyaltyShare {
+  creatorId: string;
+  creatorName: string;
+  shareBps: number;       // basis points (10000 = 100%)
+  role: 'original' | 'fork' | 'extension' | 'platform' | 'ai';
+}
+
+/** AI-generated proposal to evolve an experience */
+export interface EvolutionProposalData {
+  id: string;
+  experienceId: string;
+  analysis: {
+    patterns: string[];
+    dropOffPoint?: string;
+    bottlenecks: string[];
+    strengths: string[];
+  };
+  proposedChanges: {
+    summary: string;
+    changes: Array<{ instance: string; config: Record<string, unknown>; reason: string }>;
+  };
+  predictedLift: number;
+  newBundle?: ExperienceBundle;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'APPLIED';
+  createdAt: number;
+}
+
+/** A simulated player for the Experience Lab */
+export interface SimulatedPlayer {
+  userId: string;
+  displayName: string;
+  profile: PlayerGenome;
+  actionsPerSession: number;
+  preferredTickRate: number;
 }
 
 // ─── Studio Domain Types ───────────────────────────────────────────────────

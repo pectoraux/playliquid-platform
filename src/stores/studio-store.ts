@@ -36,6 +36,7 @@ export type StudioView =
   | 'editor'         // graph editor + inspector + preview
   | 'experiences'    // browse published experiences
   | 'creator'        // creator profile
+  | 'world'          // World Engine dashboard (v0.2)
   | 'kernel-dev';    // kernel developer playground (from v0.1)
 
 // ─── Wizard State ──────────────────────────────────────────────────────────

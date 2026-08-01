@@ -109,3 +109,45 @@ Stage Summary:
   8. Genome metadata generated ✓ (auto-computed at publish, stored in genomeJson)
 
 - Farm Kingdom demo fully functional end-to-end: load → compile → play → see economy flow → publish → fork
+
+---
+Task ID: 3
+Agent: main (Z.ai Code)
+Task: Build PlayLiquid World Engine v0.2 — Discovery, Identity, Economy & Autonomous Evolution
+
+Work Log:
+- Added 6 Prisma models: PlayerProfile, ExperienceFollow, ExperienceComment, ExperienceMetrics, EvolutionProposal, SimulationRun, RoyaltyNode
+- Extended ExperienceGenome with v2 scores: complexityScore, noveltyScore, economyScore, socialScore, emotionScore, retentionPrediction + DNA arrays (extensionDNA, tokenDNA, interactionDNA)
+- Built Metrics Engine: aggregates session telemetry (completion rate, avg score, drop-off, frustration/achievement events, token economy, market actions) into ExperienceMetrics
+- Built Player Identity service: computes PlayerGenome from play history (favorite genres, emotion preferences, skill level, social behavior, creator affinity) + reputation scores (player/creator/collaboration/trust)
+- Built Discovery Engine: real recommendation algorithm using cosine genome similarity + emotion matching + genre matching + popularity signals + novelty boost + personalization
+- Built Creator Economy: engagement rewards (player play time → Liquid for creators) + royalty graph (walks fork tree, distributes lineage shares with residual balancing to maintain double-entry invariant)
+- Built Social Layer: follow/unfollow experiences, comments, community summaries
+- Built AI Evolution Agent: uses z-ai-web-dev-sdk LLM to analyze metrics → identify patterns/bottlenecks → propose config changes → generate evolved fork bundle → predict lift. Includes rule-based fallback.
+- Built Experience Lab: generates N simulated players with varied profiles, runs REAL sessions through the kernel (actual runtime, actual tokens, actual telemetry), aggregates metrics. A/B variant support.
+- Built 16 World Engine API routes: discover, trending, player, metrics, recompute, economy, royalty, social (follow/comments/community), evolution (analyze/proposals/approve/reject), lab (simulate/runs), genomes
+- Built World Dashboard UI with 5 tabs: Discover (recommendations + player identity + trending), Economy (Liquid flows + top creators), Genomes (v2 DNA scores), Evolution (AI proposals + approve), Lab (simulation runner + Farm Kingdom Universe demo)
+- Fixed: ledger invariant violation in royalty distribution (residual balancing on last share), simulation experienceId attribution, rewardEngagement error handling
+
+Browser Verification:
+- World Dashboard renders with all 5 tabs functional
+- Discover tab: Player Identity (12 sessions, score 39, competitive), Recommendations (Farm Kingdom v2: 62% score, 74% enjoyment, "Genome similarity 80%"), Trending
+- Economy tab: 28.0 Liquid in circulation, 16.0 Creator earnings, 65 total sessions, Studio Demo Creator: 12.0 Liquid
+- Genomes tab: Farm Kingdom v2 shows v2 scores (complexity=69, economy=100, retention=79)
+- Evolution tab: AI analyzed Farm Kingdom metrics, proposed "reduce farm.intervalTicks to 2" with +20% predicted retention, identified bottlenecks ("long production cycle may deter early engagement")
+- Lab tab: Simulation runs showing 5 players → 33 sessions, 100% completion, 537 tokens earned
+- Full flow verified: publish → simulate 50 players → metrics captured → AI evolution proposal → approve → v2 fork published → royalty graph computed
+- Sticky footer verified, no console errors, lint clean
+
+Stage Summary:
+- PlayLiquid is now a self-improving experience economy:
+  1. Create ✓ (Studio → AI Composer → graph editor)
+  2. Publish ✓ (compile → genome v2 → persist)
+  3. Gain players ✓ (Experience Lab simulates real sessions)
+  4. Receive recommendations ✓ (Discovery Engine with genome similarity)
+  5. Earn Liquid ✓ (Creator Economy with engagement rewards + royalty graph)
+  6. See AI improve ✓ (Evolution Agent analyzes metrics, proposes changes)
+  7. Fork improvements ✓ (Approve proposal → v2 published with parent lineage)
+  8. Creator economy ✓ (double-entry ledger, revenue splits through fork tree)
+
+- Farm Kingdom Universe demo fully functional: publish → 50 simulated players → metrics → AI evolution → v2 fork → revenue split. All through real kernel, real ledger, real telemetry.

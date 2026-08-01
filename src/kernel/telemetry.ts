@@ -100,6 +100,57 @@ export class TelemetryService {
     const hasAI = categories.AI > 0;
     const tokenCount = graph.declaredTokens.length;
 
+    // ── Genome v2 scores ─────────────────────────────────────────────
+    const instanceCount = Object.keys(graph.instances).length;
+    const wireCount = Object.values(graph.inputSources)
+      .reduce((sum, sources) => sum + Object.values(sources).reduce((s, w) => s + w.length, 0), 0);
+
+    // Complexity: depth + instance count + wire density
+    const complexityScore = Math.min(100, Math.round(
+      depth * 12 + instanceCount * 8 + wireCount * 5
+    ));
+
+    // Novelty: how many distinct categories + unique token combinations
+    const distinctCats = Object.values(categories).filter((c) => c > 0).length;
+    const noveltyScore = Math.min(100, Math.round(
+      distinctCats * 15 + tokenCount * 10 + (hasAI ? 15 : 0)
+    ));
+
+    // Economy: token count + economy extension density + liquid backing
+    const economyExtensions = categories.ECONOMY;
+    const backedTokens = graph.declaredTokens.filter((t) => t.liquidBackingMicro).length;
+    const economyScore = Math.min(100, Math.round(
+      economyExtensions * 20 + tokenCount * 10 + backedTokens * 15
+    ));
+
+    // Social: social extensions + competition presence
+    const socialScore = Math.min(100, Math.round(
+      categories.SOCIAL * 30 + (extensions.some((e) => e.includes('competition')) ? 25 : 0)
+    ));
+
+    // Emotion: derived from intent — we don't have intent here, so use category signals
+    const emotionSignals = (categories.MECHANIC > 0 ? 1 : 0) + (categories.ECONOMY > 0 ? 1 : 0) +
+      (categories.SOCIAL > 0 ? 1 : 0) + (categories.AI > 0 ? 1 : 0) + (categories.RENDER > 0 ? 1 : 0);
+    const emotionScore = Math.min(100, emotionSignals * 20);
+
+    // Retention prediction: heuristic — economy + social + moderate complexity
+    const retentionPrediction = Math.min(100, Math.round(
+      economyScore * 0.3 + socialScore * 0.25 + (complexityScore < 80 ? 20 : 10) + (hasAI ? 10 : 0) + 15
+    ));
+
+    // DNA arrays (ordered fingerprints)
+    const extensionDNA = Object.values(graph.instances)
+      .map(({ manifest }) => manifest.slug)
+      .sort();
+    const tokenDNA = graph.declaredTokens.map((t) => t.symbol).sort();
+    const interactionDNA = Object.entries(graph.inputSources)
+      .flatMap(([target, sources]) =>
+        Object.entries(sources).flatMap(([channel, wires]) =>
+          wires.map((w) => `${w.from.instance}.${w.from.channel}->${target}.${channel}`)
+        )
+      )
+      .sort();
+
     const genome: ExperienceGenome = {
       experienceId,
       bundleHash: graph.contentHash,
@@ -111,6 +162,15 @@ export class TelemetryService {
       hasAI,
       tokenCount,
       computedAt: Date.now(),
+      complexityScore,
+      noveltyScore,
+      economyScore,
+      socialScore,
+      emotionScore,
+      retentionPrediction,
+      extensionDNA,
+      tokenDNA,
+      interactionDNA,
     };
 
     return genome;
