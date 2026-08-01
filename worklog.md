@@ -383,3 +383,46 @@ Stage Summary:
 
 - 8-layer architecture:
   - Kernel → Studio → World Engine → Civilization → Universe → Identity → Consumer → Social
+
+---
+Task ID: 9
+Agent: main (Z.ai Code)
+Task: Build PlayLiquid v0.47 Identity Universe — Communities, Game Lifecycle, AI Coaching, Dynamic Achievements, Evolved Feed
+
+Work Log:
+- Added 5 Prisma models: CommunitySpaceRecord, CommunityMemberRecord, CommunityPostRecord, GameLifecycleEventRecord, CreatorPostRecord
+- Built Community Service: create/join/leave communities, post discussions (discussion/strategy/build/challenge/poll/announcement), upvote posts, member tracking
+- Built Game Lifecycle Service: auto-detects milestones (first-play, 10-players, 50-players, 100-players, first-fork, 10-forks, legendary, community-formed) and records timeline events with icons + descriptions
+- Built AI Coaching Service: LLM-powered personalized coaching insights (5 types: discovery, coaching, progress, social, creation) with severity levels and action suggestions. Analyzes skill gaps, progress to next level, social connections, and creation readiness.
+- Built Dynamic Achievement Context: generates unlock stories ("Unlocked by earning 30.0 Liquid. Economic mastery confirmed.") and progress to next achievement ("3 more wins to unlock Arena Champion")
+- Built Creator Posts: creators can publish updates, devlogs, announcements, behind-the-scenes content
+- Built Evolved Feed: mix of content types (recommended games, trending replays, creator updates, community moments) — discovery is no longer only games but "interesting moments"
+- Integrated lifecycle milestone checking into play flow (auto-checks after every session)
+- Built 8 API routes: community (GET/join/posts), lifecycle, coaching, achievement context, creator posts, evolved feed
+- Built Identity Universe Dashboard with 5 tabs:
+  - Coaching: AI-generated coaching insights with skill gap analysis and action suggestions
+  - Achievements: dynamic cards with unlock stories + progress to next
+  - Communities: browse and join game communities
+  - Lifecycle: visual timeline of game milestones (Created → Growing → Legendary)
+  - Feed: evolved mix of games, replays, creator posts, community moments
+- Enhanced Player Profile with visual skill bars (gradient progress) and verified badge
+
+Browser Verification:
+- Enhanced Profile: Demo Player Level 9, visual skill bars (farming 100, trading 100, cooking 84, strategy 72)
+- AI Coach: "You've mastered farming and trading skills beautifully, but I notice your building is at zero. Try placing a few decorative items..."
+- Dynamic Achievements: Liquid Tycoon "Unlocked by earning 30.0 Liquid. Economic mastery confirmed."
+- Lifecycle timeline: First Play → 10 Players → First Fork with visual icons and dates
+- No console errors, lint clean
+
+Stage Summary:
+- PlayLiquid now has identity gravity:
+  1. Enhanced player profile ✓ (visible genome, skill bars, verified badge)
+  2. AI Coaching ✓ (personalized LLM insights for skill gaps, progress, social, creation)
+  3. Dynamic achievements ✓ (unlock stories + progress to next)
+  4. Game communities ✓ (Discord+Reddit inside games with posts, upvotes, members)
+  5. Game lifecycle ✓ (timeline from creation to legendary status)
+  6. Creator posts ✓ (updates, devlogs, announcements)
+  7. Evolved feed ✓ (mix of games, replays, creator updates, community moments)
+
+- 9-layer architecture:
+  - Kernel → Studio → World Engine → Civilization → Universe → Identity → Consumer → Social → Identity Universe

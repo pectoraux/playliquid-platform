@@ -13,6 +13,7 @@ import { CivDashboard } from '@/components/civ/CivDashboard';
 import { UniverseDashboard } from '@/components/universe/UniverseDashboard';
 import { ConsumerUniverse } from '@/components/consumer/ConsumerUniverse';
 import { IdentityDashboard } from '@/components/identity/IdentityDashboard';
+import { IdentityUniverse } from '@/components/identity-universe/IdentityUniverse';
 import { useEffect, useMemo } from 'react';
 import type { ExtensionManifest } from '@/kernel/types';
 import { Playground } from '@/components/playground/Playground';
@@ -62,6 +63,8 @@ export default function Home() {
       return <ConsumerUniverse />;
     case 'identity':
       return <IdentityDashboard />;
+    case 'identity-u':
+      return <IdentityUniverse />;
     case 'wizard':
       return <CreationWizard />;
     case 'editor':

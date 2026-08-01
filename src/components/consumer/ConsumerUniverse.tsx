@@ -58,7 +58,7 @@ export function ConsumerUniverse() {
             <NavButton icon={Compass} label="Discover" active />
             <NavButton icon={Zap} label="Create" onClick={() => setView('wizard')} />
             <NavButton icon={Trophy} label="Compete" onClick={() => setView('world')} />
-            <NavButton icon={User} label="Identity" onClick={() => setView('identity')} />
+            <NavButton icon={User} label="Identity" onClick={() => setView('identity-u')} />
           </nav>
 
           <div className="ml-auto flex items-center gap-2">

@@ -186,6 +186,10 @@ export async function quickPlay(params: {
     }).catch(() => {});
   }
 
+  // ── Identity Universe: check lifecycle milestones ──────────────────
+  const { checkLifecycleMilestones } = await import('@/lib/identity-universe/community-service');
+  await checkLifecycleMilestones(experienceId, exp.title).catch(() => {});
+
   return {
     result: {
       sessionId,

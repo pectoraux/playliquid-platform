@@ -703,3 +703,79 @@ model NotificationRecord {
 
   @@index([userId])
 }
+
+// ─── v0.47 Identity Universe — Communities + Game Lifecycle + Creator Posts ─
+
+model CommunitySpaceRecord {
+  id              String   @id @default(cuid())
+  experienceId    String   @unique
+  experienceName  String
+  creatorId       String
+  memberCount     Int      @default(0)
+  description     String   @default("")
+  rules           String   @default("Be kind. Play hard. Create freely.")
+  createdAt       DateTime @default(now())
+
+  posts           CommunityPostRecord[]
+  members         CommunityMemberRecord[]
+}
+
+model CommunityMemberRecord {
+  id              String   @id @default(cuid())
+  communityId     String
+  userId          String
+  displayName     String
+  role            String   @default("member")  // member | moderator | admin
+  joinedAt        DateTime @default(now())
+
+  community       CommunitySpaceRecord @relation(fields: [communityId], references: [id])
+  @@unique([communityId, userId])
+}
+
+model CommunityPostRecord {
+  id              String   @id @default(cuid())
+  communityId     String
+  userId          String
+  displayName     String
+  type            String   @default("discussion")  // discussion | strategy | build | challenge | poll | announcement
+  title           String
+  body            String
+  upvotes         Int      @default(0)
+  commentCount    Int      @default(0)
+  pinned          Boolean  @default(false)
+  pollOptionsJson String   @default("[]")  // for polls: [{option, votes}]
+  createdAt       DateTime @default(now())
+
+  community       CommunitySpaceRecord @relation(fields: [communityId], references: [id])
+  @@index([communityId])
+}
+
+model GameLifecycleEventRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  experienceName  String
+  milestone       String   // created | first-play | 100-players | 1k-players | first-fork | evolved | tournament | legendary | viral | community-formed
+  title           String
+  description     String
+  icon            String   @default("🎮")
+  metadataJson    String   @default("{}")
+  achievedAt      DateTime @default(now())
+
+  @@index([experienceId])
+}
+
+model CreatorPostRecord {
+  id              String   @id @default(cuid())
+  creatorId       String
+  creatorName     String
+  type            String   @default("update")  // update | announcement | devlog | behind-the-scenes | question | poll
+  title           String
+  body            String
+  mediaUrl        String?
+  pinned          Boolean  @default(false)
+  likeCount       Int      @default(0)
+  commentCount    Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@index([creatorId])
+}
