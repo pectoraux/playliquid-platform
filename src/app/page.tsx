@@ -10,6 +10,7 @@ import { ExperiencesView } from '@/components/studio/ExperiencesView';
 import { CreatorProfile } from '@/components/studio/CreatorProfile';
 import { WorldDashboard } from '@/components/world/WorldDashboard';
 import { CivDashboard } from '@/components/civ/CivDashboard';
+import { UniverseDashboard } from '@/components/universe/UniverseDashboard';
 import { useEffect, useMemo } from 'react';
 import type { ExtensionManifest } from '@/kernel/types';
 import { Playground } from '@/components/playground/Playground';
@@ -55,6 +56,8 @@ export default function Home() {
   switch (view) {
     case 'home':
       return <StudioHome />;
+    case 'universe':
+      return <UniverseDashboard />;
     case 'wizard':
       return <CreationWizard />;
     case 'editor':

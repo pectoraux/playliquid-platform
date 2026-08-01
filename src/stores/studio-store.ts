@@ -32,6 +32,7 @@ export type ExtensionNode = Node<ExtensionNodeData>;
 
 export type StudioView =
   | 'home'           // landing — create new or browse
+  | 'universe'       // consumer marketplace (v0.4)
   | 'wizard'         // experience creation wizard
   | 'editor'         // graph editor + inspector + preview
   | 'experiences'    // browse published experiences
@@ -129,7 +130,7 @@ const emptyBundle: ExperienceBundle = {
 };
 
 export const useStudioStore = create<StudioStore>((set) => ({
-  view: 'home',
+  view: 'universe',  // front door is the consumer marketplace
   draftId: null,
   draftTitle: 'Untitled Experience',
   draftDescription: '',

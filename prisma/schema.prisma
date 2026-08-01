@@ -218,18 +218,26 @@ model PlayerProfile {
   id                  String   @id @default(cuid())
   userId              String   @unique
   displayName         String
+  avatarUrl           String?
+  bio                 String?
   playerGenomeJson    String   @default("{}")  // favorite genres, emotions, skill
   creatorScore        Int      @default(0)
   playerScore         Int      @default(0)
   collaborationScore  Int      @default(0)
   trustScore          Int      @default(50)    // 0-100
   achievementsJson    String   @default("[]")
+  followersJson       String   @default("[]")  // userIds of followers
+  followingJson       String   @default("[]")  // userIds being followed
+  friendsJson         String   @default("[]")  // bidirectional friend userIds
+  liquidBalance       Int      @default(0)     // micro-Liquid earned as player
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
   follows             ExperienceFollow[]
   comments            ExperienceComment[]
   sessions            PlaySession[]
+  activityFeed        ActivityFeedRecord[]
+  ratings             ExperienceRatingRecord[]
 }
 
 model ExperienceFollow {
@@ -413,4 +421,47 @@ model WorldHistoryRecord {
   timestamp       DateTime @default(now())
 
   world           WorldRecord @relation(fields: [worldId], references: [id])
+}
+
+// ─── Universe v0.4 — Consumer Platform Layer ───────────────────────────────
+
+model ActivityFeedRecord {
+  id              String   @id @default(cuid())
+  userId          String   // who performed the action
+  type            String   // played | forked | published | followed | earned | evolved | rated | joined
+  targetType      String   // experience | creator | world | spark
+  targetId        String?
+  targetName      String?
+  detail          String?  // extra context
+  metadataJson    String   @default("{}")
+  createdAt       DateTime @default(now())
+
+  player          PlayerProfile @relation(fields: [userId], references: [userId])
+}
+
+model ExperienceRatingRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  userId          String
+  overallScore    Int      @default(50)  // 0-100 reputation score
+  completionScore Int      @default(50)
+  returnScore     Int      @default(50)
+  socialScore     Int      @default(50)
+  emotionScore    Int      @default(50)
+  economyScore    Int      @default(50)
+  reviewText      String?
+  createdAt       DateTime @default(now())
+
+  player          PlayerProfile @relation(fields: [userId], references: [userId])
+  @@unique([experienceId, userId])
+}
+
+model FriendRequestRecord {
+  id              String   @id @default(cuid())
+  fromUserId      String
+  toUserId        String
+  status          String   @default("PENDING")  // PENDING | ACCEPTED | REJECTED
+  createdAt       DateTime @default(now())
+
+  @@unique([fromUserId, toUserId])
 }

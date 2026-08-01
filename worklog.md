@@ -197,3 +197,58 @@ Stage Summary:
   - Studio (v0.1): creation layer
   - World Engine (v0.2): economy + discovery + evolution
   - Civilization Engine (v0.3): autonomous worlds with AI agents + emergent events
+
+---
+Task ID: 5
+Agent: main (Z.ai Code)
+Task: Build PlayLiquid Universe v0.4 — The Consumer Platform Layer (marketplace, play flow, social graph, AI curator)
+
+Work Log:
+- Added 3 Prisma models: ActivityFeedRecord, ExperienceRatingRecord, FriendRequestRecord
+- Enhanced PlayerProfile with avatarUrl, bio, followersJson, followingJson, friendsJson, liquidBalance
+- Built 6 Universe services:
+  - Social Service: activity feed (record + list), follow/unfollow users, friend requests, social stats
+  - Rating Service: Experience Reputation Score (multi-signal: completion, return, social, emotion, economy, reviews — NOT stars)
+  - AI Curator Service: LLM-powered personalized recommendations with reasoning + match factors; "why players love this" summaries
+  - Play Flow Service: one-click quickPlay → session → runtime → telemetry → creator rewards → player genome update
+  - Marketplace Service: assembles marketplace home (trending, new releases, recommended, friends playing, popular worlds)
+  - Creator Analytics Service: aggregated stats (players, retention, economy, forks, AI insights)
+- Built 11 API routes: marketplace, play, curator, rating, analytics, feed, follow, stats, summary, demo
+- Built Universe Dashboard with 4 tabs:
+  - Discover: Trending/Recommended/New/Friends Playing sections with rich Spark cards (reputation score, genome badges, play/fork/share actions)
+  - AI Curator: Personal LLM-powered recommendations with reasoning text + match factors
+  - Community: Social stats + live activity feed with avatars + event types
+  - Worlds: Link to Civilization Engine
+- Built Experience Detail modal: AI summary + multi-signal reputation score + Play button
+- Front door navigation: PLAY / CREATE / COMMUNITY / PROFILE
+- Default view changed from 'home' to 'universe' (consumer marketplace is the front door)
+- Demo seeding: 5 creators, 20 sparks, 100 simulated players, 197 play sessions
+
+Browser Verification:
+- Universe marketplace renders with 10 trending, 10 new, 10 recommended sparks + 5 popular worlds
+- Spark cards show: title, creator, reputation score, genome badges, play/fork/share buttons
+- Experience detail modal shows AI Curator summary + multi-signal reputation breakdown
+- AI Curator tab: 5 personalized recommendations with LLM reasoning ("you'll love Farm Kingdom v2's deeply strategic gameplay...")
+- Community tab: social stats + live activity feed (50 events: "Demo Player played Sky Towers scored 25")
+- Play button works: score=25, tokens earned (CORN/MEAL/GOLD), 2.50 Liquid creator reward
+- No console errors, lint clean
+
+Stage Summary:
+- PlayLiquid now has the consumer layer:
+  1. Open PlayLiquid ✓ (marketplace is the front door)
+  2. Discover Sparks ✓ (trending/recommended/new/friends sections)
+  3. Play instantly ✓ (one-click play with real kernel sessions)
+  4. Build player identity ✓ (genome + reputation + social)
+  5. Follow creators ✓ (social graph)
+  6. Fork an experience ✓ (fork button on every card)
+  7. Create own Spark ✓ (Create → wizard → Studio)
+  8. Earn Liquid ✓ (creator rewards via double-entry ledger)
+  9. Grow community ✓ (activity feed + follows)
+  10. See Sparks evolve into Worlds ✓ (Civilization Engine integration)
+
+- 5-layer architecture complete:
+  - Kernel (v0.1): execution
+  - Studio (v0.1): creation
+  - World Engine (v0.2): economy + discovery + evolution
+  - Civilization Engine (v0.3): autonomous worlds
+  - Universe (v0.4): consumer marketplace
