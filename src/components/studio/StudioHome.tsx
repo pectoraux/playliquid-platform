@@ -61,6 +61,9 @@ export function StudioHome() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setView('civ')} className="h-8 text-xs">
+              <Globe className="w-3.5 h-3.5" /> Civilization
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => setView('world')} className="h-8 text-xs">
               <Globe className="w-3.5 h-3.5" /> World
             </Button>

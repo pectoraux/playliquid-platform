@@ -37,6 +37,7 @@ export type StudioView =
   | 'experiences'    // browse published experiences
   | 'creator'        // creator profile
   | 'world'          // World Engine dashboard (v0.2)
+  | 'civ'            // Civilization Engine dashboard (v0.3)
   | 'kernel-dev';    // kernel developer playground (from v0.1)
 
 // ─── Wizard State ──────────────────────────────────────────────────────────

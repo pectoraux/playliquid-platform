@@ -465,6 +465,151 @@ export interface SimulatedPlayer {
   preferredTickRate: number;
 }
 
+// ─── Civilization Engine Types (v0.3) ──────────────────────────────────────
+
+/** A persistent world activated from a published experience */
+export interface World {
+  id: string;
+  name: string;
+  description: string;
+  experienceId: string;
+  creatorId: string;
+  status: 'DORMANT' | 'ACTIVE' | 'PAUSED' | 'ENDED';
+  tickCount: number;
+  population: number;
+  worldGenome: WorldGenome;
+  macroState: WorldMacroState;
+  createdAt: number;
+  lastTickAt?: number;
+}
+
+/** Genome of a world — derived from the experience genome + simulation state */
+export interface WorldGenome {
+  complexity: number;
+  economyDepth: number;
+  socialDensity: number;
+  agentDiversity: number;
+  resourceVariety: number;
+  eventFrequency: number;
+}
+
+/** Macro-level world state (fast to update, doesn't require full runtime) */
+export interface WorldMacroState {
+  resources: Record<string, number>;      // resource type → total supply
+  prices: Record<string, number>;         // resource type → current price
+  population: number;
+  averageWealth: number;
+  giniCoefficient: number;                // wealth inequality (0=equality, 1=inequality)
+  mood: number;                           // -100 (crisis) to +100 (boom)
+  activeEvents: string[];
+}
+
+/** An entity living inside a world */
+export type EntityType = 'CITIZEN' | 'MERCHANT' | 'BUILDER' | 'EXPLORER' | 'COMPETITOR' | 'ORGANIZATION' | 'RESOURCE_NODE' | 'PLAYER';
+
+export interface WorldEntity {
+  id: string;
+  worldId: string;
+  name: string;
+  type: EntityType;
+  agentGenome?: AgentGenome;
+  wealth: number;                         // in micro-Liquid
+  resources: Record<string, number>;      // resource holdings
+  reputation: number;                     // -100 to +100
+  relationships: Record<string, number>;  // entityId → relationship score (-100 to +100)
+  memory: AgentMemory[];
+  lastDecisionTick: number;
+  alive: boolean;
+  createdAt: number;
+}
+
+/** The personality + capabilities of an autonomous agent */
+export interface AgentGenome {
+  personality: {
+    riskTolerance: number;                // 0-100
+    sociability: number;                  // 0-100
+    ambition: number;                     // 0-100
+    creativity: number;                   // 0-100
+  };
+  goals: string[];
+  skills: Record<string, number>;         // skill name → level (0-100)
+  role: EntityType;
+  decisionStyle: 'greedy' | 'strategic' | 'social' | 'creative';
+}
+
+/** An agent's memory of past events */
+export interface AgentMemory {
+  tick: number;
+  event: string;
+  impact: number;                         // -100 to +100 (how it affected the agent)
+  learning: string;                       // what the agent learned
+}
+
+/** A relationship between two entities */
+export interface Relationship {
+  id: string;
+  worldId: string;
+  fromEntityId: string;
+  toEntityId: string;
+  type: 'owns' | 'trades' | 'competes' | 'collaborates' | 'trusts' | 'fears' | 'allied' | 'rival';
+  strength: number;                       // 0-100
+  createdAt: number;
+}
+
+/** An emergent event generated from world state */
+export interface WorldEvent {
+  id: string;
+  worldId: string;
+  name: string;
+  description: string;
+  type: 'economic' | 'social' | 'environmental' | 'competitive' | 'crisis' | 'discovery';
+  tick: number;
+  effects: {
+    resourceChanges: Record<string, number>;
+    priceChanges: Record<string, number>;
+    moodChange: number;
+    affectedEntities: string[];
+  };
+  rewards?: Record<string, number>;       // entityId → liquid reward (micro)
+  storyText: string;                      // narrative for the history log
+}
+
+/** An ownable asset in the world economy */
+export interface Asset {
+  id: string;
+  worldId: string;
+  name: string;
+  type: 'land' | 'building' | 'business' | 'item' | 'infrastructure';
+  ownerId?: string;                       // entity ID that owns it
+  purchasePrice: number;                  // micro-Liquid
+  generationRate: Record<string, number>; // resource → amount per tick
+  forSale: boolean;
+  askingPrice?: number;
+  createdAt: number;
+}
+
+/** A recorded world tick with state snapshot */
+export interface WorldTickRecord {
+  id: string;
+  worldId: string;
+  tick: number;
+  stateSnapshot: WorldMacroState;
+  eventsThisTick: string[];
+  decisionsThisTick: number;
+  timestamp: number;
+}
+
+/** A historical entry in the world's chronicle */
+export interface WorldHistoryEntry {
+  id: string;
+  worldId: string;
+  tick: number;
+  type: 'founding' | 'event' | 'milestone' | 'crisis' | 'discovery' | 'social' | 'economic';
+  title: string;
+  narrative: string;
+  timestamp: number;
+}
+
 // ─── Studio Domain Types ───────────────────────────────────────────────────
 
 export type ExperienceKind = 'GAME' | 'SPARK' | 'SIMULATION' | 'CHALLENGE' | 'LEARNING';

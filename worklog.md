@@ -151,3 +151,49 @@ Stage Summary:
   8. Creator economy ✓ (double-entry ledger, revenue splits through fork tree)
 
 - Farm Kingdom Universe demo fully functional: publish → 50 simulated players → metrics → AI evolution → v2 fork → revenue split. All through real kernel, real ledger, real telemetry.
+
+---
+Task ID: 4
+Agent: main (Z.ai Code)
+Task: Build PlayLiquid Civilization Engine v0.3 — Autonomous World with AI agents, persistent simulation, emergent events, and asset markets
+
+Work Log:
+- Added 7 Prisma models: WorldRecord, WorldEntityRecord, RelationshipRecord, WorldEventRecord, AssetRecord, WorldTickRecord, WorldHistoryRecord
+- Added Civilization types to kernel: World, WorldGenome, WorldMacroState, WorldEntity, AgentGenome, AgentMemory, Relationship, WorldEvent, Asset, WorldTickRecord, WorldHistoryEntry
+- Built World Service: createWorld (from published experience), spawnCitizens (with role distribution), getWorld, listWorlds, getEntities, getHistory
+- Built Agent Service: Observe→Reason→Plan→Act→Learn loop with LLM for strategic decisions (3 agents/tick sampled) + rule-based for frequent ticks. 5 agent roles (Citizen, Merchant, Builder, Explorer, Competitor) with distinct personalities, goals, skills, and decision styles.
+- Built World Scheduler: persistent tick loop — updates macro state (resource supply, prices, mood), runs agent decisions, checks for emergent events, updates relationships, records milestones
+- Built Emergent Events Engine: 7 event triggers (drought, bumper harvest, gold rush, festival, market crash, innovation, tournament) with real effects on world state + LLM-enhanced narratives + ledger-posted rewards
+- Built Asset System: buy/sell/listForSale, asset generation (produces resources per tick), market summary. All transactions via double-entry ledger.
+- Built World Discovery: recommends worlds based on player genome + world genome + economic opportunities + freshness
+- Built 11 API routes: worlds CRUD, spawn, tick, entities, events, assets, history, stats, discover, demo
+- Built Civilization Dashboard with 5 tabs: Citizens (entity list with wealth/reputation), Events (emergent events with stories), History (world chronicle timeline), Economy (resources/prices/wealth distribution/assets), Discover (world recommendations)
+- Fixed: BigInt conversion error from floating-point price calculations (Math.round before ledger post)
+- Added "Civilization" button to Studio Home
+
+Browser Verification:
+- Civilization Dashboard renders with world selector + stats + 5 tabs
+- Farm Kingdom Civilization demo: 20 citizens spawned (8 citizens, 4 merchants, 2 builders, 3 explorers, 3 competitors), 100 ticks run, 2000 decisions made
+- Citizens tab: 20 entities with roles, wealth, reputation (wealthiest: Doran D3 — 17.61 Liquid)
+- History tab: World chronicle shows founding + citizens arrived
+- Economy tab: Resources (CORN/WOOD/STONE/WATER/GOLD/REPUTATION) with supply + prices, total wealth 131.1 Liquid, wealth distribution
+- Sticky footer verified, no console errors, lint clean
+
+Stage Summary:
+- PlayLiquid is now an autonomous world engine:
+  1. Publish a world ✓ (from published experience)
+  2. Spawn AI citizens ✓ (with role distribution + agent genomes)
+  3. Run simulation ✓ (persistent tick loop)
+  4. Observe emergent behavior ✓ (events generated from world state)
+  5. AI agents make autonomous decisions ✓ (Observe→Reason→Plan→Act→Learn with LLM)
+  6. Economy evolves ✓ (resource supply, prices, wealth distribution via double-entry ledger)
+  7. Events emerge ✓ (7 event types with real effects + narrative stories)
+  8. Players discover worlds ✓ (genome-based recommendations)
+  9. Worlds fork and evolve ✓ (fork lineage tracked)
+  10. Civilization history recorded ✓ (WorldHistoryRecord chronicle)
+
+- All 4 layers now exist:
+  - Kernel (v0.1): execution primitive
+  - Studio (v0.1): creation layer
+  - World Engine (v0.2): economy + discovery + evolution
+  - Civilization Engine (v0.3): autonomous worlds with AI agents + emergent events

@@ -9,6 +9,7 @@ import { StudioEditor } from '@/components/studio/StudioEditor';
 import { ExperiencesView } from '@/components/studio/ExperiencesView';
 import { CreatorProfile } from '@/components/studio/CreatorProfile';
 import { WorldDashboard } from '@/components/world/WorldDashboard';
+import { CivDashboard } from '@/components/civ/CivDashboard';
 import { useEffect, useMemo } from 'react';
 import type { ExtensionManifest } from '@/kernel/types';
 import { Playground } from '@/components/playground/Playground';
@@ -64,6 +65,8 @@ export default function Home() {
       return <CreatorProfile />;
     case 'world':
       return <WorldDashboard />;
+    case 'civ':
+      return <CivDashboard />;
     case 'kernel-dev':
       return <Playground />;
     default:

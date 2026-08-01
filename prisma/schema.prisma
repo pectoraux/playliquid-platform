@@ -304,3 +304,113 @@ model RoyaltyNode {
   sharesJson      String   @default("[]")  // [{creatorId, shareBps, role}]
   updatedAt       DateTime @updatedAt
 }
+
+// ─── Civilization Engine v0.3 ──────────────────────────────────────────────
+
+model WorldRecord {
+  id              String   @id @default(cuid())
+  name            String
+  description     String
+  experienceId    String
+  creatorId       String
+  status          String   @default("DORMANT")  // DORMANT | ACTIVE | PAUSED | ENDED
+  tickCount       Int      @default(0)
+  population      Int      @default(0)
+  worldGenomeJson String   @default("{}")
+  macroStateJson  String   @default("{}")
+  createdAt       DateTime @default(now())
+  lastTickAt      DateTime?
+
+  entities        WorldEntityRecord[]
+  events          WorldEventRecord[]
+  assets          AssetRecord[]
+  ticks           WorldTickRecord[]
+  history         WorldHistoryRecord[]
+  relationships   RelationshipRecord[]
+}
+
+model WorldEntityRecord {
+  id              String   @id @default(cuid())
+  worldId         String
+  name            String
+  type            String   // CITIZEN | MERCHANT | BUILDER | EXPLORER | COMPETITOR | ORGANIZATION | RESOURCE_NODE | PLAYER
+  agentGenomeJson String   @default("{}")
+  wealth          Int      @default(0)   // micro-Liquid
+  resourcesJson   String   @default("{}")
+  reputation      Int      @default(0)
+  relationshipsJson String @default("{}")
+  memoryJson      String   @default("[]")
+  lastDecisionTick Int     @default(0)
+  alive           Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  world           WorldRecord @relation(fields: [worldId], references: [id])
+  ownedAssets     AssetRecord[]
+}
+
+model RelationshipRecord {
+  id              String   @id @default(cuid())
+  worldId         String
+  fromEntityId    String
+  toEntityId      String
+  type            String   // owns | trades | competes | collaborates | trusts | fears | allied | rival
+  strength        Int      @default(50)
+  createdAt       DateTime @default(now())
+
+  world           WorldRecord @relation(fields: [worldId], references: [id])
+}
+
+model WorldEventRecord {
+  id              String   @id @default(cuid())
+  worldId         String
+  name            String
+  description     String
+  type            String   // economic | social | environmental | competitive | crisis | discovery
+  tick            Int
+  effectsJson     String   @default("{}")
+  rewardsJson     String   @default("{}")
+  storyText       String   @default("")
+  createdAt       DateTime @default(now())
+
+  world           WorldRecord @relation(fields: [worldId], references: [id])
+}
+
+model AssetRecord {
+  id              String   @id @default(cuid())
+  worldId         String
+  name            String
+  type            String   // land | building | business | item | infrastructure
+  ownerId         String?
+  purchasePrice   Int      @default(0)
+  generationRateJson String @default("{}")
+  forSale         Boolean  @default(false)
+  askingPrice     Int?
+  createdAt       DateTime @default(now())
+
+  world           WorldRecord @relation(fields: [worldId], references: [id])
+  owner           WorldEntityRecord? @relation(fields: [ownerId], references: [id])
+}
+
+model WorldTickRecord {
+  id              String   @id @default(cuid())
+  worldId         String
+  tick            Int
+  stateSnapshotJson String @default("{}")
+  eventsJson      String   @default("[]")
+  decisionsCount  Int      @default(0)
+  timestamp       DateTime @default(now())
+
+  world           WorldRecord @relation(fields: [worldId], references: [id])
+}
+
+model WorldHistoryRecord {
+  id              String   @id @default(cuid())
+  worldId         String
+  tick            Int
+  type            String   // founding | event | milestone | crisis | discovery | social | economic
+  title           String
+  narrative       String
+  timestamp       DateTime @default(now())
+
+  world           WorldRecord @relation(fields: [worldId], references: [id])
+}
