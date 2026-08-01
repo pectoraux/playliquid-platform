@@ -779,3 +779,79 @@ model CreatorPostRecord {
 
   @@index([creatorId])
 }
+
+// ─── v0.48 Creator Intelligence Universe ───────────────────────────────────
+
+model CreatorInsightRecord {
+  id              String   @id @default(cuid())
+  creatorId       String
+  experienceId    String?
+  agentType       String   // designer | economy | balance | community | growth | narrative
+  insightType     String   // observation | suggestion | alert | opportunity | prediction
+  title           String
+  body            String
+  actionSuggestion String?
+  expectedImpact  String?
+  severity        String   @default("info")  // info | suggestion | warning | critical
+  status          String   @default("PENDING")  // PENDING | ACCEPTED | DISMISSED | APPLIED
+  metadataJson    String   @default("{}")
+  createdAt       DateTime @default(now())
+
+  @@index([creatorId])
+  @@index([agentType])
+}
+
+model CreatorExperimentRecord {
+  id              String   @id @default(cuid())
+  creatorId       String
+  experienceId    String
+  type            String   // ab-test | balance-change | new-feature | event-test
+  hypothesis      String
+  variantLabel    String   // "A" | "B" | "Variant 1"
+  configJson      String   @default("{}")
+  status          String   @default("DRAFT")  // DRAFT | RUNNING | COMPLETED | CANCELLED
+  resultsJson     String   @default("{}")
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([creatorId])
+  @@index([experienceId])
+}
+
+model GameEvolutionPlanRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  experienceName  String
+  creatorId       String
+  currentStage    String   @default("birth")  // birth | growth | optimization | expansion | civilization
+  proposedStage   String?
+  stepsJson       String   @default("[]")  // [{step, description, status, projectedImpact}]
+  projectedRetention Float @default(0)
+  projectedRevenue  Float  @default(0)
+  status          String   @default("DRAFT")  // DRAFT | APPROVED | IN_PROGRESS | COMPLETED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([experienceId])
+}
+
+model CreatorMarketplaceItemRecord {
+  id              String   @id @default(cuid())
+  creatorId       String
+  creatorName     String
+  type            String   // extension | mechanic | template | npc | world | asset-pack | ai-agent
+  name            String
+  description     String
+  icon            String   @default("📦")
+  priceRoyaltyBps Int      @default(500)  // basis points (500 = 5%)
+  usedByCount     Int      @default(0)
+  rating          Float    @default(5.0)
+  revenueImpact   Float    @default(0)  // projected % revenue increase
+  tagsJson        String   @default("[]")
+  metadataJson    String   @default("{}")
+  createdAt       DateTime @default(now())
+
+  @@index([creatorId])
+  @@index([type])
+}

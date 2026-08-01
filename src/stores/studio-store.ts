@@ -35,6 +35,7 @@ export type StudioView =
   | 'universe'
   | 'identity'
   | 'identity-u'
+  | 'creator-intel'
   | 'wizard'
   | 'editor'
   | 'experiences'

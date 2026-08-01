@@ -14,6 +14,7 @@ import { UniverseDashboard } from '@/components/universe/UniverseDashboard';
 import { ConsumerUniverse } from '@/components/consumer/ConsumerUniverse';
 import { IdentityDashboard } from '@/components/identity/IdentityDashboard';
 import { IdentityUniverse } from '@/components/identity-universe/IdentityUniverse';
+import { CreatorIntel } from '@/components/creator-intel/CreatorIntel';
 import { useEffect, useMemo } from 'react';
 import type { ExtensionManifest } from '@/kernel/types';
 import { Playground } from '@/components/playground/Playground';
@@ -65,6 +66,8 @@ export default function Home() {
       return <IdentityDashboard />;
     case 'identity-u':
       return <IdentityUniverse />;
+    case 'creator-intel':
+      return <CreatorIntel />;
     case 'wizard':
       return <CreationWizard />;
     case 'editor':

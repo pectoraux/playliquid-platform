@@ -62,7 +62,7 @@ export function ConsumerUniverse() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setStudioCreatorId('creator_demo')}>
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('creator-intel')}>
               <BarChart className="w-3.5 h-3.5" /> Studio
             </Button>
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('civ')}>
