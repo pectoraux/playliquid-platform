@@ -45,6 +45,11 @@ export const scoreManifest: ExtensionManifest = {
   ],
   permissions: { storage: ['session-state'] },
   capabilities: [],
+  icon: '🏆',
+  tags: ['score', 'mechanic', 'progression'],
+  configSchema: [
+    { key: 'pointsPerUnit', label: 'Points Per Unit', type: 'number', min: 1, max: 100, step: 1, default: 10, description: 'Points awarded per unit of distance traveled.' },
+  ],
 };
 
 interface ScoreState {

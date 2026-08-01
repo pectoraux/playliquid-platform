@@ -385,8 +385,8 @@ interface MintTracker {
 }
 
 function enforceMint(session: RuntimeSession, def: TokenDefinition, amount: number): boolean {
-  const trackers = ((session as Record<symbol, MintTracker>)[MINT_TRACKER]) ?? {};
-  (session as Record<symbol, MintTracker>)[MINT_TRACKER] = trackers;
+  const trackers = ((session as unknown) as Record<symbol, MintTracker>)[MINT_TRACKER] ?? {};
+  ((session as unknown) as Record<symbol, MintTracker>)[MINT_TRACKER] = trackers;
 
   // firstMintTick defaults to 0 (session start) so the rate limit window
   // begins from session start, not from the first mint attempt.

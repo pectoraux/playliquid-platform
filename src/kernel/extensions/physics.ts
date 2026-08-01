@@ -35,6 +35,11 @@ export const physicsManifest: ExtensionManifest = {
   ],
   permissions: { storage: ['session-state'] },
   capabilities: ['pause', 'saveState', 'restoreState'],
+  icon: '🏃',
+  tags: ['movement', 'position', 'player', 'core'],
+  configSchema: [
+    { key: 'speed', label: 'Movement Speed', type: 'number', min: 1, max: 20, step: 1, default: 5, unit: 'units/tick', description: 'How fast the player moves per action.' },
+  ],
 };
 
 interface PhysicsState {

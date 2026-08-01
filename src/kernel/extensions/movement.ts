@@ -40,6 +40,8 @@ export const movementManifest: ExtensionManifest = {
   ],
   permissions: { storage: ['session-state'] },
   capabilities: [],
+  icon: '🚶',
+  tags: ['movement', 'mechanic', 'detection'],
 };
 
 interface MovementState {

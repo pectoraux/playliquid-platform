@@ -133,6 +133,26 @@ export interface ExtensionManifest {
   parentHash?: string;
   /** Capabilities */
   capabilities?: string[];
+  /** Configuration schema — drives auto-generated forms in Studio */
+  configSchema?: ConfigField[];
+  /** Icon (emoji or URL) for Studio display */
+  icon?: string;
+  /** Marketplace tags for search */
+  tags?: string[];
+}
+
+/** A single configurable field on an extension. Studio generates a form from this. */
+export interface ConfigField {
+  key: string;
+  label: string;
+  type: 'number' | 'string' | 'boolean' | 'select';
+  min?: number;
+  max?: number;
+  step?: number;
+  default: number | string | boolean;
+  options?: string[];
+  description?: string;
+  unit?: string;
 }
 
 export interface PermissionSet {
@@ -338,4 +358,38 @@ export interface ExperienceGenome {
   hasAI: boolean;
   tokenCount: number;
   computedAt: number;
+}
+
+// ─── Studio Domain Types ───────────────────────────────────────────────────
+
+export type ExperienceKind = 'GAME' | 'SPARK' | 'SIMULATION' | 'CHALLENGE' | 'LEARNING';
+export type ExperienceEmotion = 'competition' | 'discovery' | 'creativity' | 'mastery' | 'relaxation' | 'social' | 'strategy';
+
+/** Creator intent captured by the wizard — becomes part of the genome */
+export interface ExperienceIntent {
+  kind: ExperienceKind;
+  emotions: ExperienceEmotion[];
+  goals: string[];
+  audience: string;
+  description: string;
+}
+
+/** A published experience (persisted in DB) */
+export interface PublishedExperience {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  creatorId: string;
+  creatorName: string;
+  bundleHash: string;
+  parentExperienceId?: string;  // fork lineage
+  intent: ExperienceIntent;
+  genome: ExperienceGenome;
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  playCount: number;
+  forkCount: number;
+  likeCount: number;
+  createdAt: number;
+  publishedAt?: number;
 }

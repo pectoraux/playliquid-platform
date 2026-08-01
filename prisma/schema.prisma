@@ -172,3 +172,41 @@ model ExperienceGenomeRecord {
 
   bundle          BundleRecord @relation(fields: [bundleHash], references: [contentHash])
 }
+
+// ─── Studio: Creators & Published Experiences ──────────────────────────────
+
+model CreatorRecord {
+  id            String   @id @default(cuid())
+  handle        String   @unique
+  displayName   String
+  bio           String?
+  avatarUrl     String?
+  followers     Int      @default(0)
+  totalLiquid   Int      @default(0)  // micro-Liquid earned
+  playerHours   Int      @default(0)  // total play time in seconds
+  createdAt     DateTime @default(now())
+
+  experiences   ExperienceRecord[]
+}
+
+model ExperienceRecord {
+  id                  String   @id @default(cuid())
+  slug                String   @unique
+  title               String
+  description         String
+  creatorId           String
+  bundleHash          String?
+  parentExperienceId  String?  // fork lineage
+  intentJson          String   @default("{}")  // ExperienceIntent
+  genomeJson          String?  // computed at publish
+  status              String   @default("DRAFT")  // DRAFT | PUBLISHED | ARCHIVED
+  playCount           Int      @default(0)
+  forkCount           Int      @default(0)
+  likeCount           Int      @default(0)
+  createdAt           DateTime @default(now())
+  publishedAt         DateTime?
+
+  creator             CreatorRecord @relation(fields: [creatorId], references: [id])
+  parent              ExperienceRecord? @relation("ForkTree", fields: [parentExperienceId], references: [id])
+  forks               ExperienceRecord[] @relation("ForkTree")
+}

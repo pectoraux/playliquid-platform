@@ -54,6 +54,12 @@ export const coinCollectorManifest: ExtensionManifest = {
   consumesTokens: [],
   permissions: { storage: ['session-state'] },
   capabilities: [],
+  icon: '🪙',
+  tags: ['economy', 'collectible', 'reward', 'coins'],
+  configSchema: [
+    { key: 'coinCount', label: 'Coin Count', type: 'number', min: 1, max: 50, step: 1, default: 10, description: 'How many coins to spawn in the world.' },
+    { key: 'collectRadius', label: 'Collect Radius', type: 'number', min: 1, max: 20, step: 1, default: 5, unit: 'units', description: 'How close the player must be to collect a coin.' },
+  ],
 };
 
 interface Coin {

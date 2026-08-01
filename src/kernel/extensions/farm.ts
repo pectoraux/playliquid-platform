@@ -42,6 +42,11 @@ export const farmManifest: ExtensionManifest = {
   consumesTokens: [],
   permissions: { storage: ['session-state'] },
   capabilities: [],
+  icon: '🌾',
+  tags: ['economy', 'production', 'farming', 'token'],
+  configSchema: [
+    { key: 'intervalTicks', label: 'Production Interval', type: 'number', min: 1, max: 30, step: 1, default: 5, unit: 'ticks', description: 'How often the farm produces one CORN.' },
+  ],
 };
 
 interface FarmState {

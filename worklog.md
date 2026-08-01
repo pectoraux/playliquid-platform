@@ -53,3 +53,59 @@ Stage Summary:
   - Lint clean
 
 - The kernel is REAL: actual compiler, actual runtime, actual double-entry ledger, actual token flows. No mocks.
+
+---
+Task ID: 2
+Agent: main (Z.ai Code)
+Task: Build PlayLiquid Studio v0.1 — the Experience Composer (creator layer on top of the kernel)
+
+Work Log:
+- Enriched 6 existing extensions with ConfigSchema, icon, tags
+- Added 3 new extensions: Weather (PHYSICS), Marketplace (ECONOMY, mints GOLD), Competition (SOCIAL, leaderboard)
+- Added Studio domain types to kernel: ExperienceKind, ExperienceEmotion, ExperienceIntent, PublishedExperience, ConfigField
+- Added Prisma models: CreatorRecord, ExperienceRecord (with fork lineage)
+- Built Studio data layer: studio-service.ts (drafts, publish, fork, creator profile), ai-composer.ts (LLM-powered), suggestion-utils.ts (pure converter)
+- Built AI Experience Composer using z-ai-web-dev-sdk: takes natural language + intent → suggests extension graph with reasoning, instances, wires, token flow
+- Split ai-composer into server-only (SDK) + client-safe (types, converter) to avoid SSR import issues
+- Built 8 Studio API routes: drafts CRUD, experiences list/get, publish, fork, bundle, AI compose, creator profile
+- Built Studio Zustand store with React Flow node/edge state + wizard state + compile result
+- Built Studio UI components:
+  - StudioHome (landing with hero, stats, how-it-works, recent experiences)
+  - CreationWizard (4-step: type → emotions → describe → AI suggestion)
+  - ExtensionLibrary (searchable, categorized extension palette)
+  - GraphEditor (React Flow with custom extension nodes, typed handles, drag-connect wires)
+  - ConfigInspector (auto-generates forms from ConfigSchema: sliders, selects, inputs)
+  - RuntimePreview (live session state, token balances, event log)
+  - ExperiencesView (discover + fork published experiences)
+  - CreatorProfile (stats: experiences, forks, liquid earned, player hours)
+  - StudioEditor (3-panel layout: library | canvas | inspector+preview)
+  - Playground (kernel dev tools from v0.1, accessible via "Kernel" button)
+- Built Farm Kingdom demo bundle (Weather → Farm → Cooking → Marketplace → Competition)
+- Restructured page.tsx with view-based routing (home/wizard/editor/experiences/creator/kernel-dev)
+
+Browser Verification:
+- Studio Home renders with 9 extensions, 0 experiences → created Farm Kingdom → 1 experience
+- Farm Kingdom loads into editor with 5 extension nodes visible in React Flow graph
+- Compile succeeds: "valid, weather → farm → cooking → marketplace → competition, deterministic, tokens: CORN, MEAL, GOLD"
+- Play Test starts session, ticking shows economy flow: CORN produced → MEAL cooked → GOLD traded → score=55
+- Publish works: Farm Kingdom appears on Discover Experiences page
+- AI Composer tested: "farming game with competition" → AI suggested 5 extensions (Physics, Farm, Cooking, Marketplace, Competition) with correct token flow "CORN → MEAL → GOLD → leaderboard"
+- AI-composed graph loads into editor and compiles valid
+- Fork tested: Forked Farm Kingdom → new draft "Farm Kingdom (Fork)" with 6 nodes, same graph
+- Creator Profile shows: 1 Experience, 0 Forks, correct stats
+- Kernel Developer Playground accessible via "Kernel" button
+- Sticky footer verified (sticks: true)
+- No console errors, lint clean
+
+Stage Summary:
+- ALL success criteria met:
+  1. Non-programmer can create an Experience ✓ (wizard → AI compose → editor → publish)
+  2. Extensions discovered visually ✓ (ExtensionLibrary with search + categories)
+  3. Graphs composed visually ✓ (React Flow drag-and-drop with typed handles)
+  4. AI suggests graphs ✓ (LLM-powered composer with natural language → extension graph)
+  5. Graphs compile through existing kernel ✓ (same /api/kernel/compile endpoint)
+  6. Experiences tested ✓ (Play Test with live runtime preview)
+  7. Experiences forked ✓ (fork creates draft with parentExperienceId)
+  8. Genome metadata generated ✓ (auto-computed at publish, stored in genomeJson)
+
+- Farm Kingdom demo fully functional end-to-end: load → compile → play → see economy flow → publish → fork

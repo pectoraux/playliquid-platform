@@ -43,6 +43,11 @@ export const cookingManifest: ExtensionManifest = {
   consumesTokens: ['CORN'],
   permissions: { storage: ['session-state'] },
   capabilities: [],
+  icon: '🍳',
+  tags: ['economy', 'conversion', 'cooking', 'token'],
+  configSchema: [
+    { key: 'cornNeeded', label: 'CORN Per Meal', type: 'number', min: 1, max: 10, step: 1, default: 2, unit: 'CORN', description: 'How many CORN tokens are consumed to produce one MEAL.' },
+  ],
 };
 
 interface CookingState {

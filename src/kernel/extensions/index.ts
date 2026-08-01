@@ -15,6 +15,9 @@ import { scoreManifest, scoreFactory } from './score';
 import { coinCollectorManifest, coinCollectorFactory } from './coin-collector';
 import { farmManifest, farmFactory } from './farm';
 import { cookingManifest, cookingFactory } from './cooking';
+import { weatherManifest, weatherFactory } from './weather';
+import { marketplaceManifest, marketplaceFactory } from './marketplace';
+import { competitionManifest, competitionFactory } from './competition';
 
 export interface RegistryEntry {
   manifest: ExtensionManifest;
@@ -28,6 +31,9 @@ const REGISTRY: Record<string, RegistryEntry> = {
   [coinCollectorManifest.id]: { manifest: coinCollectorManifest, factory: coinCollectorFactory },
   [farmManifest.id]: { manifest: farmManifest, factory: farmFactory },
   [cookingManifest.id]: { manifest: cookingManifest, factory: cookingFactory },
+  [weatherManifest.id]: { manifest: weatherManifest, factory: weatherFactory },
+  [marketplaceManifest.id]: { manifest: marketplaceManifest, factory: marketplaceFactory },
+  [competitionManifest.id]: { manifest: competitionManifest, factory: competitionFactory },
 };
 
 export function listExtensions(): RegistryEntry[] {
