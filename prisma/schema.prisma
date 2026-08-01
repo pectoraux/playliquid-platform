@@ -542,3 +542,89 @@ model CompanionMessageRecord {
 
   @@index([userId])
 }
+
+// ─── v0.45 Consumer Reality Layer — The YouTube Moment ─────────────────────
+
+model PlayGraphRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  experienceId    String
+  interaction     String   // liked | played | abandoned | mastered | shared | forked | watched | competed | saved | rated
+  metadataJson    String   @default("{}")
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([experienceId])
+  @@index([userId, interaction])
+}
+
+model SavedSparkRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  experienceId    String
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, experienceId])
+  @@index([userId])
+}
+
+model ChallengeRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  creatorId       String
+  title           String
+  description     String
+  type            String   @default("score")  // score | speed | survival | creative | social
+  rewardLiquid    Int      @default(0)  // micro-Liquid prize pool
+  targetScore     Int?
+  durationHours   Int      @default(24)
+  participantsJson String  @default("[]")  // userIds
+  entriesJson     String   @default("[]")  // [{userId, score, at}]
+  status          String   @default("ACTIVE")  // ACTIVE | COMPLETED | CANCELLED
+  startsAt        DateTime @default(now())
+  endsAt          DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([experienceId])
+}
+
+model LeaderboardEntryRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  userId          String
+  displayName     String
+  score           Int
+  rank            Int?
+  sessionId       String?
+  achievedAt      DateTime @default(now())
+
+  @@unique([experienceId, userId])
+  @@index([experienceId, score])
+}
+
+model LiveSessionRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  experienceName  String
+  userId          String
+  displayName     String
+  sessionId       String
+  viewerCount     Int      @default(0)
+  status          String   @default("LIVE")  // LIVE | ENDED
+  peakViewers     Int      @default(0)
+  startedAt       DateTime @default(now())
+  endedAt         DateTime?
+}
+
+model CreatorChannelRecord {
+  id              String   @id @default(cuid())
+  creatorId       String   @unique
+  channelName     String
+  tagline         String?
+  bannerUrl       String?
+  totalViews      Int      @default(0)
+  totalPlayTimeMs Int      @default(0)
+  verified        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

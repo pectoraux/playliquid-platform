@@ -11,6 +11,7 @@ import { CreatorProfile } from '@/components/studio/CreatorProfile';
 import { WorldDashboard } from '@/components/world/WorldDashboard';
 import { CivDashboard } from '@/components/civ/CivDashboard';
 import { UniverseDashboard } from '@/components/universe/UniverseDashboard';
+import { ConsumerUniverse } from '@/components/consumer/ConsumerUniverse';
 import { IdentityDashboard } from '@/components/identity/IdentityDashboard';
 import { useEffect, useMemo } from 'react';
 import type { ExtensionManifest } from '@/kernel/types';
@@ -58,7 +59,7 @@ export default function Home() {
     case 'home':
       return <StudioHome />;
     case 'universe':
-      return <UniverseDashboard />;
+      return <ConsumerUniverse />;
     case 'identity':
       return <IdentityDashboard />;
     case 'wizard':

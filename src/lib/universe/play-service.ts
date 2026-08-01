@@ -147,6 +147,31 @@ export async function quickPlay(params: {
     durationMs,
   }).catch(() => {});
 
+  // ── Consumer Layer: Play Graph + Leaderboard ─────────────────────────
+  const { recordInteraction } = await import('@/lib/consumer/discover-service');
+  const { submitLeaderboardEntry } = await import('@/lib/consumer/game-page-service');
+
+  // Record play interaction
+  const interaction = session.score > 0 ? 'played' : 'abandoned';
+  await recordInteraction({
+    userId,
+    experienceId,
+    interaction: interaction as any,
+    metadata: { score: session.score, durationMs, sessionId },
+  }).catch(() => {});
+
+  // Submit to leaderboard if score > 0
+  if (session.score > 0) {
+    const profile = await db.playerProfile.findUnique({ where: { userId } });
+    await submitLeaderboardEntry({
+      experienceId,
+      userId,
+      displayName: profile?.displayName ?? 'Unknown',
+      score: session.score,
+      sessionId,
+    }).catch(() => {});
+  }
+
   return {
     result: {
       sessionId,
