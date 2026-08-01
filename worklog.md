@@ -340,3 +340,46 @@ Stage Summary:
 
 - 7-layer architecture:
   - Kernel (v0.1) → Studio (v0.1) → World Engine (v0.2) → Civilization (v0.3) → Universe (v0.4) → Identity (v0.45) → Consumer Layer (v0.45)
+
+---
+Task ID: 8
+Agent: main (Z.ai Code)
+Task: Build PlayLiquid v0.46 Social Universe — Following feed, Live gameplay, Replays, Challenges, Collections, Wallet, Notifications
+
+Work Log:
+- Added 4 Prisma models: CollectionRecord, ReplayRecord, PlayerChallengeRecord, NotificationRecord
+- Built comprehensive Social Service covering:
+  - Following Feed: real-time activity from followed creators/players
+  - Live Gameplay: go live, end live, get live sessions with viewer counts
+  - Replays: auto-created from play sessions with highlight detection (world-record, clutch, speedrun), view counts, like counts
+  - Challenges: player-to-player (beat-score, speedrun, survival, high-score) with reward pools, entries, winner detection, Liquid payouts
+  - Collections: user-curated playlists of sparks with public/private, emoji covers
+  - Notifications: multi-type alerts (follow, challenge, achievement, live, replay, reward) with unread tracking
+  - Wallet: player Liquid balance, earned today, withdrawable amount, recent earning sources
+  - Creator Revenue: total earned, daily/weekly projections, top earning sparks
+- Integrated replay creation into play flow: every play session with score > 0 auto-generates a replay with highlight detection
+- Built 12 API routes: following, live (GET+POST+end), replays, challenges (GET+POST+accept+submit), collections (GET+POST+items), notifications (GET+markRead), wallet, revenue
+- Built Social Universe hooks for all services
+- Enhanced ConsumerUniverse UI with 7 tabs: Discover / Following / Library / Rankings / Replays / Wallet / Studio
+  - Following Feed: scrollable activity list with avatars, event types, timestamps
+  - Replays: grid of replay cards with highlight badges, scores, view counts
+  - Wallet: gradient balance card with earned today, withdrawable, recent earning sources
+
+Browser Verification:
+- Following tab: 12 activity items showing "Demo Player played Neon Runner scored 25" with timestamps
+- Replays tab: 1 replay with "Lightning fast" highlight badge, score 25
+- Wallet tab: 30.0L balance, 24.0L withdrawable, recent earnings list
+- All 7 tabs functional, no console errors, lint clean, sticky footer correct
+
+Stage Summary:
+- PlayLiquid now has the social depth for daily habit:
+  1. Following feed ✓ (return daily to see what your network is doing)
+  2. Replays as content ✓ (gameplay becomes watchable content like YouTube videos)
+  3. Challenges ✓ (player-to-player competition creates social loops)
+  4. Collections ✓ (curate and share playlists)
+  5. Wallet ✓ (understand your Liquid earnings at a glance)
+  6. Notifications ✓ (alerts drive return visits)
+  7. Live gameplay ✓ (spectator mode for Twitch-style viewing)
+
+- 8-layer architecture:
+  - Kernel → Studio → World Engine → Civilization → Universe → Identity → Consumer → Social

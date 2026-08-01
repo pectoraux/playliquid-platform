@@ -628,3 +628,78 @@ model CreatorChannelRecord {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+// ─── v0.46 Social Universe — Retention & Reality Layer ─────────────────────
+
+model CollectionRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  title           String
+  description     String?
+  isPublic        Boolean  @default(true)
+  coverEmoji      String   @default("📁")
+  itemsJson       String   @default("[]")  // array of experienceIds
+  followerCount   Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model ReplayRecord {
+  id              String   @id @default(cuid())
+  sessionId       String
+  experienceId    String
+  experienceName  String
+  userId          String
+  displayName     String
+  score           Int
+  durationMs      Int
+  highlightType   String?  // comeback | world-record | upset | clutch | speedrun
+  highlightLabel  String?  // "Impossible comeback" etc.
+  isPublic        Boolean  @default(true)
+  viewCount       Int      @default(0)
+  likeCount       Int      @default(0)
+  eventLogJson    String   @default("[]")  // key events timeline
+  createdAt       DateTime @default(now())
+
+  @@index([experienceId])
+  @@index([userId])
+}
+
+model PlayerChallengeRecord {
+  id              String   @id @default(cuid())
+  fromUserId      String
+  toUserId        String?  // null = open challenge
+  experienceId    String
+  experienceName  String
+  type            String   // beat-score | speedrun | survival | no-damage | high-score
+  description     String
+  fromScore       Int?
+  targetScore     Int?
+  rewardLiquid    Int      @default(0)
+  status          String   @default("PENDING")  // PENDING | ACCEPTED | COMPLETED | DECLINED | EXPIRED
+  winnerId        String?
+  entriesJson     String   @default("[]")  // [{userId, score, at}]
+  expiresAt       DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([experienceId])
+}
+
+model NotificationRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  type            String   // follow | challenge | achievement | live | replay | comment | fork | evolution | reward
+  title           String
+  body            String
+  icon            String   @default("🔔")
+  targetType      String?  // experience | creator | challenge | replay | collection
+  targetId        String?
+  isRead          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+}

@@ -163,12 +163,26 @@ export async function quickPlay(params: {
   // Submit to leaderboard if score > 0
   if (session.score > 0) {
     const profile = await db.playerProfile.findUnique({ where: { userId } });
+    const displayName = profile?.displayName ?? 'Unknown';
+
     await submitLeaderboardEntry({
       experienceId,
       userId,
-      displayName: profile?.displayName ?? 'Unknown',
+      displayName,
       score: session.score,
       sessionId,
+    }).catch(() => {});
+
+    // Create a replay
+    const { createReplay } = await import('@/lib/social/social-service');
+    await createReplay({
+      sessionId,
+      experienceId,
+      experienceName: exp.title,
+      userId,
+      displayName,
+      score: session.score,
+      durationMs,
     }).catch(() => {});
   }
 

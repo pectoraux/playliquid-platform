@@ -8,6 +8,7 @@ import {
   useSavedSparks,
 } from '@/hooks/use-consumer';
 import { useQuickPlay } from '@/hooks/use-universe';
+import { useFollowingFeed, useReplays, usePlayerWallet } from '@/hooks/use-social';
 import { useExperiences } from '@/hooks/use-studio';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,7 @@ import {
   ArrowLeft, Play, Users, Coins, GitFork, TrendingUp, Clock,
   Heart, Share2, Loader2, Globe, Home, Compass, Bell, User,
   Trophy, Zap, Bookmark, Eye, Bot, Star, Sparkles, Radio,
-  ChevronRight, Award, AlertCircle, CheckCircle2,
+  ChevronRight, Award, AlertCircle, CheckCircle2, Activity,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -76,16 +77,21 @@ export function ConsumerUniverse() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-4">
         <Tabs defaultValue="discover">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 max-w-lg">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 max-w-2xl">
             <TabsTrigger value="discover" className="text-xs gap-1.5"><Compass className="w-3.5 h-3.5" /> Discover</TabsTrigger>
+            <TabsTrigger value="following" className="text-xs gap-1.5"><Heart className="w-3.5 h-3.5" /> Following</TabsTrigger>
             <TabsTrigger value="saved" className="text-xs gap-1.5"><Bookmark className="w-3.5 h-3.5" /> Library</TabsTrigger>
             <TabsTrigger value="leaderboard" className="text-xs gap-1.5"><Trophy className="w-3.5 h-3.5" /> Rankings</TabsTrigger>
-            <TabsTrigger value="live" className="text-xs gap-1.5"><Radio className="w-3.5 h-3.5" /> Live</TabsTrigger>
+            <TabsTrigger value="replays" className="text-xs gap-1.5"><Play className="w-3.5 h-3.5" /> Replays</TabsTrigger>
+            <TabsTrigger value="wallet" className="text-xs gap-1.5"><Coins className="w-3.5 h-3.5" /> Wallet</TabsTrigger>
             <TabsTrigger value="studio" className="text-xs gap-1.5"><BarChart className="w-3.5 h-3.5" /> Studio</TabsTrigger>
           </TabsList>
 
           <TabsContent value="discover" className="mt-4">
             <DiscoverFeed onOpenGame={setGamePageId} />
+          </TabsContent>
+          <TabsContent value="following" className="mt-4">
+            <FollowingFeedView onOpenGame={setGamePageId} />
           </TabsContent>
           <TabsContent value="saved" className="mt-4">
             <SavedLibrary onOpenGame={setGamePageId} />
@@ -93,8 +99,11 @@ export function ConsumerUniverse() {
           <TabsContent value="leaderboard" className="mt-4">
             <LeaderboardView onOpenGame={setGamePageId} />
           </TabsContent>
-          <TabsContent value="live" className="mt-4">
-            <LiveView onOpenGame={setGamePageId} />
+          <TabsContent value="replays" className="mt-4">
+            <ReplaysView onOpenGame={setGamePageId} />
+          </TabsContent>
+          <TabsContent value="wallet" className="mt-4">
+            <WalletView />
           </TabsContent>
           <TabsContent value="studio" className="mt-4">
             <StudioTab onOpenStudio={() => setStudioCreatorId('creator_demo')} />
@@ -782,4 +791,184 @@ function StatCard({ label, value, icon: Icon, color }: { label: string; value: s
 
 function BarChart({ className }: { className?: string }) {
   return <span className={className}>📊</span>;
+}
+
+// ─── Following Feed View ───────────────────────────────────────────────────
+
+function FollowingFeedView({ onOpenGame }: { onOpenGame: (id: string) => void }) {
+  const { data } = useFollowingFeed();
+  const feed = data?.feed ?? [];
+
+  const ACTIVITY_ICONS: Record<string, any> = {
+    played: Play,
+    forked: GitFork,
+    published: Zap,
+    followed: Heart,
+    earned: Coins,
+    evolved: Sparkles,
+    rated: Star,
+    joined: Users,
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2"><Heart className="w-4 h-4 text-rose-500" /> Following</CardTitle>
+        <CardDescription className="text-xs">Activity from creators and players you follow</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ScrollArea className="h-96">
+          <div className="space-y-2">
+            {feed.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No activity yet. Follow creators to see their updates here!
+              </p>
+            ) : (
+              feed.map((item: any) => {
+                const Icon = ACTIVITY_ICONS[item.type] ?? Activity;
+                return (
+                  <div key={item.id} className="flex items-start gap-3 p-2 rounded-lg border border-border cursor-pointer hover:bg-muted/30" onClick={() => item.targetId && onOpenGame(item.targetId)}>
+                    <Avatar className="w-8 h-8 shrink-0">
+                      <AvatarFallback className="text-xs bg-rose-500 text-white">
+                        {item.displayName.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs">
+                        <span className="font-medium">{item.displayName}</span>
+                        <span className="text-muted-foreground"> {item.type} </span>
+                        {item.targetName && <span className="font-medium">{item.targetName}</span>}
+                        {item.detail && <span className="text-muted-foreground"> {item.detail}</span>}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        {new Date(item.createdAt).toLocaleTimeString()}
+                      </div>
+                    </div>
+                    <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Replays View ──────────────────────────────────────────────────────────
+
+function ReplaysView({ onOpenGame }: { onOpenGame: (id: string) => void }) {
+  const { data } = useReplays();
+  const replays = data?.replays ?? [];
+
+  const HIGHLIGHT_ICONS: Record<string, string> = {
+    'world-record': '🌍',
+    'clutch': '🎯',
+    'speedrun': '⚡',
+    'comeback': '🔄',
+    'upset': '😱',
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2"><Play className="w-4 h-4 text-amber-500" /> Replays</CardTitle>
+        <CardDescription className="text-xs">Watch gameplay highlights from the community</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {replays.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            No replays yet. Play a Spark to generate one!
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {replays.map((r: any) => (
+              <div key={r.id} className="flex items-center gap-3 p-2 rounded-lg border border-border cursor-pointer hover:shadow-sm" onClick={() => onOpenGame(r.experienceId)}>
+                <div className="w-16 aspect-video rounded bg-gradient-to-br from-amber-200 to-rose-200 dark:from-amber-900 dark:to-rose-900 shrink-0 flex items-center justify-center">
+                  <span className="text-lg">{HIGHLIGHT_ICONS[r.highlightType] ?? '🎬'}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium truncate">{r.experienceName}</div>
+                  <div className="text-[10px] text-muted-foreground">{r.displayName}</div>
+                  {r.highlightLabel && (
+                    <Badge className="text-[8px] h-3.5 mt-0.5 bg-amber-500 text-white">{r.highlightLabel}</Badge>
+                  )}
+                  <div className="flex items-center gap-2 mt-0.5 text-[9px] text-muted-foreground">
+                    <span>Score: {r.score}</span>
+                    <span>·</span>
+                    <span><Eye className="w-2 h-2 inline" /> {r.viewCount}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Wallet View ───────────────────────────────────────────────────────────
+
+function WalletView() {
+  const { data } = usePlayerWallet();
+  const wallet = data?.wallet;
+
+  if (!wallet) return <p className="text-sm text-muted-foreground">Loading wallet...</p>;
+
+  return (
+    <div className="space-y-4">
+      {/* Balance card */}
+      <Card className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-300">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-xs text-muted-foreground">Liquid Balance</div>
+              <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+                {wallet.balance / 1_000_000}<span className="text-lg ml-1">L</span>
+              </div>
+            </div>
+            <Coins className="w-8 h-8 text-amber-500/40" />
+          </div>
+          <Separator className="my-3" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="text-[10px] text-muted-foreground">Earned Today</div>
+              <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                +{wallet.earnedToday / 1_000_000} L
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted-foreground">Withdrawable</div>
+              <div className="text-sm font-semibold">
+                {wallet.withdrawable / 1_000_000} L
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent earnings */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Recent Earnings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-1">
+            {wallet.earnedSources.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">No earnings yet. Play Sparks to earn Liquid!</p>
+            ) : (
+              wallet.earnedSources.map((src: any, i: number) => (
+                <div key={i} className="flex items-center justify-between p-2 rounded border border-border text-xs">
+                  <span className="text-muted-foreground truncate flex-1">{src.source}</span>
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400">+{src.amount / 1_000_000} L</span>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
