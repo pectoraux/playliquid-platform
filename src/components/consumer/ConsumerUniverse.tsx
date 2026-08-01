@@ -68,6 +68,9 @@ export function ConsumerUniverse() {
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('creator-intel')}>
               <BarChart className="w-3.5 h-3.5" /> Studio
             </Button>
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('multiverse')}>
+              <Globe className="w-3.5 h-3.5" /> Multiverse
+            </Button>
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('civ')}>
               <Globe className="w-3.5 h-3.5" /> Worlds
             </Button>

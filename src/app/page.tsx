@@ -16,6 +16,7 @@ import { IdentityDashboard } from '@/components/identity/IdentityDashboard';
 import { IdentityUniverse } from '@/components/identity-universe/IdentityUniverse';
 import { CreatorIntel } from '@/components/creator-intel/CreatorIntel';
 import { AssetEconomy } from '@/components/asset-economy/AssetEconomy';
+import { Multiverse } from '@/components/multiverse/Multiverse';
 import { useEffect, useMemo } from 'react';
 import type { ExtensionManifest } from '@/kernel/types';
 import { Playground } from '@/components/playground/Playground';
@@ -71,6 +72,8 @@ export default function Home() {
       return <CreatorIntel />;
     case 'asset-economy':
       return <AssetEconomy />;
+    case 'multiverse':
+      return <Multiverse />;
     case 'wizard':
       return <CreationWizard />;
     case 'editor':

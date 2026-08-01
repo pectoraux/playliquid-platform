@@ -952,3 +952,110 @@ model AssetEventRecord {
   @@index([assetId])
   @@index([eventType])
 }
+
+// ─── v0.50 Multiverse — Civilization Network ───────────────────────────────
+
+model WorldIdentityRecord {
+  id                String   @id @default(cuid())
+  worldId           String   @unique
+  worldName         String
+  founderId         String
+  founderName       String
+  civilizationLevel String   @default("village")  // settlement | village | town | city | metropolis | empire
+  population        Int      @default(0)
+  influenceScore    Int      @default(0)
+  cultureDNA        String   @default("{}")  // { agriculture: 80, trade: 70, combat: 30, ... }
+  economyDNA        String   @default("{}")  // { currency: "Liquid", tradeVolume: 0, gdp: 0 }
+  governanceDNA     String   @default("{}")  // { type: "creator", stability: 50, ... }
+  era               String   @default("founding")  // founding | growth | golden | expansion | decline
+  visitors          Int      @default(0)
+  citizens          Int      @default(0)
+  alliancesCount    Int      @default(0)
+  rivalriesCount    Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([civilizationLevel])
+}
+
+model WorldRelationRecord {
+  id              String   @id @default(cuid())
+  fromWorldId     String
+  fromWorldName   String
+  toWorldId       String
+  toWorldName     String
+  type            String   // ALLIANCE | TRADE_AGREEMENT | COMPETITION | WAR | CULTURAL_EXCHANGE | MIGRATION_TREATY
+  status          String   @default("ACTIVE")  // PENDING | ACTIVE | DISSOLVED
+  terms           String   @default("{}")  // { exports: [], imports: [], benefits: {} }
+  strength        Int      @default(50)  // 0-100
+  createdAt       DateTime @default(now())
+
+  @@unique([fromWorldId, toWorldId, type])
+  @@index([fromWorldId])
+  @@index([toWorldId])
+}
+
+model WorldMigrationRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  displayName     String
+  fromWorldId     String?
+  fromWorldName   String?
+  toWorldId       String
+  toWorldName     String
+  migrationType   String   @default("visit")  // visit | immigrate | trade | diplomacy | tourism
+  assetsCarried   String   @default("[]")  // asset IDs that traveled with the player
+  reputationCarried Int    @default(0)
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([toWorldId])
+}
+
+model WorldTradeRecord {
+  id              String   @id @default(cuid())
+  fromWorldId     String
+  fromWorldName   String
+  toWorldId       String
+  toWorldName     String
+  assetId         String?
+  assetName       String?
+  resourceType    String   // asset | resource | currency | knowledge
+  amount          Int      @default(0)  // micro-Liquid or quantity
+  tradeType       String   @default("export")  // export | import | exchange | gift
+  txId            String?  // ledger transaction ID
+  createdAt       DateTime @default(now())
+
+  @@index([fromWorldId])
+  @@index([toWorldId])
+}
+
+model CivilizationEventRecord {
+  id              String   @id @default(cuid())
+  worldId         String?
+  worldName       String?
+  eventType       String   // WORLD_FOUNDED | FIRST_TRADE | FIRST_ALLIANCE | MILLION_PLAYER | GOLDEN_AGE | CIVILIZATION_COLLAPSE | WORLD_MERGER | MIGRATION_WAVE | CULTURAL_RENAISSANCE
+  title           String
+  narrative       String
+  icon            String   @default("📜")
+  impact          String   @default("{}")  // { influence: +50, population: +1000 }
+  isGlobal        Boolean  @default(false)  // true = affects entire multiverse
+  createdAt       DateTime @default(now())
+
+  @@index([worldId])
+  @@index([eventType])
+}
+
+model WorldAICouncilRecord {
+  id              String   @id @default(cuid())
+  worldId         String   @unique
+  worldName       String
+  governorState   String   @default("{}")  // AI Governor memory + decisions
+  economyState    String   @default("{}")  // AI Economy manager state
+  cultureState    String   @default("{}")  // AI Culture manager state
+  defenseState    String   @default("{}")  // AI Defense manager state
+  historianState  String   @default("{}")  // AI Historian chronicle
+  lastCouncilTick Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
