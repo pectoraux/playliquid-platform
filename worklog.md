@@ -1233,3 +1233,46 @@ Stage Summary:
   - +CREATE dropdown in Creator Studio
   - Home feed properly separates sparks from games
 - "A platform where games are born, discovered, played, and evolved." ✅
+
+---
+Task ID: 22
+Agent: main (Z.ai Code)
+Task: Phase 22 — AI Game Design Compiler. Replace the direct prompt→game flow with a structured 4-step design compiler: Describe → Architect → Compatibility → Generate.
+
+Work Log:
+- Added GameCreationSession model (tracks multi-step creation flow with rawDescription, generatedSpecJson, compatibilityJson, compiledPrompt, status, resultExperienceId)
+- Created src/lib/game-creation/ module with 5 files:
+  - game-spec-schema.ts: GameSpecification type (title, format, genre, coreFantasy, playerActions, gameLoop, sessionLength, orientation, controls, camera, difficulty, extensions, telemetry, engineTemplateId, competitiveEligible, reasoning) + PLAYLIQUID_CAPABILITIES + EXTENSION_TO_TEMPLATE mapping
+  - game-designer-agent.ts: LLM-powered design agent (description → GameSpecification via z-ai-web-dev-sdk). System prompt includes available engine templates. Falls back to rule-based keyword matching (shoot/defend→sky-defender, collect→coin-rush, run/race→neon-runner, pet→tap-pet, react→reaction-challenge, catch→catch-stars). Includes refineSpec() for real-time collaboration (make it harder, add multiplayer, change to spark)
+  - compatibility-validator.ts: validates spec against PlayLiquid capabilities (runtime, container, input, extensions, telemetry, evolutionReady). Returns missing[] + warnings[] + passed boolean
+  - prompt-compiler.ts: converts validated spec into a 2300+ char LLM-ready generation prompt with PROJECT/CATEGORY/FORMAT/RUNTIME/REQUIREMENTS/GAME DESIGN/INPUT BRIDGE/TELEMETRY BRIDGE/OUTPUT sections. Includes the pl:input and pl:telemetry postMessage bridge documentation
+  - generation-orchestrator.ts: ties the flow together (startDesignSession → refineDesignSession → compileDesignSession → generateExperience). Persists state in GameCreationSession
+- Created /api/game-creation API routes:
+  - POST /api/game-creation (actions: design, refine, compile, generate)
+  - GET /api/game-creation/[sessionId] (get session state)
+- Rewrote AICreationStudio component as 4-step modal:
+  - Step 1 (Describe): Spark vs Game format picker + description textarea + example prompts
+  - Step 2 (Architect): Full game design panel (title, genre, core fantasy, game loop, player actions, extensions, telemetry, engine template, AI reasoning) + real-time refinement input with quick suggestions
+  - Step 3 (Compatibility): Checklist (runtime, container, input, telemetry, extensions, evolution ready) with warnings/missing + copyable LLM-ready prompt preview
+  - Step 4 (Generate): Success screen with Play Now button
+- Browser verification:
+  - Step 1: Dialog opened, format picker rendered, description filled via native React setter
+  - Step 2: AI designed "Ninja vs Robots" (game, action combat, sky-defender engine, 5-10min, side scrolling) — POST /api/game-creation 200 in 7.2s
+  - Steps 3-4: Verified via direct API calls (server kept dying between browser commands)
+- API verification (local + Vercel):
+  - "ninja fighting robots" → "Ninja Cyber Clash" (sky-defender, competitive, actions: run/jump/attack/dodge)
+  - "space shooter with aliens" → "Star Shield" (sky-defender, tower defense/shooter, actions: aim/shoot/defend)
+  - Compile: passed ✅, 2315-2661 char prompt generated
+  - Generate: experience published with correct engineTemplateId
+- Deployed to Vercel: https://playliquid.vercel.app (READY)
+  - AI design API works on Vercel ✅
+  - Compile API works on Vercel ✅
+
+Stage Summary:
+- Phase 22 complete. PlayLiquid now has an AI Game Design Compiler:
+  - User describes idea → AI Architect produces structured GameSpecification
+  - Spec is validated against platform capabilities
+  - Validated spec is compiled into an LLM-ready generation prompt
+  - Prompt can be copied externally OR generated internally
+  - Internal generation uses the matched engine template
+- "This turns PlayLiquid from a game upload platform into an AI-native game creation operating system." ✅
