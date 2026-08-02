@@ -1030,3 +1030,73 @@ Stage Summary:
   - Autonomous Creator Agents: 4 proactive agents (Design/Economy/Growth/Community) that monitor and surface insights without being asked
 - Architecture: "How does PlayLiquid become the intelligence layer that coordinates millions of experiences, creators, extensions, and players?" — answered with 5 services + 16 API routes + 1 dashboard view.
 - No new currencies, no new reward systems, no new social primitives (per ADR freeze). The intelligence layer reads existing telemetry + economy + feedback data and surfaces intelligence.
+
+---
+Task ID: 20.5
+Agent: main (Z.ai Code)
+Task: Phase 20.5 — Runtime Interoperability Validation. Prove that PlayLiquid can run experiences regardless of runtime type (native + HTML5). Build the full path: ExperienceRecord → Bundle → ExtensionGraph → ContainmentFrame → RuntimeAdapter → PlayableExperience → Telemetry → Evolution. Then deploy to GitHub + Vercel with Neon Postgres.
+
+Work Log:
+- Reviewed existing architecture: ContainmentFrame (visual only), kernel runtime (tick-based, 9 extensions), session API (start/tick/action/inspector/settle), GameContainmentConfigRecord (runtimeType field already exists)
+- Added ImportedGameBundleRecord schema model (experienceId, filename, storageUrl, manifestJson, runtimeType, checksum, status) — pushed to DB
+- Built Native Runtime:
+  - src/runtime/native/NativeRuntimeAdapter.ts — client-side session manager (initialize/tick/sendInput/getSnapshot/destroy via kernel API) + extractGameState helper (player x/y from physics, coins from coin-collector, score)
+  - src/components/runtime/NativeGamePlayer.tsx — canvas renderer: game loop (120ms tick via POST /tick), keyboard (WASD/arrows) + touch dpad input → POST /action, renders player circle + coins + score + token balances + grid. Restart on game over. Settle on unmount.
+- Built HTML5 Orb Collector game (pure Canvas API + JS, no frameworks):
+  - public/imported-games/orb-collector/index.html + style.css + game.js + manifest.json
+  - Gameplay: blue circle player, falling orbs, score counter, 30s timer, game over + restart
+  - postMessage bridges: receives pl:input (move-left/right/up/down, start), sends pl:telemetry (ready, game_start, score_updated, orb_collected, game_over)
+  - Auto-starts when inside iframe
+- Built HTML5 import flow:
+  - src/lib/runtime/runtime-service.ts — importHtml5Game (creates ExperienceRecord + ContainmentConfig[html5] + ImportedGameBundleRecord), seedNativeNeonRunner (Physics+Movement+Score+CoinCollector+ Competition, wired physics→movement→score + physics→coins), seedOrbCollectorHtml5, getExperienceRuntime, listImportedGames
+  - API routes: POST /api/runtime/import-html5 (modes: import/seed-native/seed-html5/list), GET /api/runtime/bundle/[experienceId]
+- Built HTML5 Game Player:
+  - src/components/runtime/Html5GamePlayer.tsx — sandboxed iframe + postMessage input bridge (keyboard→pl:input) + telemetry listener (pl:telemetry→HUD + POST /api/telemetry/events). Live event counter + last event display.
+- Upgraded ContainmentFrame: already had input normalization + aspect ratio + fullscreen + FPS counter
+- Added telemetry events POST handler (acknowledges HTML5 game events)
+- Built PlayView (src/components/runtime/PlayView.tsx):
+  - Fetches runtime info via /api/runtime/bundle/[id]
+  - Renders NativeGamePlayer (if runtimeType=native) or Html5GamePlayer (if runtimeType=html5) inside ContainmentFrame
+  - Runtime badge (Native/HTML5), runtime info cards, sticky footer
+- Wired into studio-store (playExperienceId + playExperience action) + page.tsx (case 'play') + ConsumerHomeV2 (card click → playExperience)
+- Added Runtime tab to Creator Studio (9th tab): seed Neon Runner + import Orb Collector + list imported games with Play buttons + architecture note
+- Browser verification (agent-browser):
+  - Native Neon Runner: PlayView opened, Canvas rendered, kernel session started (sess_msbf07ef), 10+ ticks POSTed (200), keyboard input accepted (ArrowRight/Down) ✅
+  - HTML5 Orb Collector: PlayView opened, iframe loaded, Canvas game running (Score: 0, Time: 24), telemetry bridge active ("last: " events flowing) ✅
+  - ADR-005 validated: native and HTML5 experiences are indistinguishable after entering the ContainmentFrame
+- Database migration: SQLite → PostgreSQL (Neon)
+  - Changed prisma schema provider to postgresql
+  - Updated .env with Neon pooled connection string (sslmode=require)
+  - Pushed schema to Neon (23.75s, all tables created)
+  - Created seed-min.ts (standalone seed script) — seeded 5 creators + 10 experiences + Neon Runner + Orb Collector
+  - Untracked .env and db/custom.db from git, added .env.example
+- GitHub deployment:
+  - Created repo pectoraux/playliquid-platform via PAT
+  - Committed all Phase 20.5 code + Postgres migration
+  - Pushed to main branch
+- Vercel deployment:
+  - Project "playliquid" already existed (prj_GLAbzyrUhii1jlHM0GHOWAwTXSVB)
+  - Set DATABASE_URL env var (production + preview + development) pointing to Neon
+  - Triggered production deployment from GitHub repo (gitSource: pectoraux/playliquid-platform, ref: main)
+  - Build completed in ~60s: READY
+  - Live URLs: https://playliquid.vercel.app, https://playliquid-tay-nurs-projects.vercel.app
+- Verified live deployment:
+  - Home page: 200 ✅
+  - Extensions API: 200 ✅
+  - Consumer home API: 200 (6 sparks + 8 experiences including Neon Runner) ✅
+  - Runtime import API: 200 ✅
+  - Intelligence overview: 200 ✅
+  - HTML5 game files (orb-collector/index.html): 200 ✅
+- Added postinstall script (prisma generate) to package.json for Vercel builds
+- Cleaned git remote URL (removed PAT from origin)
+
+Stage Summary:
+- Phase 20.5 complete. ADR-005 (Containment) fully validated:
+  - Native game (Neon Runner): kernel session + canvas renderer + keyboard/touch input + score + telemetry
+  - HTML5 game (Orb Collector): iframe + postMessage input/telemetry bridges + sandboxed Canvas game
+  - Both run inside ContainmentFrame, both produce telemetry, both appear as normal experiences
+- Deployed to production:
+  - GitHub: https://github.com/pectoraux/playliquid-platform
+  - Vercel: https://playliquid.vercel.app
+  - Database: Neon PostgreSQL (pooled connection)
+- "If a native game and an imported HTML5 game become indistinguishable after entering PlayLiquid, ADR-005 is complete." ✅
