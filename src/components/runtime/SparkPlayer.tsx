@@ -94,7 +94,7 @@ export function SparkPlayer({ sparks, initialIndex = 0 }: { sparks: Spark[]; ini
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'ArrowUp' || e.key === 'w') { e.preventDefault(); goPrev(); }
       else if (e.key === 'ArrowDown' || e.key === 's') { e.preventDefault(); goNext(); }
-      else if (e.key === 'Escape') { setView('home-v2'); }
+      else if (e.key === 'Escape') { setView('home-v3'); }
       else if (e.key === 'l') { toggleLike(current?.experienceId); }
     };
     window.addEventListener('keydown', handler);
@@ -132,7 +132,7 @@ export function SparkPlayer({ sparks, initialIndex = 0 }: { sparks: Spark[]; ini
     >
       {/* Close button */}
       <button
-        onClick={() => setView('home-v2')}
+        onClick={() => setView('home-v3')}
         className="absolute top-4 left-4 z-50 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
       >
         <X className="w-4 h-4" />
@@ -172,7 +172,7 @@ export function SparkPlayer({ sparks, initialIndex = 0 }: { sparks: Spark[]; ini
       <div className="absolute right-3 bottom-20 z-40 flex flex-col items-center gap-4">
         {/* Creator avatar */}
         <button
-          onClick={() => setView('home-v2')}
+          onClick={() => setView('home-v3')}
           className="relative"
         >
           <Avatar className="w-10 h-10 border-2 border-white">

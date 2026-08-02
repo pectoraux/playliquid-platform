@@ -52,11 +52,14 @@ export async function getSparks(limit: number): Promise<any[]> {
     const extensions = await getExperienceExtensions(exp.id).catch(() => []);
     return {
       experienceId: exp.id,
-      title: exp.title,
+      title: exp.displayTitle ?? exp.title,
+      experienceName: exp.title,
       creatorName: exp.creator?.displayName ?? 'Unknown',
       creatorId: exp.creatorId,
       playCount: exp.playCount,
       format: exp.format,
+      thumbnailUrl: exp.thumbnailUrl,
+      publishedAgo: formatRelativeTime(exp.publishedAt ?? exp.createdAt),
       extensions: extensions.slice(0, 3).map((e: any) => ({ icon: e.icon, name: e.name })),
     };
   }));
@@ -85,7 +88,8 @@ async function getExperiencesForHome(limit: number): Promise<any[]> {
     const extensions = await getExperienceExtensions(exp.id).catch(() => []);
     return {
       experienceId: exp.id,
-      title: exp.title,
+      title: exp.displayTitle ?? exp.title,
+      experienceName: exp.title,
       description: exp.description.slice(0, 100),
       creatorName: exp.creator?.displayName ?? 'Unknown',
       creatorId: exp.creatorId,
@@ -94,9 +98,33 @@ async function getExperiencesForHome(limit: number): Promise<any[]> {
       likeCount: exp.likeCount,
       format: exp.format,
       competitiveEligible: exp.competitiveEligible,
+      thumbnailUrl: exp.thumbnailUrl,
+      publishedAt: exp.publishedAt?.getTime() ?? exp.createdAt.getTime(),
+      publishedAgo: formatRelativeTime(exp.publishedAt ?? exp.createdAt),
       extensions: extensions.slice(0, 5).map((e: any) => ({ icon: e.icon, name: e.name, category: e.category })),
     };
   }));
+}
+
+// ─── Relative time formatter (YouTube-style) ──────────────────────────────
+
+function formatRelativeTime(date: Date): string {
+  const now = Date.now();
+  const diff = now - date.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+
+  if (seconds < 60) return 'just now';
+  if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+  if (weeks < 4) return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+  if (months < 12) return `${months} month${months > 1 ? 's' : ''} ago`;
+  return `${Math.floor(months / 12)} year${months >= 24 ? 's' : ''} ago`;
 }
 
 export async function getLiveStreams(limit: number): Promise<any[]> {

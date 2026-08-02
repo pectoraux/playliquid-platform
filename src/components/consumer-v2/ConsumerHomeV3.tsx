@@ -75,7 +75,7 @@ export function ConsumerHomeV3() {
         <ScrollArea className="flex-1">
           <nav className="px-2 space-y-0.5 pb-4">
             <NavItem icon={Home} label="Home" active={activeNav === 'home'} expanded={sidebarOpen} onClick={() => setActiveNav('home')} />
-            <NavItem icon={Zap} label="Shorts" active={activeNav === 'shorts'} expanded={sidebarOpen} onClick={() => { setActiveNav('shorts'); if (sparks.length > 0) playSparkQueue(sparks, 0); }} />
+            <NavItem icon={Zap} label="Sparks" active={activeNav === 'sparks'} expanded={sidebarOpen} onClick={() => { setActiveNav('sparks'); if (sparks.length > 0) playSparkQueue(sparks, 0); }} />
             <NavItem icon={Gamepad2} label="Experiences" active={activeNav === 'experiences'} expanded={sidebarOpen} onClick={() => setActiveNav('experiences')} />
             <NavItem icon={Radio} label="Live" active={activeNav === 'live'} expanded={sidebarOpen} onClick={() => setActiveNav('live')} />
             <NavItem icon={Trophy} label="Competitions" active={activeNav === 'compete'} expanded={sidebarOpen} onClick={() => setView('competitive')} />
@@ -127,7 +127,7 @@ export function ConsumerHomeV3() {
                 <section>
                   <div className="flex items-center gap-2 mb-3">
                     <Zap className="w-5 h-5 text-rose-500" />
-                    <h2 className="text-base font-bold">Shorts</h2>
+                    <h2 className="text-base font-bold">Sparks</h2>
                     <span className="text-xs text-muted-foreground">Quick interactive moments</span>
                   </div>
                   <div className="flex gap-3 overflow-x-auto pb-2">
@@ -231,9 +231,9 @@ function SparkCard({ spark, onClick }: { spark: any; onClick?: () => void }) {
           <Play className="w-4 h-4 text-white fill-white" />
         </div>
       </div>
-      <Badge className="absolute top-1.5 left-1.5 text-[7px] h-3.5 bg-rose-500 text-white">⚡ SHORT</Badge>
+      <Badge className="absolute top-1.5 left-1.5 text-[7px] h-3.5 bg-rose-500 text-white">⚡ SPARK</Badge>
       <div className="absolute bottom-1.5 left-1.5 right-1.5 text-[8px] text-white/80">
-        {spark.playCount} plays
+        {formatCount(spark.playCount)} plays · {spark.publishedAgo ?? 'recently'}
       </div>
     </div>
   );
@@ -245,18 +245,24 @@ function ExperienceCard({ exp, onPlay }: { exp: any; onPlay?: () => void }) {
   return (
     <div className="rounded-xl overflow-hidden cursor-pointer group hover:bg-muted/30 transition-colors" onClick={onPlay}>
       {/* Thumbnail 16:9 */}
-      <div className="relative aspect-video bg-gradient-to-br from-violet-200 via-fuchsia-200 to-amber-200 dark:from-violet-900 dark:via-fuchsia-900 dark:to-amber-900 flex items-center justify-center">
-        <Play className="w-10 h-10 text-white/70 group-hover:scale-110 transition-transform" />
-        <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/60 text-white text-[9px] font-mono">
-          {exp.playCount} plays
+      <div className="relative aspect-video overflow-hidden">
+        {exp.thumbnailUrl ? (
+          <img src={exp.thumbnailUrl} alt={exp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-violet-300 via-fuchsia-300 to-amber-300 dark:from-violet-800 dark:via-fuchsia-800 dark:to-amber-800 flex items-center justify-center">
+            <Play className="w-10 h-10 text-white/70 group-hover:scale-110 transition-transform" />
+          </div>
+        )}
+        <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/70 text-white text-[9px] font-mono">
+          {formatCount(exp.playCount)} plays
         </div>
         {exp.competitiveEligible && (
           <Badge className="absolute top-1.5 right-1.5 text-[8px] h-4 bg-emerald-500 text-white gap-0.5">
-            <Trophy className="w-2.5 h-2.5" /> Competitive
+            <Trophy className="w-2.5 h-2.5" /> Ranked
           </Badge>
         )}
       </div>
-      {/* Info */}
+      {/* Info — YouTube style: avatar + title + creator + stats */}
       <div className="flex gap-2 p-2">
         <Avatar className="w-8 h-8 shrink-0">
           <AvatarFallback className="text-[9px] bg-amber-500 text-white">
@@ -266,11 +272,9 @@ function ExperienceCard({ exp, onPlay }: { exp: any; onPlay?: () => void }) {
         <div className="flex-1 min-w-0">
           <h3 className="text-xs font-medium line-clamp-2 leading-tight">{exp.title}</h3>
           <p className="text-[10px] text-muted-foreground mt-0.5">{exp.creatorName}</p>
-          <div className="flex gap-1 flex-wrap mt-1">
-            {exp.extensions?.slice(0, 3).map((ext: any, i: number) => (
-              <span key={i} className="text-[7px] px-1 py-0.5 rounded bg-muted text-muted-foreground">{ext.icon}</span>
-            ))}
-          </div>
+          <p className="text-[10px] text-muted-foreground">
+            {formatCount(exp.playCount)} plays · {exp.publishedAgo ?? 'recently'}
+          </p>
         </div>
       </div>
     </div>
@@ -301,3 +305,10 @@ function LiveCard({ stream }: { stream: any }) {
 
 // ─── ScrollArea import ─────────────────────────────────────────────────────
 import { ScrollArea } from '@/components/ui/scroll-area';
+
+// ─── Format count (YouTube-style: 1.2K, 3.4M) ─────────────────────────────
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace('.0', '') + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace('.0', '') + 'K';
+  return String(n);
+}

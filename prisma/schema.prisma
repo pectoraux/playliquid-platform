@@ -232,6 +232,10 @@ model ExperienceRecord {
   id                  String   @id @default(cuid())
   slug                String   @unique
   title               String
+  // ── Phase 25: Content packaging (YouTube-style) ──────────────────────
+  displayTitle        String?  // catchy title for discovery ("Can You Beat This?")
+  thumbnailUrl        String?  // thumbnail image URL
+  thumbnailGenerated  Boolean  @default(false)  // AI-generated vs uploaded
   description         String
   creatorId           String
   bundleHash          String?
