@@ -12,8 +12,10 @@ import { Input } from '@/components/ui/input';
 import {
   Menu, Search, Bell, Plus, X, Home as HomeIcon,
   BarChart, Coins, Package, Settings, Library as LibraryIcon,
-  Upload, Trophy, Heart, ArrowLeft,
+  Upload, Trophy, Heart, ArrowLeft, Zap, Gamepad2, Radio,
+  Sparkles, Users, Clock, Bookmark, Download,
 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface V3ShellWrapperProps {
   title: string;
@@ -199,10 +201,51 @@ export function V3ShellWrapper({ title, children, showSearch = true }: V3ShellWr
         )}
       </header>
 
-      {/* Page content */}
-      <div className="flex-1">
-        {children}
+      <div className="flex flex-1 min-h-0">
+        {/* ── Left Sidebar (same as home page) ── */}
+        <aside className="hidden md:flex w-60 shrink-0 border-r border-border bg-card/30 flex-col">
+          <ScrollArea className="flex-1">
+            <nav className="px-2 space-y-0.5 pb-4 pt-2">
+              <SidebarLink icon={HomeIcon} label="Home" onClick={() => setView('home-v3')} />
+              <SidebarLink icon={Zap} label="Sparks" onClick={() => setView('home-v3')} />
+              <SidebarLink icon={Gamepad2} label="Games" onClick={() => setView('home-v3')} />
+              <SidebarLink icon={Radio} label="Live" onClick={() => setView('home-v3')} />
+              <SidebarLink icon={Sparkles} label="Highlights" onClick={() => setView('home-v3')} />
+              <SidebarLink icon={Trophy} label="Tournaments" onClick={() => setView('home-v3')} />
+              <SidebarLink icon={Users} label="Subscriptions" onClick={() => setView('home-v3')} />
+              <div className="my-2 border-t border-border" />
+              <SidebarLink icon={LibraryIcon} label="Library" onClick={() => setView('home-v3')} />
+              <SidebarLink icon={Clock} label="History" onClick={() => setView('home-v3')} />
+              <SidebarLink icon={Heart} label="Liked" onClick={() => setView('home-v3')} />
+              <SidebarLink icon={Bookmark} label="Watch Later" onClick={() => setView('home-v3')} />
+              <SidebarLink icon={Download} label="Downloads" onClick={() => setView('home-v3')} />
+              <div className="my-2 border-t border-border" />
+              <SidebarLink icon={Coins} label="Wallet" onClick={() => setView('adr-economy')} />
+              <SidebarLink icon={Package} label="Extensions" onClick={() => setView('extensions')} />
+              <SidebarLink icon={BarChart} label="Studio" onClick={() => setView('creator-studio')} />
+            </nav>
+          </ScrollArea>
+        </aside>
+
+        {/* Page content */}
+        <div className="flex-1 min-w-0 overflow-y-auto">
+          {children}
+        </div>
       </div>
     </div>
+  );
+}
+
+// ─── Sidebar Link helper ──────────────────────────────────────────────────
+
+function SidebarLink({ icon: Icon, label, onClick }: { icon: any; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+    >
+      <Icon className="w-5 h-5 shrink-0" />
+      <span className="truncate">{label}</span>
+    </button>
   );
 }
