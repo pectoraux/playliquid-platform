@@ -1395,3 +1395,44 @@ Stage Summary:
 - All V2 references removed: every setView('home') and setView('home-v2') across 10 files changed to setView('home-v3'). page.tsx no longer imports ConsumerHomeV2 or StudioHome — all routes funnel through ConsumerHomeV3.
 - Lint clean. Default view confirmed as 'home-v3'.
 - "Replace the current ConsumerHomeV3 with a full YouTube-style application shell" ✅
+
+---
+Task ID: 27-api
+Agent: Z.ai Code (API routes)
+Task: Build API routes for the PlayLiquid social and search features on top of the existing `src/lib/social/social-service.ts`.
+
+Work Log:
+- Read worklog.md and reviewed `src/lib/social/social-service.ts` (followCreator/unfollowCreator/isFollowing/getFollowerCount/postComment/getComments/likeComment/getCreatorChannel/searchExperiences) plus reference patterns from existing routes (`social/following`, `asset-economy/assets/[id]/rate`, `identity-u/community/[experienceId]`).
+- Created 6 API routes, all using `NextRequest`/`NextResponse` from `next/server` and the Next.js 16 `params: Promise<{...}>` pattern for dynamic params. Default `viewerId` is `'demo-user'` when not provided.
+
+  1. `src/app/api/social/follow/route.ts`
+     - GET `?creatorId=X&viewerId=Y` → returns `{ following: boolean, followers: number }` via parallel `isFollowing` + `getFollowerCount`.
+     - POST `{ creatorId, action: "follow" | "unfollow", viewerId? }` → calls `followCreator`/`unfollowCreator`, then re-reads follower count, returns `{ following, followers }`. 400 if `creatorId` missing or `action` invalid.
+
+  2. `src/app/api/social/comments/route.ts`
+     - GET `?experienceId=X&limit?` → `{ comments: Comment[] }` (limit clamped to 1–200, default 50).
+     - POST `{ experienceId, body, userId?, displayName?, parentId? }` → `{ comment: Comment }` via `postComment`. 400 if `experienceId` missing or `body` empty/whitespace.
+
+  3. `src/app/api/social/comments/[id]/like/route.ts`
+     - POST (dynamic param `id`) → `{ likes: number }` via `likeComment`. Wraps service call in try/catch → 500 with error message on failure (handles unknown comment ids).
+
+  4. `src/app/api/social/followers/route.ts`
+     - GET `?creatorId=X` → `{ followers: number }` via `getFollowerCount`. 400 if `creatorId` missing.
+
+  5. `src/app/api/search/route.ts`
+     - GET `?q=query&limit?` → `{ results: SearchResult[] }` via `searchExperiences` (limit clamped 1–50, default 20). Empty/whitespace query short-circuits to `{ results: [] }` to match the service's own empty-query guard.
+
+  6. `src/app/api/creator-channel/route.ts`
+     - GET `?creatorId=X&viewerId?` → `{ channel: CreatorChannel }` via `getCreatorChannel`. 400 if `creatorId` missing. 404 if the service returns `null` (creator not found).
+
+- All routes:
+  - Use `new URL(req.url).searchParams` for query parsing.
+  - Parse JSON body defensively: `await req.json().catch(() => ({}))`.
+  - Return explicit 400s with `{ error }` payload for missing/invalid params.
+  - Avoid leaking raw error stacks; the like route catches and returns a 500 with a message.
+- Ran `bun run lint` → clean, exit 0, no errors, no warnings.
+
+Stage Summary:
+- 6 social/search API routes shipped: `social/follow` (GET+POST), `social/comments` (GET+POST), `social/comments/[id]/like` (POST), `social/followers` (GET), `search` (GET), `creator-channel` (GET).
+- Consistent with existing project conventions (Next.js 16 async params, NextRequest/NextResponse, `demo-user` default viewer, defensive JSON parsing).
+- Lint clean. Ready for the frontend agent to wire into the Consumer V3 shell / creator channel UI.

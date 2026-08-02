@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import {
   Home, Zap, Gamepad2, Radio, Sparkles, Library, Heart, Clock,
   Plus, Search, Trophy, Coins, Package, BarChart, Settings, Menu, X,
-  Play, Eye, ListVideo, History, Bookmark, Flame, Users,
+  Play, Eye, ListVideo, History, Bookmark, Flame, Users, Loader2,
 } from 'lucide-react';
 
 // ─── fetchJSON helper (retry for dev cold-start) ──────────────────────────
@@ -31,8 +31,8 @@ async function fetchJSON<T = any>(url: string, retries = 2): Promise<T> {
 // ─── Nav types ────────────────────────────────────────────────────────────
 
 type NavId =
-  | 'home' | 'sparks' | 'games' | 'live' | 'highlights'
-  | 'subscriptions' | 'library' | 'history' | 'liked' | 'watch-later';
+  | 'home' | 'sparks' | 'games' | 'live' | 'highlights' | 'tournaments'
+  | 'subscriptions' | 'library' | 'history' | 'liked' | 'watch-later' | 'search';
 
 interface Experience {
   experienceId: string;
@@ -207,6 +207,8 @@ function ContentRouter({
       return <LivePage live={live} />;
     case 'highlights':
       return <HighlightsPage highlights={highlights} />;
+    case 'tournaments':
+      return <TournamentsPage />;
     case 'subscriptions':
       return <SubscriptionsPage experiences={experiences} onPlay={onPlayExperience} />;
     case 'library':
@@ -217,6 +219,8 @@ function ContentRouter({
       return <EmptyState icon={Heart} title="No liked content yet" subtitle="Tap the heart on experiences you enjoy" />;
     case 'watch-later':
       return <EmptyState icon={Bookmark} title="Nothing saved yet" subtitle="Bookmark experiences to play them later" />;
+    case 'search':
+      return <SearchPage />;
     default:
       return <HomePage sparks={sparks} experiences={experiences} live={live} onPlaySpark={onPlaySpark} onPlayExperience={onPlayExperience} onPlayAllSparks={onPlayAllSparks} />;
   }
@@ -447,6 +451,89 @@ function LibraryPage() {
   );
 }
 
+function TournamentsPage() {
+  return (
+    <section>
+      <SectionHeader
+        icon={<Trophy className="w-5 h-5 text-amber-500" />}
+        title="Tournaments"
+        subtitle="Compete for prizes and glory"
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {[
+          { title: 'Neon Runner Championship', prize: '500L', entrants: 124, status: 'Registration Open', startsIn: '2 days' },
+          { title: 'Sky Defense Showdown', prize: '1,200L', entrants: 89, status: 'Live Now', startsIn: 'Started' },
+          { title: 'Coin Rush Sprint', prize: '250L', entrants: 56, status: 'Starting Soon', startsIn: '1 hour' },
+        ].map((t, i) => (
+          <div key={i} className="rounded-xl border border-border bg-card/40 overflow-hidden hover:shadow-md transition-all cursor-pointer">
+            <div className="relative aspect-video bg-gradient-to-br from-amber-300 to-orange-400 dark:from-amber-800 dark:to-orange-900 flex items-center justify-center">
+              <Trophy className="w-10 h-10 text-white/70" />
+              <Badge className={`absolute top-2 left-2 text-[8px] h-4 ${t.status === 'Live Now' ? 'bg-red-500 text-white animate-pulse' : 'bg-emerald-500 text-white'}`}>{t.status}</Badge>
+            </div>
+            <div className="p-2.5">
+              <h3 className="text-xs font-bold line-clamp-1">{t.title}</h3>
+              <div className="flex items-center justify-between mt-1 text-[10px] text-muted-foreground">
+                <span className="text-amber-600 dark:text-amber-400 font-medium">🏆 {t.prize}</span>
+                <span>{t.entrants} entrants</span>
+              </div>
+              <div className="text-[9px] text-muted-foreground mt-0.5">{t.startsIn}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 text-center">
+        <Button variant="outline" size="sm" className="gap-1.5"><Zap className="w-3.5 h-3.5" /> Create Tournament</Button>
+      </div>
+    </section>
+  );
+}
+
+function SearchPage() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const { playExperience } = useStudioStore();
+
+  const search = async (q: string) => {
+    setQuery(q);
+    if (!q.trim()) { setResults([]); return; }
+    setSearching(true);
+    try {
+      const d = await fetchJSON<{ results: any[] }>(`/api/search?q=${encodeURIComponent(q)}`);
+      setResults(d.results ?? []);
+    } catch { setResults([]); }
+    setSearching(false);
+  };
+
+  return (
+    <section>
+      <SectionHeader icon={<Search className="w-5 h-5 text-muted-foreground" />} title="Search" subtitle="Find experiences, creators, sparks" />
+      <div className="flex items-center gap-2 px-3 py-2 rounded-full border border-border bg-muted/50 mb-4">
+        <Search className="w-4 h-4 text-muted-foreground" />
+        <input value={query} onChange={e => search(e.target.value)} placeholder="Search..." className="flex-1 bg-transparent text-sm focus:outline-none" autoFocus />
+        {searching && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+      </div>
+      {results.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {results.map(r => (
+            <div key={r.experienceId} className="rounded-xl overflow-hidden cursor-pointer group hover:bg-muted/30" onClick={() => playExperience(r.experienceId)}>
+              <div className="relative aspect-video bg-gradient-to-br from-violet-300 to-fuchsia-300 dark:from-violet-800 dark:to-fuchsia-800 flex items-center justify-center">
+                {r.thumbnailUrl ? <img src={r.thumbnailUrl} alt={r.title} className="w-full h-full object-cover" /> : <Gamepad2 className="w-8 h-8 text-white/50" />}
+              </div>
+              <div className="p-2">
+                <h3 className="text-xs font-medium line-clamp-2">{r.displayTitle ?? r.title}</h3>
+                <p className="text-[10px] text-muted-foreground">{r.creatorName} · {r.playCount} plays · {r.publishedAgo}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : query.trim() && !searching ? (
+        <p className="text-sm text-muted-foreground text-center py-8">No results for "{query}"</p>
+      ) : null}
+    </section>
+  );
+}
+
 // ─── Sidebar (desktop) ────────────────────────────────────────────────────
 
 interface SidebarItem {
@@ -467,6 +554,7 @@ const PRIMARY_NAV: SidebarItem[] = [
   { id: 'games', icon: Gamepad2, label: 'Games' },
   { id: 'live', icon: Radio, label: 'Live' },
   { id: 'highlights', icon: Sparkles, label: 'Highlights' },
+  { id: 'tournaments', icon: Trophy, label: 'Tournaments' },
   { id: 'subscriptions', icon: Users, label: 'Subscriptions' },
 ];
 
@@ -577,6 +665,7 @@ function DesktopTopBar({
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && searchQuery.trim()) { setActiveNav('search' as NavId); } }}
             placeholder="Search experiences, creators, sparks..."
             className="flex-1 h-6 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
           />

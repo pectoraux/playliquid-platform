@@ -1793,3 +1793,30 @@ model UploadedGameFileRecord {
   @@index([experienceId])
   @@index([slug])
 }
+
+// ─── Phase 27: Interactive Media Platform Completion ───────────────────────
+// Creator follows (subscribe), simplified comments (no PlayerProfile required),
+// and search index for discovery.
+model CreatorFollow {
+  id          String   @id @default(cuid())
+  viewerId    String   // the user who follows
+  creatorId   String   // the creator being followed
+  createdAt   DateTime @default(now())
+
+  @@unique([viewerId, creatorId])
+  @@index([creatorId])
+}
+
+model ExperienceCommentV2 {
+  id              String   @id @default(cuid())
+  experienceId    String
+  userId          String   @default("demo-user")
+  displayName     String   @default("Player")
+  body            String
+  parentId        String?  // for nested replies
+  likes           Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@index([experienceId])
+  @@index([parentId])
+}

@@ -1,522 +1,260 @@
 /**
- * v0.46 Social Universe — Social Services
- * -----------------------------------------
- * Following feed, Live gameplay, Replays, Challenges, Collections,
- * Notifications, and Wallet surfaces.
+ * Phase 27 — Social Service
+ * --------------------------
+ * Real subscribe/follow, comments, and creator channel data.
  */
 
 import { db } from '@/lib/db';
-import { ledger } from '@/lib/token-store';
-import { ACCOUNTS } from '@/kernel/ledger';
 
-// ─── Following Feed ────────────────────────────────────────────────────────
+// ─── Creator Follow (Subscribe) ────────────────────────────────────────────
 
-export interface FollowingFeedItem {
+export async function followCreator(viewerId: string, creatorId: string): Promise<{ following: boolean }> {
+  await db.creatorFollow.upsert({
+    where: { viewerId_creatorId: { viewerId, creatorId } },
+    create: { viewerId, creatorId },
+    update: {},
+  });
+  await db.creatorRecord.update({
+    where: { id: creatorId },
+    data: { followers: { increment: 1 } },
+  }).catch(() => {});
+  return { following: true };
+}
+
+export async function unfollowCreator(viewerId: string, creatorId: string): Promise<{ following: boolean }> {
+  await db.creatorFollow.deleteMany({
+    where: { viewerId, creatorId },
+  });
+  await db.creatorRecord.update({
+    where: { id: creatorId },
+    data: { followers: { decrement: 1 } },
+  }).catch(() => {});
+  return { following: false };
+}
+
+export async function isFollowing(viewerId: string, creatorId: string): Promise<boolean> {
+  const follow = await db.creatorFollow.findUnique({
+    where: { viewerId_creatorId: { viewerId, creatorId } },
+  });
+  return !!follow;
+}
+
+export async function getFollowerCount(creatorId: string): Promise<number> {
+  const creator = await db.creatorRecord.findUnique({
+    where: { id: creatorId },
+    select: { followers: true },
+  });
+  return creator?.followers ?? 0;
+}
+
+// ─── Comments ──────────────────────────────────────────────────────────────
+
+export interface Comment {
   id: string;
+  experienceId: string;
   userId: string;
   displayName: string;
-  type: string;
-  targetType: string;
-  targetId?: string;
-  targetName?: string;
-  detail?: string;
-  createdAt: number;
-}
-
-export async function getFollowingFeed(userId: string, limit = 30): Promise<FollowingFeedItem[]> {
-  const profile = await db.playerProfile.findUnique({ where: { userId } });
-  if (!profile) return [];
-
-  const following: string[] = JSON.parse(profile.followingJson);
-  following.push(userId);
-
-  const records = await db.activityFeedRecord.findMany({
-    where: { userId: { in: following } },
-    include: { player: true },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-  });
-
-  return records.map((r) => ({
-    id: r.id,
-    userId: r.userId,
-    displayName: r.player?.displayName ?? 'Unknown',
-    type: r.type,
-    targetType: r.targetType,
-    targetId: r.targetId ?? undefined,
-    targetName: r.targetName ?? undefined,
-    detail: r.detail ?? undefined,
-    createdAt: r.createdAt.getTime(),
-  }));
-}
-
-// ─── Live Gameplay ─────────────────────────────────────────────────────────
-
-export async function goLive(params: {
-  userId: string;
-  displayName: string;
-  experienceId: string;
-  experienceName: string;
-  sessionId: string;
-}): Promise<{ liveId: string }> {
-  // End any existing live sessions for this user
-  await db.liveSessionRecord.updateMany({
-    where: { userId: params.userId, status: 'LIVE' },
-    data: { status: 'ENDED', endedAt: new Date() },
-  });
-
-  const live = await db.liveSessionRecord.create({
-    data: {
-      experienceId: params.experienceId,
-      experienceName: params.experienceName,
-      userId: params.userId,
-      displayName: params.displayName,
-      sessionId: params.sessionId,
-      status: 'LIVE',
-      viewerCount: Math.floor(Math.random() * 50) + 1, // simulated viewers
-    },
-  });
-
-  return { liveId: live.id };
-}
-
-export async function endLive(liveId: string): Promise<void> {
-  await db.liveSessionRecord.update({
-    where: { id: liveId },
-    data: { status: 'ENDED', endedAt: new Date() },
-  });
-}
-
-export async function getLiveSessions(limit = 10): Promise<any[]> {
-  const sessions = await db.liveSessionRecord.findMany({
-    where: { status: 'LIVE' },
-    orderBy: { viewerCount: 'desc' },
-    take: limit,
-  });
-  return sessions.map((s) => ({
-    id: s.id,
-    experienceId: s.experienceId,
-    experienceName: s.experienceName,
-    streamerName: s.displayName,
-    viewerCount: s.viewerCount,
-    peakViewers: s.peakViewers,
-    startedAt: s.startedAt.getTime(),
-  }));
-}
-
-// ─── Replays ───────────────────────────────────────────────────────────────
-
-export async function createReplay(params: {
-  sessionId: string;
-  experienceId: string;
-  experienceName: string;
-  userId: string;
-  displayName: string;
-  score: number;
-  durationMs: number;
-  eventLog?: any[];
-}): Promise<{ replayId: string }> {
-  // Determine highlight type
-  let highlightType: string | null = null;
-  let highlightLabel: string | null = null;
-
-  if (params.score > 200) {
-    highlightType = 'world-record';
-    highlightLabel = 'Potential world record!';
-  } else if (params.score > 100) {
-    highlightType = 'clutch';
-    highlightLabel = 'High-scoring run';
-  } else if (params.durationMs < 3000 && params.score > 0) {
-    highlightType = 'speedrun';
-    highlightLabel = 'Lightning fast';
-  }
-
-  const replay = await db.replayRecord.create({
-    data: {
-      sessionId: params.sessionId,
-      experienceId: params.experienceId,
-      experienceName: params.experienceName,
-      userId: params.userId,
-      displayName: params.displayName,
-      score: params.score,
-      durationMs: params.durationMs,
-      highlightType,
-      highlightLabel,
-      eventLogJson: JSON.stringify(params.eventLog ?? []),
-    },
-  });
-
-  return { replayId: replay.id };
-}
-
-export async function getReplays(params: {
-  experienceId?: string;
-  highlightType?: string;
-  limit?: number;
-}): Promise<any[]> {
-  const where: any = { isPublic: true };
-  if (params.experienceId) where.experienceId = params.experienceId;
-  if (params.highlightType) where.highlightType = params.highlightType;
-
-  const replays = await db.replayRecord.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    take: params.limit ?? 20,
-  });
-
-  return replays.map((r) => ({
-    id: r.id,
-    experienceId: r.experienceId,
-    experienceName: r.experienceName,
-    userId: r.userId,
-    displayName: r.displayName,
-    score: r.score,
-    durationMs: r.durationMs,
-    highlightType: r.highlightType,
-    highlightLabel: r.highlightLabel,
-    viewCount: r.viewCount,
-    likeCount: r.likeCount,
-    createdAt: r.createdAt.getTime(),
-  }));
-}
-
-export async function viewReplay(replayId: string): Promise<void> {
-  await db.replayRecord.update({
-    where: { id: replayId },
-    data: { viewCount: { increment: 1 } },
-  });
-}
-
-// ─── Challenges (player-to-player) ─────────────────────────────────────────
-
-export async function createChallenge(params: {
-  fromUserId: string;
-  toUserId?: string;
-  experienceId: string;
-  experienceName: string;
-  type: string;
-  description: string;
-  fromScore?: number;
-  targetScore?: number;
-  rewardLiquid?: number;
-  durationHours?: number;
-}): Promise<{ challengeId: string }> {
-  const challenge = await db.playerChallengeRecord.create({
-    data: {
-      fromUserId: params.fromUserId,
-      toUserId: params.toUserId,
-      experienceId: params.experienceId,
-      experienceName: params.experienceName,
-      type: params.type,
-      description: params.description,
-      fromScore: params.fromScore,
-      targetScore: params.targetScore,
-      rewardLiquid: params.rewardLiquid ?? 0,
-      expiresAt: params.durationHours ? new Date(Date.now() + params.durationHours * 3600000) : null,
-    },
-  });
-
-  // Notify the challenged player
-  if (params.toUserId) {
-    await createNotification({
-      userId: params.toUserId,
-      type: 'challenge',
-      title: 'New Challenge!',
-      body: `Someone challenged you to "${params.description}" on ${params.experienceName}`,
-      icon: '⚔️',
-      targetType: 'challenge',
-      targetId: challenge.id,
-    });
-  }
-
-  return { challengeId: challenge.id };
-}
-
-export async function getChallenges(userId?: string): Promise<any[]> {
-  const where: any = { status: { in: ['PENDING', 'ACCEPTED'] } };
-  if (userId) {
-    where.OR = [{ fromUserId: userId }, { toUserId: userId }, { toUserId: null }];
-  }
-
-  const challenges = await db.playerChallengeRecord.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    take: 20,
-  });
-
-  return challenges.map((c) => ({
-    id: c.id,
-    fromUserId: c.fromUserId,
-    toUserId: c.toUserId,
-    experienceId: c.experienceId,
-    experienceName: c.experienceName,
-    type: c.type,
-    description: c.description,
-    fromScore: c.fromScore,
-    targetScore: c.targetScore,
-    rewardLiquid: c.rewardLiquid,
-    status: c.status,
-    entries: JSON.parse(c.entriesJson),
-    expiresAt: c.expiresAt?.getTime(),
-    createdAt: c.createdAt.getTime(),
-  }));
-}
-
-export async function acceptChallenge(challengeId: string, userId: string): Promise<void> {
-  await db.playerChallengeRecord.update({
-    where: { id: challengeId },
-    data: { status: 'ACCEPTED', toUserId: userId },
-  });
-}
-
-export async function submitChallengeEntry(challengeId: string, userId: string, score: number): Promise<{ won: boolean }> {
-  const challenge = await db.playerChallengeRecord.findUnique({ where: { id: challengeId } });
-  if (!challenge) return { won: false };
-
-  const entries = JSON.parse(challenge.entriesJson);
-  entries.push({ userId, score, at: Date.now() });
-  await db.playerChallengeRecord.update({
-    where: { id: challengeId },
-    data: { entriesJson: JSON.stringify(entries) },
-  });
-
-  // Check if challenge is won
-  let won = false;
-  if (challenge.type === 'beat-score' && score > (challenge.fromScore ?? 0)) {
-    won = true;
-  } else if (challenge.type === 'high-score' && entries.length >= 2) {
-    won = score === Math.max(...entries.map((e: any) => e.score));
-  } else if (challenge.targetScore && score >= challenge.targetScore) {
-    won = true;
-  }
-
-  if (won) {
-    await db.playerChallengeRecord.update({
-      where: { id: challengeId },
-      data: { status: 'COMPLETED', winnerId: userId },
-    });
-
-    // ADR-006: Liquid is NOT minted as rewards. Challenge rewards are
-    // recorded but NOT credited as Liquid. In the ADR model, player
-    // earnings come ONLY from leaderboard payouts (ADR-007).
-    // The challenge reward field is kept for XP/reputation tracking.
-
-    await createNotification({
-      userId,
-      type: 'reward',
-      title: 'Challenge Won! 🎉',
-      body: `You won the challenge "${challenge.description}" and earned ${challenge.rewardLiquid / 1_000_000} Liquid!`,
-      icon: '🏆',
-      targetType: 'challenge',
-      targetId: challengeId,
-    });
-  }
-
-  return { won };
-}
-
-// ─── Collections ───────────────────────────────────────────────────────────
-
-export async function createCollection(params: {
-  userId: string;
-  title: string;
-  description?: string;
-  coverEmoji?: string;
-}): Promise<{ collectionId: string }> {
-  const collection = await db.collectionRecord.create({
-    data: {
-      userId: params.userId,
-      title: params.title,
-      description: params.description,
-      coverEmoji: params.coverEmoji ?? '📁',
-    },
-  });
-  return { collectionId: collection.id };
-}
-
-export async function addToCollection(collectionId: string, experienceId: string): Promise<void> {
-  const collection = await db.collectionRecord.findUnique({ where: { id: collectionId } });
-  if (!collection) return;
-
-  const items: string[] = JSON.parse(collection.itemsJson);
-  if (!items.includes(experienceId)) {
-    items.push(experienceId);
-    await db.collectionRecord.update({
-      where: { id: collectionId },
-      data: { itemsJson: JSON.stringify(items) },
-    });
-  }
-}
-
-export async function getCollections(userId?: string, limit = 20): Promise<any[]> {
-  const where: any = userId ? { userId } : { isPublic: true };
-  const collections = await db.collectionRecord.findMany({
-    where,
-    orderBy: { updatedAt: 'desc' },
-    take: limit,
-  });
-
-  return collections.map((c) => ({
-    id: c.id,
-    userId: c.userId,
-    title: c.title,
-    description: c.description,
-    coverEmoji: c.coverEmoji,
-    itemCount: (JSON.parse(c.itemsJson) as string[]).length,
-    isPublic: c.isPublic,
-    followerCount: c.followerCount,
-    updatedAt: c.updatedAt.getTime(),
-  }));
-}
-
-export async function getCollectionItems(collectionId: string): Promise<any[]> {
-  const collection = await db.collectionRecord.findUnique({ where: { id: collectionId } });
-  if (!collection) return [];
-
-  const itemIds: string[] = JSON.parse(collection.itemsJson);
-  const exps = await db.experienceRecord.findMany({
-    where: { id: { in: itemIds } },
-    include: { creator: true },
-  });
-
-  return exps.map((e) => ({
-    experienceId: e.id,
-    title: e.title,
-    creatorName: e.creator?.displayName ?? 'Unknown',
-    playCount: e.playCount,
-  }));
-}
-
-// ─── Notifications ─────────────────────────────────────────────────────────
-
-export async function createNotification(params: {
-  userId: string;
-  type: string;
-  title: string;
   body: string;
-  icon?: string;
-  targetType?: string;
-  targetId?: string;
-}): Promise<void> {
-  await db.notificationRecord.create({
-    data: {
-      userId: params.userId,
-      type: params.type,
-      title: params.title,
-      body: params.body,
-      icon: params.icon ?? '🔔',
-      targetType: params.targetType,
-      targetId: params.targetId,
-    },
-  });
+  parentId?: string | null;
+  likes: number;
+  createdAt: number;
+  replies?: Comment[];
 }
 
-export async function getNotifications(userId: string, limit = 30): Promise<any[]> {
-  const records = await db.notificationRecord.findMany({
-    where: { userId },
+export async function postComment(params: {
+  experienceId: string;
+  userId?: string;
+  displayName?: string;
+  body: string;
+  parentId?: string;
+}): Promise<Comment> {
+  const row = await db.experienceCommentV2.create({
+    data: {
+      experienceId: params.experienceId,
+      userId: params.userId ?? 'demo-user',
+      displayName: params.displayName ?? 'Player',
+      body: params.body,
+      parentId: params.parentId ?? null,
+    },
+  });
+  return rowToComment(row);
+}
+
+export async function getComments(experienceId: string, limit = 50): Promise<Comment[]> {
+  const rows = await db.experienceCommentV2.findMany({
+    where: { experienceId, parentId: null },
     orderBy: { createdAt: 'desc' },
     take: limit,
   });
-  return records.map((r) => ({
-    id: r.id,
-    type: r.type,
-    title: r.title,
-    body: r.body,
-    icon: r.icon,
-    targetType: r.targetType,
-    targetId: r.targetId,
-    isRead: r.isRead,
-    createdAt: r.createdAt.getTime(),
+  const replies = await db.experienceCommentV2.findMany({
+    where: { experienceId, parentId: { not: null } },
+    orderBy: { createdAt: 'asc' },
+    take: 100,
+  });
+  const replyMap = new Map<string, Comment[]>();
+  for (const r of replies) {
+    const comment = rowToComment(r);
+    const parentId = r.parentId!;
+    if (!replyMap.has(parentId)) replyMap.set(parentId, []);
+    replyMap.get(parentId)!.push(comment);
+  }
+  return rows.map(rowToComment).map((c) => ({
+    ...c,
+    replies: replyMap.get(c.id) ?? [],
   }));
 }
 
-export async function getUnreadCount(userId: string): Promise<number> {
-  return db.notificationRecord.count({ where: { userId, isRead: false } });
-}
-
-export async function markAllRead(userId: string): Promise<void> {
-  await db.notificationRecord.updateMany({
-    where: { userId, isRead: false },
-    data: { isRead: true },
+export async function likeComment(commentId: string): Promise<{ likes: number }> {
+  const row = await db.experienceCommentV2.update({
+    where: { id: commentId },
+    data: { likes: { increment: 1 } },
+    select: { likes: true },
   });
+  return { likes: row.likes };
 }
 
-// ─── Wallet & Revenue ──────────────────────────────────────────────────────
+// ─── Creator Channel ───────────────────────────────────────────────────────
 
-export async function getPlayerWallet(userId: string): Promise<{
-  balance: number;
-  earnedToday: number;
-  earnedSources: Array<{ source: string; amount: number; time: number }>;
-  withdrawable: number;
-}> {
-  const profile = await db.playerProfile.findUnique({ where: { userId } });
-  const balance = profile?.liquidBalance ?? 0;
+export interface CreatorChannel {
+  creatorId: string;
+  displayName: string;
+  handle: string;
+  bio: string;
+  avatarUrl: string | null;
+  followers: number;
+  isFollowing: boolean;
+  experiences: Array<{
+    experienceId: string;
+    title: string;
+    displayTitle: string | null;
+    thumbnailUrl: string | null;
+    playCount: number;
+    format: string;
+    publishedAgo: string;
+  }>;
+}
 
-  // Get recent ledger credits to the player wallet
-  const transactions = await ledger.listTransactions(20);
-  const earnedSources: Array<{ source: string; amount: number; time: number }> = [];
+export async function getCreatorChannel(creatorId: string, viewerId: string = 'demo-user'): Promise<CreatorChannel | null> {
+  const creator = await db.creatorRecord.findUnique({
+    where: { id: creatorId },
+    include: {
+      experiences: {
+        where: { status: 'PUBLISHED' },
+        orderBy: { playCount: 'desc' },
+      },
+    },
+  });
+  if (!creator) return null;
 
-  for (const tx of transactions) {
-    for (const entry of tx.entries) {
-      if (entry.account === `player:wallet:${userId}` && entry.debit > 0) {
-        earnedSources.push({
-          source: tx.memo ?? 'Unknown',
-          amount: entry.debit,
-          time: tx.createdAt,
-        });
-      }
-    }
-  }
-
-  const now = Date.now();
-  const earnedToday = earnedSources
-    .filter((s) => now - s.time < 86400000)
-    .reduce((sum, s) => sum + s.amount, 0);
+  const following = await isFollowing(viewerId, creatorId);
 
   return {
-    balance,
-    earnedToday,
-    earnedSources: earnedSources.slice(0, 5),
-    withdrawable: Math.floor(balance * 0.8), // 80% withdrawable, 20% reserved
-  };
-}
-
-export async function getCreatorRevenue(creatorId: string): Promise<{
-  totalEarned: number;
-  earnedToday: number;
-  earnedThisWeek: number;
-  topEarningSparks: Array<{ title: string; revenue: number; players: number }>;
-  projectedMonthly: number;
-}> {
-  const creator = await db.creatorRecord.findUnique({ where: { id: creatorId } });
-  const totalEarned = creator?.totalLiquid ?? 0;
-
-  // Get creator's experiences
-  const exps = await db.experienceRecord.findMany({
-    where: { creatorId, status: 'PUBLISHED' },
-  });
-
-  const topEarningSparks: Array<{ title: string; revenue: number; players: number }> = [];
-  for (const exp of exps) {
-    const metrics = await db.experienceMetrics.findUnique({ where: { experienceId: exp.id } });
-    topEarningSparks.push({
+    creatorId: creator.id,
+    displayName: creator.displayName,
+    handle: creator.handle,
+    bio: creator.bio ?? '',
+    avatarUrl: creator.avatarUrl,
+    followers: creator.followers,
+    isFollowing: following,
+    experiences: creator.experiences.map((exp) => ({
+      experienceId: exp.id,
       title: exp.title,
-      revenue: Math.floor(totalEarned / Math.max(exps.length, 1)), // approx per-spark
-      players: metrics?.totalSessions ?? exp.playCount,
-    });
-  }
-
-  topEarningSparks.sort((a, b) => b.revenue - a.revenue);
-
-  const earnedToday = Math.floor(totalEarned * 0.05); // approx
-  const earnedThisWeek = Math.floor(totalEarned * 0.2);
-  const projectedMonthly = earnedThisWeek * 4;
-
-  return {
-    totalEarned,
-    earnedToday,
-    earnedThisWeek,
-    topEarningSparks,
-    projectedMonthly,
+      displayTitle: exp.displayTitle,
+      thumbnailUrl: exp.thumbnailUrl,
+      playCount: exp.playCount,
+      format: exp.format,
+      publishedAgo: formatRelativeTime(exp.publishedAt ?? exp.createdAt),
+    })),
   };
+}
+
+// ─── Search ────────────────────────────────────────────────────────────────
+
+export async function searchExperiences(query: string, limit = 20): Promise<Array<{
+  experienceId: string;
+  title: string;
+  displayTitle: string | null;
+  thumbnailUrl: string | null;
+  creatorName: string;
+  creatorId: string;
+  playCount: number;
+  format: string;
+  publishedAgo: string;
+}>> {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+
+  const results = await db.experienceRecord.findMany({
+    where: {
+      status: 'PUBLISHED',
+      OR: [
+        { title: { contains: query, mode: 'insensitive' } },
+        { displayTitle: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+      ],
+    },
+    include: { creator: true },
+    orderBy: { playCount: 'desc' },
+    take: limit,
+  });
+
+  // Also search by creator name
+  const creatorResults = await db.experienceRecord.findMany({
+    where: {
+      status: 'PUBLISHED',
+      creator: { displayName: { contains: query, mode: 'insensitive' } },
+    },
+    include: { creator: true },
+    orderBy: { playCount: 'desc' },
+    take: limit,
+  });
+
+  // Merge + dedupe
+  const seen = new Set<string>();
+  const merged = [...results, ...creatorResults].filter((exp) => {
+    if (seen.has(exp.id)) return false;
+    seen.add(exp.id);
+    return true;
+  });
+
+  return merged.map((exp) => ({
+    experienceId: exp.id,
+    title: exp.title,
+    displayTitle: exp.displayTitle,
+    thumbnailUrl: exp.thumbnailUrl,
+    creatorName: exp.creator?.displayName ?? 'Unknown',
+    creatorId: exp.creatorId,
+    playCount: exp.playCount,
+    format: exp.format,
+    publishedAgo: formatRelativeTime(exp.publishedAt ?? exp.createdAt),
+  }));
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+function rowToComment(row: any): Comment {
+  return {
+    id: row.id,
+    experienceId: row.experienceId,
+    userId: row.userId,
+    displayName: row.displayName,
+    body: row.body,
+    parentId: row.parentId,
+    likes: row.likes,
+    createdAt: row.createdAt instanceof Date ? row.createdAt.getTime() : new Date(row.createdAt).getTime(),
+  };
+}
+
+function formatRelativeTime(date: Date): string {
+  const diff = Date.now() - date.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  if (seconds < 60) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return `${Math.floor(days / 30)}mo ago`;
 }
