@@ -870,7 +870,7 @@ function ProfileDropdown({
             <Library className="w-4 h-4" /> Library
           </DropdownMenuItem>
           <DropdownMenuSeparator className="my-0" />
-          <DropdownMenuItem className="gap-3 cursor-pointer rounded-md" onSelect={() => onNavigate('identity-u')}>
+          <DropdownMenuItem className="gap-3 cursor-pointer rounded-md" onSelect={() => onNavigate('creator-studio')}>
             <Settings className="w-4 h-4" /> Settings
           </DropdownMenuItem>
         </div>

@@ -7,18 +7,6 @@ import { CreationWizard } from '@/components/studio/CreationWizard';
 import { StudioEditor } from '@/components/studio/StudioEditor';
 import { ExperiencesView } from '@/components/studio/ExperiencesView';
 import { CreatorProfile } from '@/components/studio/CreatorProfile';
-import { WorldDashboard } from '@/components/world/WorldDashboard';
-import { CivDashboard } from '@/components/civ/CivDashboard';
-import { UniverseDashboard } from '@/components/universe/UniverseDashboard';
-import { ConsumerUniverse } from '@/components/consumer/ConsumerUniverse';
-import { IdentityDashboard } from '@/components/identity/IdentityDashboard';
-import { IdentityUniverse } from '@/components/identity-universe/IdentityUniverse';
-import { CreatorIntel } from '@/components/creator-intel/CreatorIntel';
-import { AssetEconomy } from '@/components/asset-economy/AssetEconomy';
-import { Multiverse } from '@/components/multiverse/Multiverse';
-import { LivingCivilizations } from '@/components/living/LivingCivilizations';
-import { AdrEconomy } from '@/components/economy/AdrEconomy';
-import { CompetitivePlay } from '@/components/economy/CompetitivePlay';
 import { ExtensionUniverse } from '@/components/extensions/ExtensionUniverse';
 import { V3ShellWrapper } from '@/components/consumer-v2/V3ShellWrapper';
 import { ConsumerHomeV3 } from '@/components/consumer-v2/ConsumerHomeV3';
@@ -45,10 +33,8 @@ export default function Home() {
   }, [extData]);
 
   // When entering the editor, sync the React Flow nodes/edges from the bundle
-  // (handles draft loading, AI suggestions, fork, and demo loading)
   useEffect(() => {
     if (view === 'editor' && bundle.instances.length > 0 && manifestMap.size > 0) {
-      // Only rebuild if node count doesn't match instance count
       const currentNodes = useStudioStore.getState().nodes;
       if (currentNodes.length !== bundle.instances.length) {
         const { nodes, edges } = bundleToNodes(bundle, manifestMap);
@@ -70,41 +56,22 @@ export default function Home() {
   }, [view, bundle.instances.length, setNodes, setEdges]);
 
   switch (view) {
+    // ── V3 Consumer Shell ──
     case 'home':
-      return <ConsumerHomeV3 />;
     case 'home-v2':
-      return <ConsumerHomeV3 />;
     case 'home-v3':
       return <ConsumerHomeV3 />;
-    case 'universe':
-      return <ConsumerUniverse />;
-    case 'identity':
-      return <IdentityDashboard />;
-    case 'identity-u':
-      return <IdentityUniverse />;
-    case 'creator-intel':
-      return <CreatorIntel />;
-    case 'asset-economy':
-      return <AssetEconomy />;
-    case 'multiverse':
-      return <Multiverse />;
-    case 'living':
-      return <LivingCivilizations />;
-    case 'adr-economy':
-      return <V3ShellWrapper title="Wallet"><AdrEconomy /></V3ShellWrapper>;
-    case 'competitive':
-      return <V3ShellWrapper title="Compete"><CompetitivePlay /></V3ShellWrapper>;
-    case 'extensions':
-      return <V3ShellWrapper title="Extensions"><ExtensionUniverse /></V3ShellWrapper>;
-    case 'creator-studio':
-      return <CreatorStudio />;
-    case 'network-intelligence':
-      return <V3ShellWrapper title="Network Intelligence"><NetworkIntelligence /></V3ShellWrapper>;
+
+    // ── Play views ──
     case 'play':
       if (sparkQueue.length > 0) {
         return <SparkPlayer sparks={sparkQueue} initialIndex={Math.max(0, sparkQueue.findIndex((s) => s.experienceId === playExperienceId))} />;
       }
       return playExperienceId ? <GamePlayer experienceId={playExperienceId} /> : <ConsumerHomeV3 />;
+
+    // ── Creator ──
+    case 'creator-studio':
+      return <CreatorStudio />;
     case 'wizard':
       return <CreationWizard />;
     case 'editor':
@@ -113,12 +80,29 @@ export default function Home() {
       return <ExperiencesView />;
     case 'creator':
       return <CreatorProfile />;
-    case 'world':
-      return <WorldDashboard />;
-    case 'civ':
-      return <CivDashboard />;
+
+    // ── V3-wrapped legacy views ──
+    case 'extensions':
+      return <V3ShellWrapper title="Extensions"><ExtensionUniverse /></V3ShellWrapper>;
+    case 'adr-economy':
+      return <V3ShellWrapper title="Wallet"><PlayView experienceId="" /></V3ShellWrapper>;
+    case 'competitive':
+      return <V3ShellWrapper title="Compete"><PlayView experienceId="" /></V3ShellWrapper>;
+    case 'network-intelligence':
+      return <V3ShellWrapper title="Network Intelligence"><NetworkIntelligence /></V3ShellWrapper>;
     case 'kernel-dev':
       return <Playground />;
+
+    // ── All legacy views redirect to V3 home ──
+    case 'universe':
+    case 'identity':
+    case 'identity-u':
+    case 'creator-intel':
+    case 'asset-economy':
+    case 'multiverse':
+    case 'living':
+    case 'world':
+    case 'civ':
     default:
       return <ConsumerHomeV3 />;
   }

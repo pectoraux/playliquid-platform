@@ -32,26 +32,17 @@ export type ExtensionNode = Node<ExtensionNodeData>;
 
 export type StudioView =
   | 'home'
-  | 'universe'
-  | 'identity'
-  | 'identity-u'
-  | 'creator-intel'
-  | 'asset-economy'
-  | 'multiverse'
-  | 'living'
+  | 'home-v3'
+  | 'play'
+  | 'creator-studio'
+  | 'extensions'
   | 'adr-economy'
   | 'competitive'
-  | 'extensions'
-  | 'home-v2'
-  | 'home-v3'
-  | 'creator-studio'
   | 'network-intelligence'
   | 'wizard'
   | 'editor'
   | 'experiences'
   | 'creator'
-  | 'world'
-  | 'civ'
   | 'kernel-dev';
 
 // ─── Wizard State ──────────────────────────────────────────────────────────
