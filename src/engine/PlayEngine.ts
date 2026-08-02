@@ -99,7 +99,7 @@ export function aabb(a: Entity, b: Entity): boolean {
 // ─── The Engine ────────────────────────────────────────────────────────────
 
 export interface GameCallbacks {
-  onUpdate?: (state: GameState, dt: number, input: InputState) => void;
+  onUpdate?: (state: GameState, dt: number, input: InputState, engine: PlayEngine) => void;
   onRender?: (ctx: CanvasRenderingContext2D, state: GameState) => void;
   onScore?: (score: number) => void;
   onEvent?: (event: TelemetryEvent) => void;
@@ -212,8 +212,13 @@ export class PlayEngine {
       e.pos.y += e.vel.y * dt;
     }
 
-    // Custom update
-    this.callbacks.onUpdate?.(this.state, dt, this.input);
+    // Custom update (wrapped in try/catch so a game bug doesn't kill the loop)
+    try {
+      this.callbacks.onUpdate?.(this.state, dt, this.input, this);
+    } catch (err) {
+      // Log but don't crash the loop
+      console.error('[PlayEngine] update error:', err);
+    }
 
     // Remove dead entities
     this.state.entities = this.state.entities.filter((e) => e.alive);

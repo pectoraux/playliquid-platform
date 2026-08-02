@@ -34,6 +34,8 @@ export function GameCanvas({ game, seed = 'spark-seed', onScore, onEnd }: GameCa
     engineRef.current?.stop();
 
     const engine = new PlayEngine(canvas, game.config, {
+      onUpdate: (state, dt, input, eng) => game.update(state, dt, input, eng),
+      onRender: (ctx, state) => game.render(ctx, state),
       onScore: (score) => {
         setGameState({ score, status: 'playing', time: engine.currentState.time });
         onScore?.(score);
