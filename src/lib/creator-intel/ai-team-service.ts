@@ -91,13 +91,13 @@ export async function runCreatorAITeam(creatorId: string, experienceId: string):
       data: {
         creatorId,
         experienceId,
-        agentType: insight.agentType,
-        insightType: insight.insightType,
-        title: insight.title,
-        body: insight.body,
-        actionSuggestion: insight.actionSuggestion,
-        expectedImpact: insight.expectedImpact,
+        category: insight.agentType, // agentType maps to category
+        problem: insight.title,
+        evidence: insight.body,
+        recommendation: insight.actionSuggestion ?? '',
+        expectedImpact: insight.expectedImpact ?? '',
         severity: insight.severity,
+        reportType: 'daily',
       },
     });
     insight.id = record.id;
@@ -339,11 +339,11 @@ export async function getInsights(creatorId: string, experienceId?: string): Pro
   });
   return records.map((r) => ({
     id: r.id,
-    agentType: r.agentType,
-    insightType: r.insightType,
-    title: r.title,
-    body: r.body,
-    actionSuggestion: r.actionSuggestion,
+    agentType: r.category,
+    insightType: r.reportType,
+    title: r.problem,
+    body: r.evidence,
+    actionSuggestion: r.recommendation,
     expectedImpact: r.expectedImpact,
     severity: r.severity,
     status: r.status,

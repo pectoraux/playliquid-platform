@@ -13,7 +13,7 @@ import { ContainmentFrame } from './ContainmentFrame';
 import {
   ArrowLeft, Play, Users, Radio, Sparkles, ChevronRight,
   Zap, Eye, Share2, GitFork, Heart, Loader2, Trophy, Coins,
-  Package, Crown,
+  Package, Crown, BarChart,
 } from 'lucide-react';
 
 const MICRO = 1_000_000;
@@ -57,6 +57,7 @@ export function ConsumerHomeV2() {
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('extensions')}><Package className="w-3.5 h-3.5" /> Extensions</Button>
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('creator-studio')}><BarChart className="w-3.5 h-3.5" /> Studio</Button>
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('competitive')}><Trophy className="w-3.5 h-3.5" /> Compete</Button>
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('adr-economy')}><Coins className="w-3.5 h-3.5" /> Wallet</Button>
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('identity-u')}><Users className="w-3.5 h-3.5" /> Identity</Button>

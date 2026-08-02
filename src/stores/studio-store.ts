@@ -43,6 +43,7 @@ export type StudioView =
   | 'competitive'
   | 'extensions'
   | 'home-v2'
+  | 'creator-studio'
   | 'wizard'
   | 'editor'
   | 'experiences'

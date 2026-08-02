@@ -821,43 +821,8 @@ model CreatorPostRecord {
 }
 
 // ─── v0.48 Creator Intelligence Universe ───────────────────────────────────
-
-model CreatorInsightRecord {
-  id              String   @id @default(cuid())
-  creatorId       String
-  experienceId    String?
-  agentType       String   // designer | economy | balance | community | growth | narrative
-  insightType     String   // observation | suggestion | alert | opportunity | prediction
-  title           String
-  body            String
-  actionSuggestion String?
-  expectedImpact  String?
-  severity        String   @default("info")  // info | suggestion | warning | critical
-  status          String   @default("PENDING")  // PENDING | ACCEPTED | DISMISSED | APPLIED
-  metadataJson    String   @default("{}")
-  createdAt       DateTime @default(now())
-
-  @@index([creatorId])
-  @@index([agentType])
-}
-
-model CreatorExperimentRecord {
-  id              String   @id @default(cuid())
-  creatorId       String
-  experienceId    String
-  type            String   // ab-test | balance-change | new-feature | event-test
-  hypothesis      String
-  variantLabel    String   // "A" | "B" | "Variant 1"
-  configJson      String   @default("{}")
-  status          String   @default("DRAFT")  // DRAFT | RUNNING | COMPLETED | CANCELLED
-  resultsJson     String   @default("{}")
-  startedAt       DateTime?
-  completedAt     DateTime?
-  createdAt       DateTime @default(now())
-
-  @@index([creatorId])
-  @@index([experienceId])
-}
+// (CreatorInsightRecord moved to Phase 19 section below)
+// (CreatorExperimentRecord moved to Phase 19 section below)
 
 model GameEvolutionPlanRecord {
   id              String   @id @default(cuid())
@@ -1508,4 +1473,74 @@ model SparkPresentationConfigRecord {
   interactionMode String   @default("tap")  // tap | swipe | tilt | hold
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+// ─── Phase 19: Creator Operating System ────────────────────────────────────
+
+model CreatorExperimentRecord {
+  id              String   @id @default(cuid())
+  creatorId       String
+  experienceId    String
+  experienceName  String
+  name            String
+  hypothesis      String
+  type            String   @default("difficulty")  // difficulty | economy | extension | layout | pricing
+  variantAJson    String   @default("{}")
+  variantBJson    String   @default("{}")
+  status          String   @default("DRAFT")  // DRAFT | RUNNING | COMPLETED | CANCELLED
+  winner          String?  // "A" | "B" | null
+  metricsJson     String   @default("{}")  // { retention: {A: 0.6, B: 0.72}, completion: {A: 0.4, B: 0.5} }
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+
+  @@index([creatorId])
+  @@index([experienceId])
+}
+
+model CreatorRevenueRecord {
+  id              String   @id @default(cuid())
+  creatorId       String
+  experienceId    String?
+  experienceName  String?
+  source          String   // COMPETITIVE_PLAY | EXTENSION_ROYALTY | TOURNAMENT | SPONSORSHIP
+  amountXof       Int      // micro-XOF
+  description     String?
+  createdAt       DateTime @default(now())
+
+  @@index([creatorId])
+  @@index([source])
+}
+
+model CreatorInsightRecord {
+  id              String   @id @default(cuid())
+  creatorId       String
+  experienceId    String?
+  experienceName  String?
+  category        String   // retention | economy | difficulty | social | evolution | opportunity
+  problem         String
+  evidence        String
+  recommendation  String
+  expectedImpact  String
+  severity        String   @default("info")  // info | suggestion | warning | critical
+  status          String   @default("PENDING")  // PENDING | ACCEPTED | DISMISSED | APPLIED
+  reportType      String   @default("daily")  // daily | weekly | monthly
+  createdAt       DateTime @default(now())
+
+  @@index([creatorId])
+  @@index([status])
+}
+
+model ExperienceVersionRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  experienceName  String
+  version         Int
+  bundleHash      String?
+  changeSummary   String
+  metricsBeforeJson String  @default("{}")  // { playCount, retention, revenue }
+  metricsAfterJson  String  @default("{}")
+  createdBy        String
+  createdAt       DateTime @default(now())
+
+  @@index([experienceId])
 }
