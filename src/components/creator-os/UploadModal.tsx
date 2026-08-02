@@ -179,9 +179,10 @@ export function UploadModal({ open, onOpenChange, onPublished }: UploadModalProp
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      onPublished?.(experienceId);
+      // Navigate to the published game's page (like YouTube routing to the video)
       reset();
       onOpenChange(false);
+      playExperience(experienceId);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -471,7 +472,7 @@ export function UploadModal({ open, onOpenChange, onPublished }: UploadModalProp
                   variant="outline"
                   size="sm"
                   className="flex-1 gap-1.5"
-                  onClick={() => { close(); playExperience(experienceId); }}
+                  onClick={() => { window.open(`/?exp=${experienceId}`, '_blank'); }}
                 >
                   <Eye className="w-3.5 h-3.5" /> Preview
                 </Button>

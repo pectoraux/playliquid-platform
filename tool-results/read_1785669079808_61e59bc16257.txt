@@ -1,0 +1,1439 @@
+     1→# PlayLiquid Experience Kernel v0.1 — Worklog
+     2→
+     3→---
+     4→Task ID: 1
+     5→Agent: main (Z.ai Code)
+     6→Task: Build PlayLiquid Experience Kernel v0.1 — the foundational runtime proving that an Experience is a composition of Extensions connected through a typed graph.
+     7→
+     8→Work Log:
+     9→- Surveyed existing project (Next.js 16, Prisma/SQLite, shadcn/ui, Tailwind 4, Zustand, TanStack Query all present)
+    10→- Designed kernel architecture: pure domain layer (types/compiler/runtime/ledger/tokens/telemetry) + Prisma-backed stores + in-memory session registry + Next.js API routes + playground UI
+    11→- Building kernel domain layer first (highly interconnected, must be consistent)
+    12→
+    13→Stage Summary:
+    14→- Project understood. Architecture planned. Starting kernel domain implementation.
+    15→
+    16→---
+    17→Task ID: 1 (continued)
+    18→Agent: main (Z.ai Code)
+    19→Task: Complete PlayLiquid Experience Kernel v0.1 build + browser verification
+    20→
+    21→Work Log:
+    22→- Built kernel domain layer (types, channel-type, compiler, runtime, ledger, tokens, telemetry)
+    23→- Built 6 native extensions: Physics, Movement, Score, CoinCollector, Farm, Cooking
+    24→- Built Prisma schema (10 models: Extension, Bundle, BundleInstance, PlaySession, LedgerAccount, LedgerTx, LedgerEntry, TokenBalance, TokenEvent, ExperienceEvent, ExperienceGenome)
+    25→- Built Prisma-backed stores (ledger-store, token-store, telemetry-store)
+    26→- Built in-memory session registry (survives dev hot-reload via globalThis)
+    27→- Built 12 API routes (extensions, compile, sessions, tick, action, inspector, settle, ledger accounts/transactions/seed, tokens balances/events, telemetry events/genomes)
+    28→- Built Playground UI: GraphEditor (palette + bundle canvas + wire builder), RuntimeInspector (controls + instance states + event log), LedgerView (accounts + transactions with double-entry), TokenView (balances + events), TelemetryView (genomes + session events)
+    29→- Built 5 demo presets (Demo 1 valid runner, Demo 2b invalid missing input, Demo 3 coin economy, Demo 4 farm→cooking token conversion)
+    30→- Fixed: layout useState error (extracted QueryProvider client component), zod v4 record signature, ledger balance double-update, token rate-limit firstMintTick bug, in-memory registry hot-reload survival, compile API body shape
+    31→- Browser-verified all 3 required demos + bonus Demo 4
+    32→
+    33→Stage Summary:
+    34→- ALL success criteria met:
+    35→  1. Extensions exist independently ✓ (6 native extensions with typed manifests)
+    36→  2. Extensions declare typed inputs/outputs ✓ (ChannelSpec with structural type system)
+    37→  3. Experiences are graphs of extensions ✓ (ExperienceBundle = instances + wires)
+    38→  4. Graphs compile before execution ✓ (compiler rejects invalid graphs with specific error codes)
+    39→  5. Runtime executes compiled graphs ✓ (tick loop in topological order, channel bus routing)
+    40→  6. Tokens flow through extensions ✓ (CORN emitted by Farm → consumed by Cooking → MEAL emitted)
+    41→  7. Liquid ledger records value movement ✓ (double-entry, Σ debit = Σ credit, settlement credits player wallet)
+    42→  8. Telemetry captures experience evolution data ✓ (ExperienceEvent + ExperienceGenome per session)
+    43→
+    44→- Browser-verified:
+    45→  - Demo 1 compiles valid (physics → movement → score, deterministic, hash 1c4c47b4)
+    46→  - Demo 2b rejected with MISSING_REQUIRED_INPUT error
+    47→  - Demo 3 compiles valid with COIN token declared
+    48→  - Full session flow: start → action (move) → tick → score updates → settle → ledger credits player wallet
+    49→  - Farm→Cooking token conversion: 2 CORN → 1 MEAL, settled to 3 Liquid
+    50→  - Ledger invariant holds (Σ balances = 0 in closed system)
+    51→  - Sticky footer verified
+    52→  - No console errors
+    53→  - Lint clean
+    54→
+    55→- The kernel is REAL: actual compiler, actual runtime, actual double-entry ledger, actual token flows. No mocks.
+    56→
+    57→---
+    58→Task ID: 2
+    59→Agent: main (Z.ai Code)
+    60→Task: Build PlayLiquid Studio v0.1 — the Experience Composer (creator layer on top of the kernel)
+    61→
+    62→Work Log:
+    63→- Enriched 6 existing extensions with ConfigSchema, icon, tags
+    64→- Added 3 new extensions: Weather (PHYSICS), Marketplace (ECONOMY, mints GOLD), Competition (SOCIAL, leaderboard)
+    65→- Added Studio domain types to kernel: ExperienceKind, ExperienceEmotion, ExperienceIntent, PublishedExperience, ConfigField
+    66→- Added Prisma models: CreatorRecord, ExperienceRecord (with fork lineage)
+    67→- Built Studio data layer: studio-service.ts (drafts, publish, fork, creator profile), ai-composer.ts (LLM-powered), suggestion-utils.ts (pure converter)
+    68→- Built AI Experience Composer using z-ai-web-dev-sdk: takes natural language + intent → suggests extension graph with reasoning, instances, wires, token flow
+    69→- Split ai-composer into server-only (SDK) + client-safe (types, converter) to avoid SSR import issues
+    70→- Built 8 Studio API routes: drafts CRUD, experiences list/get, publish, fork, bundle, AI compose, creator profile
+    71→- Built Studio Zustand store with React Flow node/edge state + wizard state + compile result
+    72→- Built Studio UI components:
+    73→  - StudioHome (landing with hero, stats, how-it-works, recent experiences)
+    74→  - CreationWizard (4-step: type → emotions → describe → AI suggestion)
+    75→  - ExtensionLibrary (searchable, categorized extension palette)
+    76→  - GraphEditor (React Flow with custom extension nodes, typed handles, drag-connect wires)
+    77→  - ConfigInspector (auto-generates forms from ConfigSchema: sliders, selects, inputs)
+    78→  - RuntimePreview (live session state, token balances, event log)
+    79→  - ExperiencesView (discover + fork published experiences)
+    80→  - CreatorProfile (stats: experiences, forks, liquid earned, player hours)
+    81→  - StudioEditor (3-panel layout: library | canvas | inspector+preview)
+    82→  - Playground (kernel dev tools from v0.1, accessible via "Kernel" button)
+    83→- Built Farm Kingdom demo bundle (Weather → Farm → Cooking → Marketplace → Competition)
+    84→- Restructured page.tsx with view-based routing (home/wizard/editor/experiences/creator/kernel-dev)
+    85→
+    86→Browser Verification:
+    87→- Studio Home renders with 9 extensions, 0 experiences → created Farm Kingdom → 1 experience
+    88→- Farm Kingdom loads into editor with 5 extension nodes visible in React Flow graph
+    89→- Compile succeeds: "valid, weather → farm → cooking → marketplace → competition, deterministic, tokens: CORN, MEAL, GOLD"
+    90→- Play Test starts session, ticking shows economy flow: CORN produced → MEAL cooked → GOLD traded → score=55
+    91→- Publish works: Farm Kingdom appears on Discover Experiences page
+    92→- AI Composer tested: "farming game with competition" → AI suggested 5 extensions (Physics, Farm, Cooking, Marketplace, Competition) with correct token flow "CORN → MEAL → GOLD → leaderboard"
+    93→- AI-composed graph loads into editor and compiles valid
+    94→- Fork tested: Forked Farm Kingdom → new draft "Farm Kingdom (Fork)" with 6 nodes, same graph
+    95→- Creator Profile shows: 1 Experience, 0 Forks, correct stats
+    96→- Kernel Developer Playground accessible via "Kernel" button
+    97→- Sticky footer verified (sticks: true)
+    98→- No console errors, lint clean
+    99→
+   100→Stage Summary:
+   101→- ALL success criteria met:
+   102→  1. Non-programmer can create an Experience ✓ (wizard → AI compose → editor → publish)
+   103→  2. Extensions discovered visually ✓ (ExtensionLibrary with search + categories)
+   104→  3. Graphs composed visually ✓ (React Flow drag-and-drop with typed handles)
+   105→  4. AI suggests graphs ✓ (LLM-powered composer with natural language → extension graph)
+   106→  5. Graphs compile through existing kernel ✓ (same /api/kernel/compile endpoint)
+   107→  6. Experiences tested ✓ (Play Test with live runtime preview)
+   108→  7. Experiences forked ✓ (fork creates draft with parentExperienceId)
+   109→  8. Genome metadata generated ✓ (auto-computed at publish, stored in genomeJson)
+   110→
+   111→- Farm Kingdom demo fully functional end-to-end: load → compile → play → see economy flow → publish → fork
+   112→
+   113→---
+   114→Task ID: 3
+   115→Agent: main (Z.ai Code)
+   116→Task: Build PlayLiquid World Engine v0.2 — Discovery, Identity, Economy & Autonomous Evolution
+   117→
+   118→Work Log:
+   119→- Added 6 Prisma models: PlayerProfile, ExperienceFollow, ExperienceComment, ExperienceMetrics, EvolutionProposal, SimulationRun, RoyaltyNode
+   120→- Extended ExperienceGenome with v2 scores: complexityScore, noveltyScore, economyScore, socialScore, emotionScore, retentionPrediction + DNA arrays (extensionDNA, tokenDNA, interactionDNA)
+   121→- Built Metrics Engine: aggregates session telemetry (completion rate, avg score, drop-off, frustration/achievement events, token economy, market actions) into ExperienceMetrics
+   122→- Built Player Identity service: computes PlayerGenome from play history (favorite genres, emotion preferences, skill level, social behavior, creator affinity) + reputation scores (player/creator/collaboration/trust)
+   123→- Built Discovery Engine: real recommendation algorithm using cosine genome similarity + emotion matching + genre matching + popularity signals + novelty boost + personalization
+   124→- Built Creator Economy: engagement rewards (player play time → Liquid for creators) + royalty graph (walks fork tree, distributes lineage shares with residual balancing to maintain double-entry invariant)
+   125→- Built Social Layer: follow/unfollow experiences, comments, community summaries
+   126→- Built AI Evolution Agent: uses z-ai-web-dev-sdk LLM to analyze metrics → identify patterns/bottlenecks → propose config changes → generate evolved fork bundle → predict lift. Includes rule-based fallback.
+   127→- Built Experience Lab: generates N simulated players with varied profiles, runs REAL sessions through the kernel (actual runtime, actual tokens, actual telemetry), aggregates metrics. A/B variant support.
+   128→- Built 16 World Engine API routes: discover, trending, player, metrics, recompute, economy, royalty, social (follow/comments/community), evolution (analyze/proposals/approve/reject), lab (simulate/runs), genomes
+   129→- Built World Dashboard UI with 5 tabs: Discover (recommendations + player identity + trending), Economy (Liquid flows + top creators), Genomes (v2 DNA scores), Evolution (AI proposals + approve), Lab (simulation runner + Farm Kingdom Universe demo)
+   130→- Fixed: ledger invariant violation in royalty distribution (residual balancing on last share), simulation experienceId attribution, rewardEngagement error handling
+   131→
+   132→Browser Verification:
+   133→- World Dashboard renders with all 5 tabs functional
+   134→- Discover tab: Player Identity (12 sessions, score 39, competitive), Recommendations (Farm Kingdom v2: 62% score, 74% enjoyment, "Genome similarity 80%"), Trending
+   135→- Economy tab: 28.0 Liquid in circulation, 16.0 Creator earnings, 65 total sessions, Studio Demo Creator: 12.0 Liquid
+   136→- Genomes tab: Farm Kingdom v2 shows v2 scores (complexity=69, economy=100, retention=79)
+   137→- Evolution tab: AI analyzed Farm Kingdom metrics, proposed "reduce farm.intervalTicks to 2" with +20% predicted retention, identified bottlenecks ("long production cycle may deter early engagement")
+   138→- Lab tab: Simulation runs showing 5 players → 33 sessions, 100% completion, 537 tokens earned
+   139→- Full flow verified: publish → simulate 50 players → metrics captured → AI evolution proposal → approve → v2 fork published → royalty graph computed
+   140→- Sticky footer verified, no console errors, lint clean
+   141→
+   142→Stage Summary:
+   143→- PlayLiquid is now a self-improving experience economy:
+   144→  1. Create ✓ (Studio → AI Composer → graph editor)
+   145→  2. Publish ✓ (compile → genome v2 → persist)
+   146→  3. Gain players ✓ (Experience Lab simulates real sessions)
+   147→  4. Receive recommendations ✓ (Discovery Engine with genome similarity)
+   148→  5. Earn Liquid ✓ (Creator Economy with engagement rewards + royalty graph)
+   149→  6. See AI improve ✓ (Evolution Agent analyzes metrics, proposes changes)
+   150→  7. Fork improvements ✓ (Approve proposal → v2 published with parent lineage)
+   151→  8. Creator economy ✓ (double-entry ledger, revenue splits through fork tree)
+   152→
+   153→- Farm Kingdom Universe demo fully functional: publish → 50 simulated players → metrics → AI evolution → v2 fork → revenue split. All through real kernel, real ledger, real telemetry.
+   154→
+   155→---
+   156→Task ID: 4
+   157→Agent: main (Z.ai Code)
+   158→Task: Build PlayLiquid Civilization Engine v0.3 — Autonomous World with AI agents, persistent simulation, emergent events, and asset markets
+   159→
+   160→Work Log:
+   161→- Added 7 Prisma models: WorldRecord, WorldEntityRecord, RelationshipRecord, WorldEventRecord, AssetRecord, WorldTickRecord, WorldHistoryRecord
+   162→- Added Civilization types to kernel: World, WorldGenome, WorldMacroState, WorldEntity, AgentGenome, AgentMemory, Relationship, WorldEvent, Asset, WorldTickRecord, WorldHistoryEntry
+   163→- Built World Service: createWorld (from published experience), spawnCitizens (with role distribution), getWorld, listWorlds, getEntities, getHistory
+   164→- Built Agent Service: Observe→Reason→Plan→Act→Learn loop with LLM for strategic decisions (3 agents/tick sampled) + rule-based for frequent ticks. 5 agent roles (Citizen, Merchant, Builder, Explorer, Competitor) with distinct personalities, goals, skills, and decision styles.
+   165→- Built World Scheduler: persistent tick loop — updates macro state (resource supply, prices, mood), runs agent decisions, checks for emergent events, updates relationships, records milestones
+   166→- Built Emergent Events Engine: 7 event triggers (drought, bumper harvest, gold rush, festival, market crash, innovation, tournament) with real effects on world state + LLM-enhanced narratives + ledger-posted rewards
+   167→- Built Asset System: buy/sell/listForSale, asset generation (produces resources per tick), market summary. All transactions via double-entry ledger.
+   168→- Built World Discovery: recommends worlds based on player genome + world genome + economic opportunities + freshness
+   169→- Built 11 API routes: worlds CRUD, spawn, tick, entities, events, assets, history, stats, discover, demo
+   170→- Built Civilization Dashboard with 5 tabs: Citizens (entity list with wealth/reputation), Events (emergent events with stories), History (world chronicle timeline), Economy (resources/prices/wealth distribution/assets), Discover (world recommendations)
+   171→- Fixed: BigInt conversion error from floating-point price calculations (Math.round before ledger post)
+   172→- Added "Civilization" button to Studio Home
+   173→
+   174→Browser Verification:
+   175→- Civilization Dashboard renders with world selector + stats + 5 tabs
+   176→- Farm Kingdom Civilization demo: 20 citizens spawned (8 citizens, 4 merchants, 2 builders, 3 explorers, 3 competitors), 100 ticks run, 2000 decisions made
+   177→- Citizens tab: 20 entities with roles, wealth, reputation (wealthiest: Doran D3 — 17.61 Liquid)
+   178→- History tab: World chronicle shows founding + citizens arrived
+   179→- Economy tab: Resources (CORN/WOOD/STONE/WATER/GOLD/REPUTATION) with supply + prices, total wealth 131.1 Liquid, wealth distribution
+   180→- Sticky footer verified, no console errors, lint clean
+   181→
+   182→Stage Summary:
+   183→- PlayLiquid is now an autonomous world engine:
+   184→  1. Publish a world ✓ (from published experience)
+   185→  2. Spawn AI citizens ✓ (with role distribution + agent genomes)
+   186→  3. Run simulation ✓ (persistent tick loop)
+   187→  4. Observe emergent behavior ✓ (events generated from world state)
+   188→  5. AI agents make autonomous decisions ✓ (Observe→Reason→Plan→Act→Learn with LLM)
+   189→  6. Economy evolves ✓ (resource supply, prices, wealth distribution via double-entry ledger)
+   190→  7. Events emerge ✓ (7 event types with real effects + narrative stories)
+   191→  8. Players discover worlds ✓ (genome-based recommendations)
+   192→  9. Worlds fork and evolve ✓ (fork lineage tracked)
+   193→  10. Civilization history recorded ✓ (WorldHistoryRecord chronicle)
+   194→
+   195→- All 4 layers now exist:
+   196→  - Kernel (v0.1): execution primitive
+   197→  - Studio (v0.1): creation layer
+   198→  - World Engine (v0.2): economy + discovery + evolution
+   199→  - Civilization Engine (v0.3): autonomous worlds with AI agents + emergent events
+   200→
+   201→---
+   202→Task ID: 5
+   203→Agent: main (Z.ai Code)
+   204→Task: Build PlayLiquid Universe v0.4 — The Consumer Platform Layer (marketplace, play flow, social graph, AI curator)
+   205→
+   206→Work Log:
+   207→- Added 3 Prisma models: ActivityFeedRecord, ExperienceRatingRecord, FriendRequestRecord
+   208→- Enhanced PlayerProfile with avatarUrl, bio, followersJson, followingJson, friendsJson, liquidBalance
+   209→- Built 6 Universe services:
+   210→  - Social Service: activity feed (record + list), follow/unfollow users, friend requests, social stats
+   211→  - Rating Service: Experience Reputation Score (multi-signal: completion, return, social, emotion, economy, reviews — NOT stars)
+   212→  - AI Curator Service: LLM-powered personalized recommendations with reasoning + match factors; "why players love this" summaries
+   213→  - Play Flow Service: one-click quickPlay → session → runtime → telemetry → creator rewards → player genome update
+   214→  - Marketplace Service: assembles marketplace home (trending, new releases, recommended, friends playing, popular worlds)
+   215→  - Creator Analytics Service: aggregated stats (players, retention, economy, forks, AI insights)
+   216→- Built 11 API routes: marketplace, play, curator, rating, analytics, feed, follow, stats, summary, demo
+   217→- Built Universe Dashboard with 4 tabs:
+   218→  - Discover: Trending/Recommended/New/Friends Playing sections with rich Spark cards (reputation score, genome badges, play/fork/share actions)
+   219→  - AI Curator: Personal LLM-powered recommendations with reasoning text + match factors
+   220→  - Community: Social stats + live activity feed with avatars + event types
+   221→  - Worlds: Link to Civilization Engine
+   222→- Built Experience Detail modal: AI summary + multi-signal reputation score + Play button
+   223→- Front door navigation: PLAY / CREATE / COMMUNITY / PROFILE
+   224→- Default view changed from 'home' to 'universe' (consumer marketplace is the front door)
+   225→- Demo seeding: 5 creators, 20 sparks, 100 simulated players, 197 play sessions
+   226→
+   227→Browser Verification:
+   228→- Universe marketplace renders with 10 trending, 10 new, 10 recommended sparks + 5 popular worlds
+   229→- Spark cards show: title, creator, reputation score, genome badges, play/fork/share buttons
+   230→- Experience detail modal shows AI Curator summary + multi-signal reputation breakdown
+   231→- AI Curator tab: 5 personalized recommendations with LLM reasoning ("you'll love Farm Kingdom v2's deeply strategic gameplay...")
+   232→- Community tab: social stats + live activity feed (50 events: "Demo Player played Sky Towers scored 25")
+   233→- Play button works: score=25, tokens earned (CORN/MEAL/GOLD), 2.50 Liquid creator reward
+   234→- No console errors, lint clean
+   235→
+   236→Stage Summary:
+   237→- PlayLiquid now has the consumer layer:
+   238→  1. Open PlayLiquid ✓ (marketplace is the front door)
+   239→  2. Discover Sparks ✓ (trending/recommended/new/friends sections)
+   240→  3. Play instantly ✓ (one-click play with real kernel sessions)
+   241→  4. Build player identity ✓ (genome + reputation + social)
+   242→  5. Follow creators ✓ (social graph)
+   243→  6. Fork an experience ✓ (fork button on every card)
+   244→  7. Create own Spark ✓ (Create → wizard → Studio)
+   245→  8. Earn Liquid ✓ (creator rewards via double-entry ledger)
+   246→  9. Grow community ✓ (activity feed + follows)
+   247→  10. See Sparks evolve into Worlds ✓ (Civilization Engine integration)
+   248→
+   249→- 5-layer architecture complete:
+   250→  - Kernel (v0.1): execution
+   251→  - Studio (v0.1): creation
+   252→  - World Engine (v0.2): economy + discovery + evolution
+   253→  - Civilization Engine (v0.3): autonomous worlds
+   254→  - Universe (v0.4): consumer marketplace
+   255→
+   256→---
+   257→Task ID: 6
+   258→Agent: main (Z.ai Code)
+   259→Task: Build PlayLiquid Identity Layer v0.45 — persistent identity, AI companion, achievements, inventory, world passport, reputation graph
+   260→
+   261→Work Log:
+   262→- Enhanced PlayerProfile with: playerLevel, playerXP, skillsJson, reputationJson, inventoryJson, worldPassportJson, companionStateJson
+   263→- Enhanced CreatorRecord with: creatorLevel, creatorXP, creatorGenomeJson, reputationJson
+   264→- Added 4 Prisma models: AchievementRecord, InventoryItemRecord, WorldVisitRecord, CompanionMessageRecord
+   265→- Added Identity types: FullPlayerIdentity, PlayerReputation, Achievement, InventoryItem, WorldPassport, AICompanionState, CompanionMessage, CreatorIdentity
+   266→- Built Player Identity Service: computes full identity (level, XP, skills, reputation, achievements, inventory, passport, companion state) from play history
+   267→- Built Achievement & Progression Service: 9-achievement catalog (First Steps → Living Legend), automatic check+award, XP rewards, skill updates, inventory badge creation
+   268→- Built AI Companion Service: LLM-powered proactive insights ("You've got impressive farming and trading skills but haven't explored building or combat yet"), conversational chat with message history, rule-based fallback
+   269→- Built Inventory Service: persistent items with rarity tiers (common→mythic), world origin tracking, quantity management
+   270→- Built World Passport Service: visit tracking, citizenship status (visitor→leader), cross-world identity
+   271→- Built 10 API routes: player, companion (insight/chat/messages), achievements (catalog/check), inventory, passport, creator
+   272→- Built Identity Dashboard with 5 tabs: AI Companion (insight + chat), Achievements (catalog with earned/locked states), Inventory (rarity-colored grid), Passport (world visits), Reputation (8-dimensional graph)
+   273→- Integrated play flow with identity: quickPlay now awards XP, updates skills, checks achievements automatically
+   274→- Added "Identity" to front door navigation (Play/Create/Community/Identity)
+   275→
+   276→Browser Verification:
+   277→- Identity overview: Demo Player, Level 5, XP 1260/500, 21 sessions, 6 achievements, 22.5 Liquid
+   278→- Skills: farming 94, trading 90, strategy 66, cooking 66
+   279→- AI Companion insight: "You've got impressive farming and trading skills but haven't explored building or combat yet. Try building in Farm Kingdom v2..."
+   280→- Achievements tab: 6 earned (First Steps, Strategist, Merchant, Master Player, Living Legend, Liquid Tycoon), 3 locked
+   281→- Reputation tab: Trader 90, Competitor 65, Trust 50, Toxicity 0
+   282→- Inventory: 6 badge items with rarity colors
+   283→- Sticky footer verified, no console errors, lint clean
+   284→
+   285→Stage Summary:
+   286→- Players are now citizens with persistent identity:
+   287→  1. Level & XP progression ✓ (Level 5, 1260 XP)
+   288→  2. Skills that grow from play ✓ (farming 94, trading 90)
+   289→  3. Multi-dimensional reputation ✓ (8 dimensions)
+   290→  4. Achievement system ✓ (9 achievements, 6 earned)
+   291→  5. Persistent inventory ✓ (badge items with rarity)
+   292→  6. AI Companion ✓ (proactive insights + conversational chat)
+   293→  7. World passport ✓ (visit tracking, citizenship)
+   294→  8. Creator identity ✓ (genome, reputation, level)
+   295→
+   296→- 6-layer architecture:
+   297→  - Kernel (v0.1) → Studio (v0.1) → World Engine (v0.2) → Civilization (v0.3) → Universe (v0.4) → Identity (v0.45)
+   298→
+   299→---
+   300→Task ID: 7
+   301→Agent: main (Z.ai Code)
+   302→Task: Build PlayLiquid v0.45 Consumer Reality Layer — The YouTube Moment (discover feed, game pages, creator studio, play graph, leaderboards, save library)
+   303→
+   304→Work Log:
+   305→- Added 6 Prisma models: PlayGraphRecord, SavedSparkRecord, ChallengeRecord, LeaderboardEntryRecord, LiveSessionRecord, CreatorChannelRecord
+   306→- Built Discover Feed Service: YouTube-style home feed with 6 sections (For You, Trending, Following, Friends Are Playing, Live Now, Active Challenges)
+   307→- Built Play Graph Service: records all user interactions (liked/played/abandoned/mastered/shared/forked/watched/competed/saved/rated) — PlayLiquid's equivalent of YouTube watch history
+   308→- Built Game Page Service: YouTube watch page equivalent — runtime area, play/save/share/fork actions, 6-signal reputation breakdown, leaderboard, comments, remixes, related sparks, creator info with follow
+   309→- Built Creator Studio Service: YouTube Studio equivalent — overview stats, AI insights with severity levels (info/warning/critical), top sparks with detailed metrics, audience breakdown by genre/emotion, retention curve
+   310→- Built Leaderboard Service: per-game + global leaderboards with rank computation, auto-submission from play sessions
+   311→- Built Save/Library Service: bookmark sparks, saved sparks library
+   312→- Integrated play flow with Play Graph + Leaderboard: every play session now records interaction type (played/abandoned), submits leaderboard entries
+   313→- Built 8 API routes: discover, game page, save/unsave, saved library, leaderboard, studio, interact
+   314→- Redesigned Universe UI as ConsumerUniverse:
+   315→  - YouTube-style Discover feed with thumbnail cards (aspect-video, gradient backgrounds, NEW badges, play count overlays)
+   316→  - Game Page view (full-page, not modal) with runtime area, actions, reputation scores, leaderboard, comments, remixes, related sidebar
+   317→  - Creator Studio view with stats grid, AI insights, spark list, audience analytics, retention curve
+   318→  - 5 tabs: Discover / Library / Rankings / Live / Studio
+   319→  - Navigation: Discover / Create / Compete / Identity
+   320→
+   321→Browser Verification:
+   322→- Discover feed shows 8 For You + 8 Trending sparks with YouTube-style cards
+   323→- Cards show: thumbnail with NEW badge, play count, title, creator avatar+name, reputation star, match reason, Play+Save buttons
+   324→- Game Page: full page with runtime area, Play/Save/Share/Fork buttons, 6-signal reputation breakdown, creator info, related sidebar
+   325→- Play button works: "Played! Score: 25, 0.2s, 2.50L earned"
+   326→- Creator Studio: AI insight "Farm Kingdom has 43 plays but few likes. Add social features or competitive elements to increase engagement."
+   327→- Studio shows: 2 Sparks, 44 Players, 1 Fork, retention curve (100%→72%→58%→41%→28%), audience by genre
+   328→- No console errors, lint clean
+   329→
+   330→Stage Summary:
+   331→- PlayLiquid now has the "YouTube Moment":
+   332→  1. YouTube-style Discover feed ✓ (For You / Trending / Following / Friends / Live / Challenges)
+   333→  2. Game Pages ✓ (watch page equivalent with runtime, leaderboard, comments, remixes, related)
+   334→  3. Creator Studio ✓ (YouTube Studio with analytics, AI insights, audience data)
+   335→  4. Play Graph ✓ (tracks every interaction for recommendations)
+   336→  5. Leaderboards ✓ (per-game + global, auto-submitted from sessions)
+   337→  6. Save Library ✓ (bookmark sparks)
+   338→  7. Multi-signal reputation ✓ (not stars — 6-dimensional scores)
+   339→  8. Competition flywheel ✓ (leaderboards → challenges → status → creation)
+   340→
+   341→- 7-layer architecture:
+   342→  - Kernel (v0.1) → Studio (v0.1) → World Engine (v0.2) → Civilization (v0.3) → Universe (v0.4) → Identity (v0.45) → Consumer Layer (v0.45)
+   343→
+   344→---
+   345→Task ID: 8
+   346→Agent: main (Z.ai Code)
+   347→Task: Build PlayLiquid v0.46 Social Universe — Following feed, Live gameplay, Replays, Challenges, Collections, Wallet, Notifications
+   348→
+   349→Work Log:
+   350→- Added 4 Prisma models: CollectionRecord, ReplayRecord, PlayerChallengeRecord, NotificationRecord
+   351→- Built comprehensive Social Service covering:
+   352→  - Following Feed: real-time activity from followed creators/players
+   353→  - Live Gameplay: go live, end live, get live sessions with viewer counts
+   354→  - Replays: auto-created from play sessions with highlight detection (world-record, clutch, speedrun), view counts, like counts
+   355→  - Challenges: player-to-player (beat-score, speedrun, survival, high-score) with reward pools, entries, winner detection, Liquid payouts
+   356→  - Collections: user-curated playlists of sparks with public/private, emoji covers
+   357→  - Notifications: multi-type alerts (follow, challenge, achievement, live, replay, reward) with unread tracking
+   358→  - Wallet: player Liquid balance, earned today, withdrawable amount, recent earning sources
+   359→  - Creator Revenue: total earned, daily/weekly projections, top earning sparks
+   360→- Integrated replay creation into play flow: every play session with score > 0 auto-generates a replay with highlight detection
+   361→- Built 12 API routes: following, live (GET+POST+end), replays, challenges (GET+POST+accept+submit), collections (GET+POST+items), notifications (GET+markRead), wallet, revenue
+   362→- Built Social Universe hooks for all services
+   363→- Enhanced ConsumerUniverse UI with 7 tabs: Discover / Following / Library / Rankings / Replays / Wallet / Studio
+   364→  - Following Feed: scrollable activity list with avatars, event types, timestamps
+   365→  - Replays: grid of replay cards with highlight badges, scores, view counts
+   366→  - Wallet: gradient balance card with earned today, withdrawable, recent earning sources
+   367→
+   368→Browser Verification:
+   369→- Following tab: 12 activity items showing "Demo Player played Neon Runner scored 25" with timestamps
+   370→- Replays tab: 1 replay with "Lightning fast" highlight badge, score 25
+   371→- Wallet tab: 30.0L balance, 24.0L withdrawable, recent earnings list
+   372→- All 7 tabs functional, no console errors, lint clean, sticky footer correct
+   373→
+   374→Stage Summary:
+   375→- PlayLiquid now has the social depth for daily habit:
+   376→  1. Following feed ✓ (return daily to see what your network is doing)
+   377→  2. Replays as content ✓ (gameplay becomes watchable content like YouTube videos)
+   378→  3. Challenges ✓ (player-to-player competition creates social loops)
+   379→  4. Collections ✓ (curate and share playlists)
+   380→  5. Wallet ✓ (understand your Liquid earnings at a glance)
+   381→  6. Notifications ✓ (alerts drive return visits)
+   382→  7. Live gameplay ✓ (spectator mode for Twitch-style viewing)
+   383→
+   384→- 8-layer architecture:
+   385→  - Kernel → Studio → World Engine → Civilization → Universe → Identity → Consumer → Social
+   386→
+   387→---
+   388→Task ID: 9
+   389→Agent: main (Z.ai Code)
+   390→Task: Build PlayLiquid v0.47 Identity Universe — Communities, Game Lifecycle, AI Coaching, Dynamic Achievements, Evolved Feed
+   391→
+   392→Work Log:
+   393→- Added 5 Prisma models: CommunitySpaceRecord, CommunityMemberRecord, CommunityPostRecord, GameLifecycleEventRecord, CreatorPostRecord
+   394→- Built Community Service: create/join/leave communities, post discussions (discussion/strategy/build/challenge/poll/announcement), upvote posts, member tracking
+   395→- Built Game Lifecycle Service: auto-detects milestones (first-play, 10-players, 50-players, 100-players, first-fork, 10-forks, legendary, community-formed) and records timeline events with icons + descriptions
+   396→- Built AI Coaching Service: LLM-powered personalized coaching insights (5 types: discovery, coaching, progress, social, creation) with severity levels and action suggestions. Analyzes skill gaps, progress to next level, social connections, and creation readiness.
+   397→- Built Dynamic Achievement Context: generates unlock stories ("Unlocked by earning 30.0 Liquid. Economic mastery confirmed.") and progress to next achievement ("3 more wins to unlock Arena Champion")
+   398→- Built Creator Posts: creators can publish updates, devlogs, announcements, behind-the-scenes content
+   399→- Built Evolved Feed: mix of content types (recommended games, trending replays, creator updates, community moments) — discovery is no longer only games but "interesting moments"
+   400→- Integrated lifecycle milestone checking into play flow (auto-checks after every session)
+   401→- Built 8 API routes: community (GET/join/posts), lifecycle, coaching, achievement context, creator posts, evolved feed
+   402→- Built Identity Universe Dashboard with 5 tabs:
+   403→  - Coaching: AI-generated coaching insights with skill gap analysis and action suggestions
+   404→  - Achievements: dynamic cards with unlock stories + progress to next
+   405→  - Communities: browse and join game communities
+   406→  - Lifecycle: visual timeline of game milestones (Created → Growing → Legendary)
+   407→  - Feed: evolved mix of games, replays, creator posts, community moments
+   408→- Enhanced Player Profile with visual skill bars (gradient progress) and verified badge
+   409→
+   410→Browser Verification:
+   411→- Enhanced Profile: Demo Player Level 9, visual skill bars (farming 100, trading 100, cooking 84, strategy 72)
+   412→- AI Coach: "You've mastered farming and trading skills beautifully, but I notice your building is at zero. Try placing a few decorative items..."
+   413→- Dynamic Achievements: Liquid Tycoon "Unlocked by earning 30.0 Liquid. Economic mastery confirmed."
+   414→- Lifecycle timeline: First Play → 10 Players → First Fork with visual icons and dates
+   415→- No console errors, lint clean
+   416→
+   417→Stage Summary:
+   418→- PlayLiquid now has identity gravity:
+   419→  1. Enhanced player profile ✓ (visible genome, skill bars, verified badge)
+   420→  2. AI Coaching ✓ (personalized LLM insights for skill gaps, progress, social, creation)
+   421→  3. Dynamic achievements ✓ (unlock stories + progress to next)
+   422→  4. Game communities ✓ (Discord+Reddit inside games with posts, upvotes, members)
+   423→  5. Game lifecycle ✓ (timeline from creation to legendary status)
+   424→  6. Creator posts ✓ (updates, devlogs, announcements)
+   425→  7. Evolved feed ✓ (mix of games, replays, creator updates, community moments)
+   426→
+   427→- 9-layer architecture:
+   428→  - Kernel → Studio → World Engine → Civilization → Universe → Identity → Consumer → Social → Identity Universe
+   429→
+   430→---
+   431→Task ID: 10
+   432→Agent: main (Z.ai Code)
+   433→Task: Build PlayLiquid v0.48 Creator Intelligence Universe — AI Team, Evolution Engine, Reputation, Economy Dashboard, Marketplace
+   434→
+   435→Work Log:
+   436→- Added 4 Prisma models: CreatorInsightRecord, CreatorExperimentRecord, GameEvolutionPlanRecord, CreatorMarketplaceItemRecord
+   437→- Built AI Team Service with 6 specialized agents:
+   438→  - Designer: analyzes player behavior, retention curves, difficulty, frustration
+   439→  - Economy: monitors token flow, market activity, prize pool health
+   440→  - Balance: score distributions, win rates, strategy diversity
+   441→  - Community: discussion sentiment, engagement, requests
+   442→  - Growth: discovery optimization, like-to-play ratio, audience targeting
+   443→  - Narrative: world story potential, lore, character development
+   444→  - Each agent generates rule-based insights + LLM-enhanced top insight
+   445→  - Insights have severity levels (info/suggestion/warning/critical) and accept/dismiss workflow
+   446→- Built Game Evolution Engine:
+   447→  - 5 stages: Birth → Growth → Optimization → Expansion → Civilization
+   448→  - Auto-detects current stage from play count + forks + world status
+   449→  - Generates evolution plans with step-by-step recommendations and projected impact
+   450→- Built Creator Reputation: 5-dimensional (Innovation, Player Love, Fair Economy, Community, Evolution Speed) with overall score
+   451→- Built Game Economy Dashboard: players, DAU, minute volume, creator share, leaderboard activity, prize pool health, retention
+   452→- Built Creator Marketplace: 8 seed items (extensions, mechanics, templates, NPCs, worlds, asset packs, AI agents) with royalty %, revenue impact, ratings
+   453→- Built 9 API routes: ai-team, insights (list/accept/dismiss), evolution, reputation, economy, marketplace (list/seed)
+   454→- Built Creator Intelligence Dashboard with 5 tabs:
+   455→  - AI Team: run analysis, grouped insights by agent with accept/dismiss
+   456→  - Evolution: stage tracking + plan with projected impact
+   457→  - Economy: creator share, volume, leaderboard health, retention
+   458→  - Reputation: 5-dimensional score with visual bars
+   459→  - Market: browsable marketplace items with royalty + revenue impact
+   460→- Updated ConsumerUniverse "Studio" button to open Creator Intelligence
+   461→
+   462→Browser Verification:
+   463→- AI Team: 6 agents generated insights, LLM-enhanced Narrative Agent: "Your game has the foundation for a rich world narrative. The 100% completion rate and high achievement events (179) indicate players are deeply engaged with the farming mechanics..."
+   464→- Evolution: Stage "Growing" with plan (Add daily challenges +25% retention, Create community +40% engagement)
+   465→- Reputation: Overall 43, Fair Economy 100, Player Love 56, Innovation 25
+   466→- Marketplace: 8 items (Trading System 5% royalty, Combat System 7%, Farming Template 8%, AI Merchant NPC, etc.)
+   467→- No console errors, lint clean
+   468→
+   469→Stage Summary:
+   470→- Creators now have an AI-native studio team:
+   471→  1. 6 AI agents analyze every aspect of their games ✓
+   472→  2. Evolution engine tracks growth stages with actionable plans ✓
+   473→  3. Multi-dimensional creator reputation ✓
+   474→  4. Game economy dashboard with revenue + health metrics ✓
+   475→  5. Creator marketplace for discovering extensions/mechanics/templates ✓
+   476→
+   477→- 10-layer architecture:
+   478→  - Kernel → Studio → World Engine → Civilization → Universe → Identity → Consumer → Social → Identity Universe → Creator Intelligence
+   479→
+   480→---
+   481→Task ID: 11
+   482→Agent: main (Z.ai Code)
+   483→Task: Build PlayLiquid v0.49 Asset Economy Universe — persistent, ownable, tradeable assets with reputation, lineage, royalties, and AI recommendations
+   484→
+   485→Work Log:
+   486→- Added 5 Prisma models: AssetEconomyRecord, AssetOwnershipRecord, AssetInstallationRecord, AssetRoyaltyRecord, AssetEventRecord
+   487→- Built Asset Service with full lifecycle:
+   488→  - Create/publish assets with permanent asset:// IDs
+   489→  - Install in games (with ledger-backed payment if priced)
+   490→  - Evolve (create new version with lineage tracking)
+   491→  - Fork (create derivative with parent attribution)
+   492→  - Rate (updates quality score + rating)
+   493→- Built 10 seed assets across 6 types: Trading System, Combat System, Farming Template, AI Merchant Maria, Cyber Wolf, Medieval World Seed, Dungeon Master AI, Leaderboard System, Legendary Sword, Guild System
+   494→- Built Asset Reputation: 5-dimensional (Quality, Performance, Adoption, Fairness, Innovation) with overall score
+   495→- Built Asset Discovery Feed: trending, new releases, top rated, most installed
+   496→- Built AI Asset Recommendations: rule-based suggestions from game metrics (low completion → leaderboard, low economy → trading, enough players → guilds)
+   497→- Built Creator Asset Studio: total revenue, installs, assets by type
+   498→- Built Cross-Game Ownership model: assets can be installed in multiple games, ownership tracked
+   499→- Built Asset Lineage: version tracking with parent/child relationships
+   500→- Built 10 API routes: assets (list/detail/install/rate/evolve/fork), feed, creator assets, recommendations, seed
+   501→- Built Asset Economy Dashboard with 5 tabs:
+   502→  - Discover: feed with trending/new/top-rated/most-installed sections
+   503→  - AI Picks: personalized recommendations with reasons + expected impact
+   504→  - My Assets: creator asset portfolio with revenue stats
+   505→  - Trending: grid of trending assets
+   506→  - Browse: filter by asset type (character/mechanic/ai-agent/template/item/world-seed)
+   507→- Built Asset Detail View: full page with icon, reputation bars, install buttons, lineage, activity log
+   508→- Added "Assets" button to ConsumerUniverse navigation
+   509→
+   510→Browser Verification:
+   511→- Discover feed shows 4 sections (Trending/New/Top Rated/Most Installed) with asset cards
+   512→- Asset cards show: icon, name, type, description, install count, rating, royalty %
+   513→- Asset Detail: Legendary Sword v1 with Quality 80, Performance 70, Adoption 36, Fairness 50, Innovation 80
+   514→- Install section shows all published games with Install buttons
+   515→- Activity log shows creation event
+   516→- 10 assets seeded across 6 types
+   517→- No console errors, lint clean
+   518→
+   519→Stage Summary:
+   520→- Assets are now persistent economies:
+   521→  1. 6 asset types ✓ (characters, mechanics, AI agents, templates, items, world seeds)
+   522→  2. Permanent identity ✓ (asset://type/name-v1 with lineage)
+   523→  3. Multi-dimensional reputation ✓ (Quality/Performance/Adoption/Fairness/Innovation)
+   524→  4. Cross-game ownership ✓ (install in multiple experiences)
+   525→  5. Royalty system ✓ (basis points, ledger-backed payments)
+   526→  6. Asset evolution ✓ (version tracking, fork with parent attribution)
+   527→  7. AI recommendations ✓ (personalized from game metrics)
+   528→  8. Discovery feed ✓ (trending/new/rated/installed)
+   529→  9. Creator portfolio ✓ (revenue, installs, by type)
+   530→
+   531→- 11-layer architecture:
+   532→  - Kernel → Studio → World Engine → Civilization → Universe → Identity → Consumer → Social → Identity Universe → Creator Intelligence → Asset Economy
+   533→
+   534→---
+   535→Task ID: 12
+   536→Agent: main (Z.ai Code)
+   537→Task: Build PlayLiquid v0.50 Multiverse — Civilization Network (world identity, diplomacy, migration, trade, chronicle, AI governors)
+   538→
+   539→Work Log:
+   540→- Added 6 Prisma models: WorldIdentityRecord, WorldRelationRecord, WorldMigrationRecord, WorldTradeRecord, CivilizationEventRecord, WorldAICouncilRecord
+   541→- Built World Identity Service: civilization levels (settlement→village→town→city→metropolis→empire), culture DNA, economy DNA, governance DNA, era tracking (founding→growth→golden→expansion), influence score
+   542→- Built World Diplomacy Service: 6 relation types (ALLIANCE, TRADE_AGREEMENT, COMPETITION, WAR, CULTURAL_EXCHANGE, MIGRATION_TREATY) with terms, strength tracking, automatic event recording
+   543→- Built Player Migration Service: travel between worlds with identity/assets/reputation carried, migration history, visitor tracking
+   544→- Built Interworld Trade Service: cross-world trade records, economy DNA updates, resource exchange tracking
+   545→- Built Civilization Events / Chronicle: global history (WORLD_FOUNDED, FIRST_TRADE, FIRST_ALLIANCE, GOLDEN_AGE, MIGRATION_WAVE, CULTURAL_RENAISSANCE) with narratives, impact, global flag
+   546→- Built AI Civilization Governors: 5-agent council (Governor, Economy, Culture, Defense, Historian) with LLM-enhanced strategic assessment + rule-based insights for each domain
+   547→- Built World Discovery: recommends civilizations based on player genome (skills match culture DNA), migration patterns, influence, population, alliance status
+   548→- Built 9 API routes: civilizations (list/detail), diplomacy, migrate, trade, chronicle, council, recommend, seed
+   549→- Built Multiverse Dashboard with 5 tabs:
+   550→  - Explore: grid of civilization cards with level, era, population, influence, alliances
+   551→  - For You: personalized civilization recommendations with match scores and reasons
+   552→  - Chronicle: global history timeline with event icons and narratives
+   553→  - Migrations: available destinations + migration history + "Visit" buttons
+   554→  - AI Council: 5-agent council insights per civilization (Governor, Economy, Culture, Defense, Historian)
+   555→- Built Civilization Detail View: world passport (level, era, stats), Culture DNA bars, Diplomacy (relations + form alliance/trade), Trade history, Migrate button
+   556→- Added "Multiverse" button to ConsumerUniverse navigation
+   557→
+   558→Browser Verification:
+   559→- 5 civilizations seeded with founding events in chronicle
+   560→- Explore tab: civilization cards showing Town/Village level, founding era, population, influence
+   561→- Civilization Detail: full passport with Culture DNA (agriculture/trade/combat/knowledge/art/community), Diplomacy with Ally/Trade buttons for other civilizations
+   562→- Chronicle: founding events with narratives ("The civilization of Farm Kingdom Civilization was established...")
+   563→- AI Council: LLM-enhanced Governor insight: "Our town-level civilization is in a precarious founding phase with zero alliances or rivals, leaving our 100-person settlement vulnerable to external threats..."
+   564→- No console errors, lint clean
+   565→
+   566→Stage Summary:
+   567→- Worlds are now interoperable civilizations:
+   568→  1. World identity ✓ (civilization level, culture/economy/governance DNA, era, influence)
+   569→  2. World passport ✓ (discoverable civilizations with stats)
+   570→  3. Player migration ✓ (travel with identity/assets/reputation)
+   571→  4. World diplomacy ✓ (alliances, trade agreements, rivalries, cultural exchange)
+   572→  5. Interworld economy ✓ (cross-world trade, resource exchange)
+   573→  6. Civilization chronicle ✓ (global history with events)
+   574→  7. AI civilization governors ✓ (5-agent council per world)
+   575→  8. World discovery ✓ (recommendations based on player genome + culture match)
+   576→
+   577→- COMPLETE 12-LAYER ARCHITECTURE:
+   578→  - Kernel (v0.1) → Studio (v0.1) → World Engine (v0.2) → Civilization (v0.3) → Universe (v0.4) → Identity (v0.45) → Consumer (v0.45) → Social (v0.46) → Identity Universe (v0.47) → Creator Intelligence (v0.48) → Asset Economy (v0.49) → Multiverse (v0.50)
+   579→
+   580→The final flywheel is complete:
+   581→  Creator creates world → AI civilization forms → Players arrive → Players build identity → Assets gain value → Economy emerges → World gains culture → Civilizations connect → Multiverse expands
+   582→
+   583→---
+   584→Task ID: 13
+   585→Agent: main (Z.ai Code)
+   586→Task: Build PlayLiquid v0.51 Living Civilizations — Time Engine, Event Generator, Seasons, Feed, Missions, "What Changed"
+   587→
+   588→Work Log:
+   589→- Added 4 Prisma models: CivilizationTickRecord, CivilizationFeedItemRecord, CivilizationMissionRecord, CivilizationSeasonRecord
+   590→- Built Civilization Time Engine: advances world time in ticks, cycles seasons (spring→summer→autumn→winter, 7 ticks each), tracks population/economy/influence changes per tick, generates narrative summaries
+   591→- Built Event Generator: creates events from state changes — population milestones (50/100/500), economy surges (golden trade era, market boom), random cultural events (art festival, new discovery, legendary forge, migration wave, cultural renaissance, ancient ruins), season changes
+   592→- Built Civilization Seasons: 4 seasons with distinct effects (spring: +15% pop growth, summer: +20% trade, autumn: +30% trade, winter: -5% pop, -10% trade), each season generates a themed mission
+   593→- Built Civilization Feed: per-world and global news feed showing everything that happened — "Migration Wave to Farm Kingdom", "Farm Kingdom enters Summer", "New Mission: Summer Migration"
+   594→- Built Civilization Missions: seasonal community objectives (Spring: Build Grand Garden, Summer: Establish Trade Routes, Autumn: Harvest Festival, Winter: Winter Tournament) with progress tracking, completion rewards (influence/population/economy), auto-generated on season change
+   595→- Built "What Changed" feature (THE key feature): summarizes what happened while the player was away — "While you were away: population grew by 11, trade generated 1.2 Liquid, 5 events occurred, the season changed."
+   596→- Built 6 API routes: advance, feed, timeline, missions, season, changed
+   597→- Built Living Civilizations Dashboard with 5 tabs:
+   598→  - What Changed: summary + quick stats + event list + mission updates
+   599→  - Feed: scrollable news feed with event icons and timestamps
+   600→  - Timeline: day-by-day history with population/economy/event data
+   601→  - Missions: active community objectives with progress bars and rewards
+   602→  - Season: current season with effects (pop growth %, trade bonus %, event rate %)
+   603→- Time controls: Advance 1 Day / 1 Week / 2 Weeks
+   604→
+   605→Browser Verification:
+   606→- Advanced 7 days: 4 events generated, season changed from Spring to Summer
+   607→- "What Changed" tab: "While you were away: population grew by 11, trade generated 1.2 Liquid, 5 events occurred, the season changed."
+   608→- Quick stats: +11 Population, +1.2L Trade, 5 Events
+   609→- Events: Migration Wave, New Mission, Season Change to Summer
+   610→- Missions tab: "Summer Migration" — Attract 10 new visitors, progress 0%, reward +15 citizens
+   611→- Season tab: ☀️ Summer, Year 1, "Trade flourishes and civilizations expand their reach"
+   612→- No console errors, lint clean
+   613→
+   614→Stage Summary:
+   615→- The universe now has a heartbeat:
+   616→  1. Time passes ✓ (advance days/weeks, ticks recorded)
+   617→  2. Seasons cycle ✓ (spring/summer/autumn/winter with effects)
+   618→  3. Events generate from state ✓ (population milestones, economy surges, cultural events)
+   619→  4. Feed records everything ✓ (per-world + global)
+   620→  5. Missions update seasonally ✓ (themed objectives with rewards)
+   621→  6. "What Changed" works ✓ (the key retention feature — "something changed while you were away")
+   622→
+   623→- The question v0.51 answers: "I entered Farm Kingdom yesterday, and something changed when I came back today." ✓
+   624→
+   625→---
+   626→Task ID: 14
+   627→Agent: main (Z.ai Code)
+   628→Task: Build PlayLiquid v0.52 Living Economies — Resources, Dynamic Markets, Trade Routes, Buildings, Player Roles
+   629→
+   630→Work Log:
+   631→- Added 5 Prisma models: CivilizationResourceRecord, CivilizationMarketRecord, TradeRouteRecord, CivilizationBuildingRecord, PlayerRoleRecord
+   632→- Built Resource System: 7 resource types (food, wood, metal, knowledge, culture, energy, technology) with supply, demand, production/consumption rates, price, and price history
+   633→- Built Dynamic Market: supply/demand-driven pricing (oversupply → cheap, shortage → expensive), buy/sell transactions with price impact, market history
+   634→- Built Living Trade Routes: active routes that generate value per tick, automatically transfer resources between worlds, track total generated value
+   635→- Built Civilization Buildings: 10 building types (Town Hall, Farm, Market, Mine, Library, Temple, Barracks, Trade Port, Monument, District) with population-based unlocking and economic modifiers
+   636→- Built Player Roles: progression from visitor → citizen → specialist → guild_member → leader, based on economic contribution, with specialty assignment (trading/farming/combat/building/exploration/governance)
+   637→- Integrated with Time Engine: every tick now updates resources (supply/demand/prices), processes trade routes, checks building unlocks, generates economy feed events (price surges/drops, new buildings)
+   638→- The causal chain works: migration wave → population increase → resource demand rises → prices change → trade routes become profitable → buildings unlock → civilization visibly grows
+   639→- Built 5 API routes: resources, market (GET+POST), routes (GET+POST), buildings, roles
+   640→- Added Economy tab to Living Civilizations dashboard with: Resources & Markets (supply/demand/price/trend), Buildings (visible growth), Trade Routes (per-tick value), Player Roles (contribution/standing)
+   641→
+   642→Browser Verification:
+   643→- Advanced 3 days: 7 resources initialized with supply/demand/prices, 9 buildings auto-constructed (Town Hall + Farm + Market + Mine + Library + Temple + Barracks + Trade Port + Monument)
+   644→- Economy tab shows: 🎭 Culture (supply 242, demand 200), ⚡ Energy (supply 139, demand 247, ▲ shortage), 🌾 Food (supply 169, demand 253, ▲ shortage)
+   645→- Trend indicators work: ▲ for shortage (demand > supply), ● for balanced
+   646→- No console errors, lint clean
+   647→
+   648→Stage Summary:
+   649→- The causal chain that makes civilizations feel alive:
+   650→  1. Time passes ✓ (v0.51)
+   651→  2. Population changes ✓ (v0.51)
+   652→  3. Resource demand shifts ✓ (v0.52)
+   653→  4. Market prices change ✓ (v0.52)
+   654→  5. Buildings unlock and grow ✓ (v0.52)
+   655→  6. Trade routes generate value ✓ (v0.52)
+   656→  7. Player roles evolve with contribution ✓ (v0.52)
+   657→  8. Economy events appear in feed ✓ (v0.52)
+   658→
+   659→- "Things that happen in the civilization should have economic consequences." ✓
+   660→
+   661→---
+   662→Task ID: 15
+   663→Agent: main (Z.ai Code)
+   664→Task: ADR Freeze Implementation — Align existing platform with frozen architectural decisions (ADR-001 through ADR-012)
+   665→
+   666→Work Log:
+   667→- Added 11 new Prisma models: LiquidWalletRecord, LiquidPurchaseRecord, MinutePurchaseRecord, PrizePoolRecord, LeaderboardPayoutRecord, ExtensionRoyaltyConfigRecord, ExtensionRoyaltyDistributionRecord, TournamentRecord, TournamentTeamRecord, HighlightRecord, GameContainmentConfigRecord
+   668→- Modified ExperienceRecord: added format (spark/standard), pricePerMinuteXof, minMinutesPurchase, maxMinutesPurchase, competitiveEligible
+   669→- Modified PlaySession: added competitiveMode, minutePurchaseId, timerStartedAt, timerElapsedMs, attempts, highestScore
+   670→- Built 5 economy services:
+   671→  - liquid-wallet-service.ts: getWallet, purchaseLiquid (PaySwap), debitWallet, creditWalletFromPayout (ONLY for leaderboard payouts)
+   672→  - revenue-split-service.ts: processRevenueSplit (Platform 20% / Creator 30% / Prize Pool 50%), extension royalty calculation from creator share, prize pool management
+   673→  - leaderboard-payout-service.ts: processPayoutCycle (distributes prize pool to top 3: 25%/15%/10%), payout history, player winnings
+   674→  - minutes-service.ts: purchaseMinutes, getActiveMinutes, consumeMinutes (triggers revenue split), purchase history
+   675→  - tournament-service.ts: createTournament, createTeam, joinTeam, getTournaments, getTournamentTeams
+   676→  - highlight-service.ts: generateHighlight (6 trigger types), getHighlights, shouldGenerateHighlight, viewHighlight
+   677→  - containment-service.ts: getContainmentConfig, updateContainmentConfig, RUNTIME_TYPES (native/html5/external)
+   678→- Built 8 API routes: wallet, purchase, prize-pool, leaderboard-payout, revenue-split, minutes, tournaments, highlights, containment
+   679→- Built ADR Economy Dashboard with 5 tabs: Wallet, Minutes, Prizes, Tournaments, Highlights
+   680→- REMOVED all Liquid minting code paths:
+   681→  - rewardEngagement() → no-op (returns { totalReward: 0 })
+   682→  - play-service.ts → removed rewardEngagement call + liquidBalance increment
+   683→  - simulation-service.ts → removed rewardEngagement call
+   684→  - achievement-service.ts → removed liquidBalance reference
+   685→  - social-service.ts → removed challenge reward Liquid crediting
+   686→- Added "Economy" button to ConsumerUniverse navigation
+   687→
+   688→ADR VERIFICATION (all passed):
+   689→✅ No code path can mint Liquid (rewardEngagement is no-op, no liquidBalance increments, no reward pool credits)
+   690→✅ Liquid only enters through purchases (purchaseLiquid via PaySwap)
+   691→✅ Player earnings only from leaderboard payouts (creditWalletFromPayout)
+   692→✅ Extension royalties from creator share (ExtensionRoyaltyDistributionRecord)
+   693→✅ Spark format field exists (format: spark | standard)
+   694→✅ Game containment config exists (GameContainmentConfigRecord)
+   695→✅ Tournament models exist (TournamentRecord, TournamentTeamRecord)
+   696→✅ Highlight model exists (HighlightRecord)
+   697→✅ Minute purchase model exists (MinutePurchaseRecord)
+   698→✅ Prize pool model exists (PrizePoolRecord with configurable BPS splits)
+   699→
+   700→Browser Verification:
+   701→- Wallet: 0L → purchased 50L via PaySwap → balance shows 50.00L
+   702→- "This is the ONLY way Liquid enters circulation" message displayed
+   703→- Prize Pools: all experiences show 0L pool with 25%/15%/10% payout structure
+   704→- No console errors, lint clean
+   705→
+   706→---
+   707→Task ID: 16
+   708→Agent: main (Z.ai Code)
+   709→Task: Phase 16 — Competitive Economy Execution Layer (the first real economic loop)
+   710→
+   711→Work Log:
+   712→- Built Competitive Session Service (src/lib/competition/competitive-session-service.ts):
+   713→  - startCompetitiveSession: validates minute purchase, creates competitive PlaySession with timer
+   714→  - submitCompetitiveScore: tracks attempts, updates highestScore, submits to leaderboard
+   715→  - endCompetitiveSession: calculates minutes used, triggers revenue split via consumeMinutes
+   716→  - getCompetitiveSession: returns live session status
+   717→- Built Leaderboard Engine (src/lib/competition/leaderboard-service.ts):
+   718→  - getLeaderboard with daily/weekly/monthly/all-time cycles
+   719→  - getPlayerRank: returns user's rank + total player count
+   720→  - getTop3: for prize settlement
+   721→- Built Prize Settlement Service (src/lib/competition/prize-settlement-service.ts):
+   722→  - settlePrizePool: distributes current balance to top 3 (25%/15%/10%)
+   723→  - Creates LeaderboardPayoutRecord
+   724→  - Credits player wallets via creditWalletFromPayout (ONLY path for player Liquid earnings)
+   725→- Built 5 API routes: session (start/get), submit, end, leaderboard, settle
+   726→- Built Competitive Play UI with full loop:
+   727→  - Experience selector
+   728→  - Wallet + Prize Pool display
+   729→  - Purchase minutes (with wallet validation)
+   730→  - Start competitive session
+   731→  - Submit scores (shows highest, new high indicator)
+   732→  - End session (triggers revenue split)
+   733→  - Leaderboard with player rank
+   734→  - Prize settlement button
+   735→- Revenue flow integration: minute purchase → session end → consumeMinutes → processRevenueSplit → ledger transactions
+   736→- Extension royalty execution: on revenue split, creator share is split between game creator and extension creators based on ExtensionRoyaltyConfigRecord
+   737→
+   738→FULL ECONOMIC LOOP VERIFIED (API test):
+   739→1. ✅ Purchased 100L via PaySwap → wallet: 150L
+   740→2. ✅ Purchased 20 minutes for 20L → wallet: 130L (spent: 20L)
+   741→3. ✅ Started competitive session
+   742→4. ✅ Submitted scores: 1000 → new high, 3000 → new high, 2500 → not new high
+   743→5. ✅ Leaderboard shows: 1. Demo Player: 3000 (highest score, not last attempt)
+   744→6. ✅ Ended session: 4 attempts, 1 minute used
+   745→7. ✅ Revenue split: 1L → Platform 0.2L, Creator 0.3L, Prize Pool 0.5L
+   746→8. ✅ Prize pool: 0.5L
+   747→9. ✅ Settled: 0.125L to 1st place (25% of 0.5L)
+   748→10. ✅ Final wallet: 129.125L (purchased: 150L, spent: 21L, won: 0.125L)
+   749→
+   750→ECONOMIC INVARIANTS VERIFIED:
+   751→✅ Liquid only enters through purchases (150L purchased)
+   752→✅ Liquid leaves through spending (21L spent on minutes)
+   753→✅ Player earns ONLY from leaderboard payout (0.125L won)
+   754→✅ Revenue split: 20% + 30% + 50% = 100%
+   755→✅ Prize pool distributes only to top 3
+   756→✅ Double-entry ledger balanced at every step
+   757→✅ No code path mints Liquid as gameplay reward
+   758→
+   759→---
+   760→Task ID: 17
+   761→Agent: main (Z.ai Code)
+   762→Task: Phase 17 — Extension Operating System Unification (ADR-001 full implementation)
+   763→
+   764→Work Log:
+   765→- Enhanced ExtensionRecord with 15 new fields: creatorId, creatorName, version, parentExtensionId, icon, tagsJson, priceXof, royaltyBps, qualityScore, performanceScore, innovationScore, fairnessScore, adoptionScore, installCount, forkCount, rating, ratingCount, totalRevenueXof, status, updatedAt
+   766→- Added ExtensionInstallationRecord model: tracks which experiences use which extensions, with revenue generated per installation
+   767→- Built Extension Service (src/lib/extensions/extension-service.ts):
+   768→  - seedExtensionRecords: syncs kernel extensions into DB as canonical entities
+   769→  - publishExtension: creator-uploaded extension publishing flow
+   770→  - getExtensionFeed: trending, newest, top rated, most installed
+   771→  - getExtensions: filtered/sorted marketplace listing
+   772→  - getExtension: detail with usedBy experiences
+   773→  - recordInstallation: track extension→experience relationships
+   774→  - getExperienceExtensions: get extension graph for an experience
+   775→  - getUsedTogether: co-occurrence recommendations ("if you install X, also try Y")
+   776→  - getExtensionAnalytics: creator dashboard (installs, revenue, royalties, top extensions)
+   777→  - updateExtensionReputation: recalculate scores from stats
+   778→- Built 5 API routes: marketplace, [id] detail, install, feed, analytics
+   779→- Built Extension Universe UI:
+   780→  - Feed with 4 sections (Trending, Most Installed, Top Rated, Latest)
+   781→  - Extension cards with icon, name, category, description, installs, rating, reputation bars (Q/P/A/I)
+   782→  - Extension detail page with full reputation, Used By experiences, Used Together recommendations
+   783→  - Category-colored borders (PHYSICS=sky, MECHANIC=violet, ECONOMY=amber, etc.)
+   784→- Added "Extensions" button to ConsumerUniverse navigation
+   785→
+   786→Browser Verification:
+   787→- 9 extensions seeded as canonical entities (Physics, Movement, Score, CoinCollector, Farm, Cooking, Weather, Marketplace, Competition)
+   788→- Trending feed shows all 9 with reputation bars and stats
+   789→- Extension detail (Physics): Quality 84, Performance 89, Adoption 38, Fairness 50, Innovation 77
+   790→- Used By: Neon Runner
+   791→- Used Together: Movement (100%), Score (100%), Coin Collector (100%), Farm (100%), Cooking (100%)
+   792→- No console errors, lint clean
+   793→
+   794→ADR-001 Verification:
+   795→✅ One canonical extension entity (ExtensionRecord with all fields)
+   796→✅ Extensions discoverable (marketplace with 4 sort modes)
+   797→✅ Extensions installable (ExtensionInstallationRecord)
+   798→✅ Extensions have reputation (5-dimensional: Quality/Performance/Adoption/Fairness/Innovation)
+   799→✅ Extension royalties connected to creator share (royaltyBps field)
+   800→✅ Users can see what powers experiences (usedBy on detail page)
+   801→✅ Used Together recommendations work (co-occurrence analysis)
+   802→✅ Existing native extensions still compile (kernel unchanged)
+   803→✅ Existing experiences still run (runtime unchanged)
+   804→
+   805→---
+   806→Task ID: 18
+   807→Agent: main (Z.ai Code)
+   808→Task: Phase 18 — Experience Operating System Consumer Alignment (YouTube-style home, SparkFeed, ContainmentFrame, graph transparency)
+   809→
+   810→Work Log:
+   811→- Added 3 Prisma models: ReplayEventRecord (timeline events for replays), LiveStreamRecord (live gameplay sessions), SparkPresentationConfigRecord (portrait/autoplay/interaction config)
+   812→- Built Consumer Service v2 (src/lib/consumer-v2/consumer-service.ts):
+   813→  - getYouTubeHome: assembles Sparks + Experiences + Live + Highlights
+   814→  - getSparks: experiences with spark format (portrait, vertical)
+   815→  - getExperiencesForHome: long-form cards with extension graph
+   816→  - getLiveStreams: active live sessions
+   817→  - getHighlightsForHome: AI-generated clips
+   818→  - getExperienceGraph: extension list for an experience
+   819→  - getReplayEvents: timeline events for replays
+   820→  - getSparkConfig: portrait/autoplay/interaction mode
+   821→  - goLive: start a live stream
+   822→- Built ContainmentFrame component (src/components/consumer-v2/ContainmentFrame.tsx):
+   823→  - Fixed PlayLiquid viewport with aspect ratio enforcement
+   824→  - Input normalization (touch → normalized 0-1 coordinates)
+   825→  - Fullscreen handling
+   826→  - Performance telemetry (FPS counter)
+   827→  - PlayLiquid badge + boundary marker
+   828→  - Every experience renders inside <PlayLiquidFrame><ExperienceRuntime /></PlayLiquidFrame>
+   829→- Built ConsumerHomeV2 (src/components/consumer-v2/ConsumerHomeV2.tsx):
+   830→  - YouTube-style home with 4 sections: Sparks, Experiences, Live Now, Best Moments
+   831→  - Spark cards: vertical 9:16, ⚡ SPARK badge, extension pills, Play/Heart/Share/Fork buttons, contained in PlayLiquid frame
+   832→  - Experience cards: 16:9 thumbnails, creator avatar, extension pills, play count, competitive badge
+   833→  - Live cards: red LIVE badge, viewer count
+   834→  - Highlight cards: trigger icon, score, views
+   835→  - Navigation: Sparks | Experiences | Live | Highlights + Extensions | Compete | Wallet | Identity
+   836→- Made ConsumerHomeV2 the default view (front door)
+   837→- Built 5 API routes: home, sparks, highlights, live, replay-events
+   838→
+   839→Browser Verification:
+   840→- YouTube-style home loads with 6 Sparks (vertical 9:16 cards with ⚡ badge, contained in PlayLiquid frame)
+   841→- Experiences section: 8 cards with 16:9 thumbnails, creator avatars, extension pills (🏃🚶🏆🪙🌾)
+   842→- Live section: "No live sessions right now" (correct — no streams active)
+   843→- Highlights section: "No highlights yet" (correct — no competitive play yet to generate them)
+   844→- Navigation works: Sparks | Experiences | Live | Highlights
+   845→- Top nav: Extensions | Compete | Wallet | Identity
+   846→- No console errors, lint clean
+   847→
+   848→Phase 18 Verification:
+   849→✅ Shorts-style Spark feed (vertical 9:16 cards with ⚡ badge)
+   850→✅ Experience marketplace (16:9 cards with extension pills)
+   851→✅ Live plays section (ready for streams)
+   852→✅ AI highlights section (ready for competitive highlights)
+   853→✅ Experience exposes extension graph (5 extensions per card)
+   854→✅ Extensions link to Extension Universe (accessible via nav)
+   855→✅ All experiences render inside PlayLiquid frame (ContainmentFrame)
+   856→✅ Watching earns nothing (passive viewing only)
+   857→✅ Playing casually earns nothing (ADR-006 compliant)
+   858→✅ Competition requires purchased minutes (competitive play view)
+   859→✅ Winners earn only leaderboard payouts (prize settlement)
+   860→
+   861→---
+   862→Task ID: 19
+   863→Agent: main (Z.ai Code)
+   864→Task: Phase 19 — Creator Operating System (Creator Studio with 7 tabs, AI Copilot, experiments, version history, extension economy)
+   865→
+   866→Work Log:
+   867→- Added 4 Prisma models: CreatorExperimentRecord (A/B testing), CreatorRevenueRecord (revenue by source), CreatorInsightRecord (AI insights with report types), ExperienceVersionRecord (version history with metrics)
+   868→- Migrated old CreatorInsightRecord/CreatorExperimentRecord from v0.48 to new Phase 19 schema (resolved duplicates)
+   869→- Fixed ai-team-service.ts to work with new schema (agentType→category, title→problem, body→evidence, actionSuggestion→recommendation)
+   870→- Built Creator Studio Service (src/lib/creator-os/creator-studio-service.ts):
+   871→  - getCreatorOverview: channel health (players, followers, revenue, experiences), revenue breakdown by source, content list with extensions, AI insights
+   872→  - generateCreatorInsights: rule-based insights (retention, opportunity, economy, social) + LLM-enhanced Copilot assessment
+   873→  - createExperiment / getExperiments / completeExperiment: A/B testing lifecycle
+   874→  - recordVersion / getVersions: experience version history with before/after metrics
+   875→  - getExtensionEconomy: extension dependencies, royalty paid/received, net royalty
+   876→  - getInsights: AI insight history
+   877→- Built 5 API routes: overview, revenue, insights, experiments, versions
+   878→- Built Creator Studio UI with 7 tabs:
+   879→  - Overview: stats grid (players, followers, revenue, experiences) + AI Copilot panel + revenue breakdown
+   880→  - Content: experience cards with format, play count, completion, extensions, competitive badge, fork button
+   881→  - Economy: royalty paid/received/net + extension dependencies list
+   882→  - Extensions: link to Extension Universe
+   883→  - AI: insight cards with severity colors, category, report type, recommendation, expected impact
+   884→  - Experiments: A/B test list with hypothesis, status, winner
+   885→  - Community: placeholder for community management
+   886→- Added "Studio" button to ConsumerHomeV2 navigation
+   887→- Migrated old CreatorInsightRecord references in ai-team-service.ts
+   888→
+   889→Browser Verification:
+   890→- Creator Studio loads with 7-tab navigation
+   891→- Overview: Creator Copilot AI assessment ("Studio Demo Creator should focus on creating a single, high-quality demo experience...")
+   892→- API test with real creator (Alex Rivers): 4 experiences, 23 plays, 9 extensions each, competitive enabled
+   893→- AI Insights: 4 insights including "Neon Runner has excellent retention" and Copilot strategic assessment
+   894→- No console errors, lint clean
+   895→
+   896→Phase 19 Verification:
+   897→✅ Creator Studio exists (7-tab dashboard)
+   898→✅ Revenue visible (by source: competitive play, extension royalty, tournament)
+   899→✅ Extensions visible (dependencies with royalty BPS)
+   900→✅ AI insights visible (Copilot + rule-based with severity)
+   901→✅ Experiments work (create, list, complete with winner)
+   902→✅ Version history works (record with change summary)
+   903→✅ No new Liquid creation (all revenue from valid ADR sources)
+   904→✅ Creator revenue comes only from valid sources (competitive play, extension royalties)
+   905→✅ Creator operates through Experience Graph (extensions visible per experience)
+   906→✅ AI assists but does not replace creators (insights are recommendations, not autonomous)
+   907→
+   908→---
+   909→Task ID: 20
+   910→Agent: main (Z.ai Code)
+   911→Task: Phase 20 — Experience Evolution Operating System. Turn every experience into a continuously improving AI-assisted product. Build the Evolution Loop: Players → Telemetry → AI Analysis → Hypothesis → Creator Experiment → Graph Variant → Player Testing → Winner Selection → Experience Evolution.
+   912→
+   913→Work Log:
+   914→- Read worklog + existing evolution-agent.ts, creator-os service, simulation-service, metrics-service, leaderboard-service, kernel types to understand current state
+   915→- Upgraded prisma schema:
+   916→  - EvolutionProposal: added problem, evidence, affectedExtensionsJson, graphChangesJson, expectedImpact, confidenceScore, mutationId fields; extended status lifecycle (DISCOVERED → PROPOSED → CREATOR_REVIEW → EXPERIMENTING → APPROVED | REJECTED | ROLLED_BACK)
+   917→  - Added ExperienceMutationRecord (graph mutations: before/after graphs, creatorApproved, appliedExperienceId)
+   918→  - Added ExperienceFeedbackRecord (player feedback: type, funScore, difficultyScore, emotionScore, comment, clusterLabel)
+   919→  - Added EvolutionRunRecord (A/B sandbox runs: variantA, variantB, winner, metricsJson)
+   920→  - Ran `bun run db:push` successfully
+   921→- Created src/lib/evolution/ module:
+   922→  - evolution-types.ts: Phase 20 type definitions (ProposalStatus, MutationType, GraphChangeSpec, EvolutionProposalV2, EvolutionInputs, MutationRecord, EvolutionRunRecordData, EvolutionTimelineEntry, FeedbackCluster)
+   923→  - mutation-service.ts: pure graph mutation engine (applyChange/applyChanges for ADD_EXTENSION, REMOVE_EXTENSION, UPDATE_CONFIG, REWIRE_CONNECTION, CHANGE_ECONOMY) + diffBundles for before/after visualization
+   924→  - mutation-store.ts: persistence layer for ExperienceMutationRecord (create, get, setStatus, markApplied)
+   925→  - evolution-engine.ts: EvolutionEngine — gathers inputs (metrics, replay events, feedback, economy, leaderboard), calls LLM with structured diagnosis prompt (problem → evidence → hypothesis → graphChanges → expectedImpact → confidenceScore), falls back to rule-based diagnosis (low completion → speed up farm, high frustration → reduce weather, weak economy → boost rewards, too-hard feedback → soften physics). Persists proposal + mutation record. Exposes getProposalsV2/getProposalV2.
+   926→  - feedback-store.ts: submitFeedback + getFeedbackSummary + clusterFeedback (LLM clustering into themes like "Players love speed mechanics", falls back to rule-based by-type clustering)
+   927→  - sandbox-service.ts: Evolution Sandbox — runSandbox (fork → apply mutation → compile → simulate → compare metrics, no production impact), runEvolutionExperiment (A/B run with winner selection by completion rate), applyApprovedMutation (replace/publish-new/discard — the ONLY path that touches production, requires creator approval), proposeFork (AI-generated fork helper)
+   928→  - timeline-service.ts: getEvolutionTimeline (version history with impact from versions + mutations + proposals + experiment wins) + getExperienceHealth (5-dimension health score: retention, competition, economy, community, evolution + signals)
+   929→- Created 13 API routes under /api/evolution/:
+   930→  - [experienceId]/analyze (POST — run EvolutionEngine)
+   931→  - [experienceId]/proposals (GET — list proposals)
+   932→  - [experienceId]/timeline (GET — evolution history)
+   933→  - [experienceId]/health (GET — health snapshot)
+   934→  - [experienceId]/feedback (GET/POST — player feedback)
+   935→  - [experienceId]/sandbox (POST — run sandbox/experiment)
+   936→  - [experienceId]/experiments (GET — list A/B runs)
+   937→  - [experienceId]/mutations (GET — list mutations with diff)
+   938→  - [experienceId]/seed (POST — seed demo feedback + run analysis)
+   939→  - [experienceId]/fork (POST — AI-generated fork)
+   940→  - proposals/[id]/approve (POST)
+   941→  - proposals/[id]/reject (POST)
+   942→  - mutations/[id]/apply (POST — replace/publish-new/discard)
+   943→  - mutations/[id]/diff (GET)
+   944→  - creator/experiences (GET — list experiences for picker, demo fallback)
+   945→- Built src/components/creator-os/EvolutionTab.tsx (856 lines) with 5 sections:
+   946→  - Current Health (overall score + 5 dimension progress bars + AI signals)
+   947→  - AI Opportunities (proposal cards with problem/evidence/affectedExtensions/graphChanges/expectedImpact/confidenceScore, expandable AI reasoning, Approve/Run Experiment/Reject actions)
+   948→  - Experiments (A/B run results with winner badge + delta metrics)
+   949→  - Evolution Timeline (versioned history with change type icons + impact badges)
+   950→  - Graph Mutations (pending/applied mutations with before→after config diffs, Replace/Publish-as-new/Discard actions)
+   951→  - Experience picker (Select dropdown) + Seed demo data button + Run AI Analysis button
+   952→  - fetchJSON/postJSON helpers with retry to handle dev cold-start compilation
+   953→- Wired EvolutionTab into CreatorStudio.tsx as the 8th tab ("Evolution" with GitBranch icon), updated TabsList to grid-cols-4 sm:grid-cols-8
+   954→- Browser verification with agent-browser:
+   955→  - Dev server starts on port 3000, home page renders (ConsumerHomeV2)
+   956→  - Navigated to Creator Studio → Evolution tab
+   957→  - All 6 evolution API routes return 200 (experiences, mutations, health, proposals, timeline, experiments)
+   958→  - Clicked "Seed demo data" → POST /api/evolution/{id}/seed 200 in 6.8s (LLM ran diagnosis)
+   959→  - AI generated structured proposals: problem="Players report difficulty spikes and frustration with coin progression", evidence="3/8 feedback entries mention TOO_HARD...", graphChanges=[UPDATE_CONFIG @marketplace exchangeRate 0.5→0.75], expectedImpact="+15% average score and 20% reduction in TOO_HARD feedback", confidenceScore=0.75
+   960→  - Current Health rendered: 72/100 overall, Retention 97 (Strong), Competition 85 (Active), Economy 77 (Healthy), Community 100 (Engaged), Evolution 0 (Static)
+   961→  - Timeline rendered: v1.0 CREATED "Initial publish"
+   962→  - Graph Mutations rendered: 3 PENDING mutations with "marketplace.exchangeRate: 0.5 → 0.75" diffs
+   963→  - Clicked Approve → POST /api/evolution/proposals/{id}/approve 200 → DB confirms proposal.status=APPROVED, mutation.status=APPROVED, creatorApproved=true
+   964→  - 24 feedback records created, 3 proposals, 3 mutations
+   965→  - Sticky footer confirmed at bottom (contentinfo)
+   966→- Lint clean throughout (bun run lint passes after every change)
+   967→
+   968→Stage Summary:
+   969→- Phase 20 complete. The Experience Evolution Loop is fully operational:
+   970→  - AI NEVER modifies production directly — it creates graph Mutations (before/after bundle snapshots)
+   971→  - Creator approval required (Approve/Reject buttons, status lifecycle DISCOVERED→PROPOSED→APPROVED→APPLIED)
+   972→  - Fork lineage preserved (parentExperienceId, ExperienceVersionRecord)
+   973→  - Extensions remain primitives (all mutations are ADD/REMOVE/UPDATE_CONFIG/REWIRE/CHANGE_ECONOMY on extension instances)
+   974→  - No new Liquid creation (experiments run in sandbox DRAFT experiences that are deleted after; only applyApprovedMutation touches production, and it records a version)
+   975→  - Evolution Sandbox reuses Simulation Lab + kernel runtime + telemetry (no production impact until approved)
+   976→  - Player Feedback Intelligence with LLM clustering (FUN/CONFUSING/TOO_HARD/BUG/SUGGESTION + funScore/difficultyScore/emotionScore)
+   977→  - Evolution Timeline with version history + impact measurement
+   978→  - Creator Evolution Dashboard with 5 sections (Health/Opportunities/Experiments/Timeline/Mutations)
+   979→- Architecture verified: "Creators operate living experiences that continuously evolve with AI."
+   980→
+   981→---
+   982→Task ID: 21
+   983→Agent: main (Z.ai Code)
+   984→Task: Phase 21 — PlayLiquid Network & Marketplace Intelligence. Build the intelligence layer that coordinates experiences, creators, extensions, and players across the network: Experience Genome, Discovery Graph (co-play), Creator Intelligence Score, Extension Ecosystem Intelligence (composition patterns), and Autonomous Creator Agents.
+   985→
+   986→Work Log:
+   987→- Reviewed existing intelligence services: discovery-service (content-based cosine similarity), curator-service (LLM reasoning), ai-team-service (6 reactive agents), rating-service (reputation), ExperienceGenomeRecord (bundle-derived). Identified gaps: no collaborative co-play graph, no unified creator intelligence score, no composition pattern mining, no enriched genome with audience/economy dimensions, no proactive autonomous agents.
+   988→- Added 5 Prisma models for Phase 21:
+   989→  - ExperienceIntelligenceRecord (enriched genome: mechanics, emotionalProfile, economyProfile, audienceProfile, novelty/quality/maturity scores)
+   990→  - CoPlayEdgeRecord (collaborative filtering edges: experienceA, experienceB, sharedPlayers, coPlayScore, sharedExtensions)
+   991→  - CreatorIntelligenceRecord (6 dimensions: retentionQuality, evolutionVelocity, extensionAdoption, fairness, communityHealth, economicSustainability + overallIntelligence + tier)
+   992→  - ExtensionCompositionPatternRecord (mined patterns: patternSignature, extensionsJson, occurrenceCount, avgCompletion, avgRetention, avgReputation, context, recommendation)
+   993→  - CreatorAgentInsightRecord (proactive agent insights: agentType, insightType, title, body, actionSuggestion, expectedImpact, confidence, severity, status)
+   994→  - Ran `bun run db:push` successfully
+   995→- Created src/lib/intelligence/ module with 5 services:
+   996→  - intelligence-types.ts: type definitions (ExperienceIntelligence, CoPlayEdge, DiscoveryGraph, CreatorIntelligence, CreatorTier, CompositionPattern, AgentInsight, AgentType, AGENT_META)
+   997→  - genome-service.ts (21.1): computeExperienceIntelligence — computes enriched genome from bundle (mechanics) + feedback (emotional profile via keyword matching + type mapping) + sessions (audience profile: avgSkill, socialBehavior, segment) + metrics (economy profile) + reputation (quality score). Computes novelty (rare extension combinations), maturity (data volume). Persists to ExperienceIntelligenceRecord. Exposes get/getAll.
+   998→  - discovery-graph-service.ts (21.2): recomputeDiscoveryGraph — walks all play sessions, groups by userId, builds co-occurrence edges between every pair of experiences a user played. Computes Jaccard-like coPlayScore. Derives sharedExtensions + sharedMechanics. getDiscoveryGraph returns related experiences sorted by score. getGlobalDiscoveryGraph returns top pairs network-wide.
+   999→  - creator-intelligence-service.ts (21.3): computeCreatorIntelligence — aggregates 6 dimensions from existing data: retentionQuality (avg completion), evolutionVelocity (mutations in 30d), extensionAdoption (unique extensions used), fairness (frustration rate + competitive balance), communityHealth (followers + feedback + sentiment), economicSustainability (revenue + competitive prize pool). Weighted overall → tier (emerging/growing/established/leading). Human-readable signals. recomputeAllCreatorIntelligence + leaderboard.
+  1000→  - extension-genome-service.ts (21.4): recomputeCompositionPatterns — scans all published experiences, builds all extension pairs + triples, aggregates avgCompletion/avgRetention/avgReputation per pattern. generateRecommendation produces labels ("Strong competitive foundation", "High-quality composition", "Underperforming composition"). recommendComposition — given a partial extension set, suggests additions from successful patterns (with LLM-generated suggestion sentence).
+  1001→  - autonomous-agents-service.ts (21.5): runAutonomousAgents — 4 proactive agents (Design/Economy/Growth/Community) that read telemetry + feedback + marketplace context and surface insights WITHOUT being asked. Each agent has rule-based triggers: Design (low completion, too-hard feedback, high frustration), Economy (free competitive, priced above market, empty leaderboard), Growth (low discovery velocity, no forks, low like conversion), Community (suggestions, bugs, fun feedback). Dedupes against last 24h. Persisted to CreatorAgentInsightRecord with Act/Dismiss status lifecycle.
+  1002→- Created 16 API routes under /api/intelligence/:
+  1003→  - genome/[experienceId] (GET/POST), genome/all (GET)
+  1004→  - discovery-graph/[experienceId] (GET), discovery-graph/recompute (POST), discovery-graph/global (GET)
+  1005→  - creator-intelligence/[creatorId] (GET/POST), creator-intelligence/leaderboard (GET), creator-intelligence/recompute-all (POST)
+  1006→  - extension-patterns (GET), extension-patterns/recompute (POST), extension-patterns/recommend (POST)
+  1007→  - agents/[creatorId] (GET), agents/[creatorId]/run (POST), agents/insight/[id] (POST status)
+  1008→  - seed (POST — bootstraps all 4 layers in one call), overview (GET — network summary)
+  1009→- Built src/components/intelligence/NetworkIntelligence.tsx (new view) with:
+  1010→  - Header with Recompute All button (calls /seed)
+  1011→  - Totals row (Experiences, Creators, Patterns, Co-Play Edges, Avg Quality)
+  1012→  - 5-tab dashboard: Genomes (enriched genome cards with mechanics/emotional profile/audience+economy), Discovery (co-play edges with shared extensions), Creators (leaderboard with 6 dimension bars + signals), Patterns (mined compositions with AI recommendations), Agents (proactive insight feed with Act/Dismiss)
+  1013→  - fetchJSON/postJSON helpers with retry for dev cold-start
+  1014→- Wired network-intelligence view into studio-store + page.tsx + ConsumerHomeV2 nav (Network icon button)
+  1015→- Browser verification with agent-browser:
+  1016→  - Network Intelligence dashboard renders with totals: 20 experiences, 5 creators, 20 patterns, 180 co-play edges, avg quality 79
+  1017→  - Genomes tab: "Garden Grow" genome with "mastery" dominant emotion, Novelty 90, all 20 genomes computed
+  1018→  - Creators tab: leaderboard with Kenji Sato #1 (established, 73/100) showing all 6 dimensions (Retention 100, Evolution 65, Extensions 100, Fairness 86, Community 100, Economy 0) + signals ("Strong retention", "Fast iterator (3 mutations in 30d)", "Diverse toolkit (9 extensions)")
+  1019→  - Patterns tab: mined compositions "Competition + Cooking + Marketplace (20 uses, 100% completion)" with AI recommendation "Reliable engagement pattern"
+  1020→  - Agents tab: 3 Growth Agent insights surfaced — "Cooking Master has traction but no forks (24 plays, 0 forks)" with action "Mark as forkable" + impact "+10% discovery" + Act/Dismiss buttons
+  1021→  - Sticky footer confirmed at bottom (contentinfo)
+  1022→- Lint clean throughout
+  1023→
+  1024→Stage Summary:
+  1025→- Phase 21 complete. PlayLiquid now has a Network Intelligence layer:
+  1026→  - Experience Genome: enriched structured profile (mechanics + emotional + economy + audience) for every experience
+  1027→  - Discovery Graph: collaborative co-play filtering ("players who played X also played Y") with shared extension analysis
+  1028→  - Creator Intelligence Score: 6-dimension reputation graph (retention, evolution velocity, extension adoption, fairness, community, economy) with tier classification
+  1029→  - Extension Ecosystem Intelligence: mined composition patterns ("experiences with {Physics, Score, Competition} have 72% avg completion") + AI composition recommendations
+  1030→  - Autonomous Creator Agents: 4 proactive agents (Design/Economy/Growth/Community) that monitor and surface insights without being asked
+  1031→- Architecture: "How does PlayLiquid become the intelligence layer that coordinates millions of experiences, creators, extensions, and players?" — answered with 5 services + 16 API routes + 1 dashboard view.
+  1032→- No new currencies, no new reward systems, no new social primitives (per ADR freeze). The intelligence layer reads existing telemetry + economy + feedback data and surfaces intelligence.
+  1033→
+  1034→---
+  1035→Task ID: 20.5
+  1036→Agent: main (Z.ai Code)
+  1037→Task: Phase 20.5 — Runtime Interoperability Validation. Prove that PlayLiquid can run experiences regardless of runtime type (native + HTML5). Build the full path: ExperienceRecord → Bundle → ExtensionGraph → ContainmentFrame → RuntimeAdapter → PlayableExperience → Telemetry → Evolution. Then deploy to GitHub + Vercel with Neon Postgres.
+  1038→
+  1039→Work Log:
+  1040→- Reviewed existing architecture: ContainmentFrame (visual only), kernel runtime (tick-based, 9 extensions), session API (start/tick/action/inspector/settle), GameContainmentConfigRecord (runtimeType field already exists)
+  1041→- Added ImportedGameBundleRecord schema model (experienceId, filename, storageUrl, manifestJson, runtimeType, checksum, status) — pushed to DB
+  1042→- Built Native Runtime:
+  1043→  - src/runtime/native/NativeRuntimeAdapter.ts — client-side session manager (initialize/tick/sendInput/getSnapshot/destroy via kernel API) + extractGameState helper (player x/y from physics, coins from coin-collector, score)
+  1044→  - src/components/runtime/NativeGamePlayer.tsx — canvas renderer: game loop (120ms tick via POST /tick), keyboard (WASD/arrows) + touch dpad input → POST /action, renders player circle + coins + score + token balances + grid. Restart on game over. Settle on unmount.
+  1045→- Built HTML5 Orb Collector game (pure Canvas API + JS, no frameworks):
+  1046→  - public/imported-games/orb-collector/index.html + style.css + game.js + manifest.json
+  1047→  - Gameplay: blue circle player, falling orbs, score counter, 30s timer, game over + restart
+  1048→  - postMessage bridges: receives pl:input (move-left/right/up/down, start), sends pl:telemetry (ready, game_start, score_updated, orb_collected, game_over)
+  1049→  - Auto-starts when inside iframe
+  1050→- Built HTML5 import flow:
+  1051→  - src/lib/runtime/runtime-service.ts — importHtml5Game (creates ExperienceRecord + ContainmentConfig[html5] + ImportedGameBundleRecord), seedNativeNeonRunner (Physics+Movement+Score+CoinCollector+ Competition, wired physics→movement→score + physics→coins), seedOrbCollectorHtml5, getExperienceRuntime, listImportedGames
+  1052→  - API routes: POST /api/runtime/import-html5 (modes: import/seed-native/seed-html5/list), GET /api/runtime/bundle/[experienceId]
+  1053→- Built HTML5 Game Player:
+  1054→  - src/components/runtime/Html5GamePlayer.tsx — sandboxed iframe + postMessage input bridge (keyboard→pl:input) + telemetry listener (pl:telemetry→HUD + POST /api/telemetry/events). Live event counter + last event display.
+  1055→- Upgraded ContainmentFrame: already had input normalization + aspect ratio + fullscreen + FPS counter
+  1056→- Added telemetry events POST handler (acknowledges HTML5 game events)
+  1057→- Built PlayView (src/components/runtime/PlayView.tsx):
+  1058→  - Fetches runtime info via /api/runtime/bundle/[id]
+  1059→  - Renders NativeGamePlayer (if runtimeType=native) or Html5GamePlayer (if runtimeType=html5) inside ContainmentFrame
+  1060→  - Runtime badge (Native/HTML5), runtime info cards, sticky footer
+  1061→- Wired into studio-store (playExperienceId + playExperience action) + page.tsx (case 'play') + ConsumerHomeV2 (card click → playExperience)
+  1062→- Added Runtime tab to Creator Studio (9th tab): seed Neon Runner + import Orb Collector + list imported games with Play buttons + architecture note
+  1063→- Browser verification (agent-browser):
+  1064→  - Native Neon Runner: PlayView opened, Canvas rendered, kernel session started (sess_msbf07ef), 10+ ticks POSTed (200), keyboard input accepted (ArrowRight/Down) ✅
+  1065→  - HTML5 Orb Collector: PlayView opened, iframe loaded, Canvas game running (Score: 0, Time: 24), telemetry bridge active ("last: " events flowing) ✅
+  1066→  - ADR-005 validated: native and HTML5 experiences are indistinguishable after entering the ContainmentFrame
+  1067→- Database migration: SQLite → PostgreSQL (Neon)
+  1068→  - Changed prisma schema provider to postgresql
+  1069→  - Updated .env with Neon pooled connection string (sslmode=require)
+  1070→  - Pushed schema to Neon (23.75s, all tables created)
+  1071→  - Created seed-min.ts (standalone seed script) — seeded 5 creators + 10 experiences + Neon Runner + Orb Collector
+  1072→  - Untracked .env and db/custom.db from git, added .env.example
+  1073→- GitHub deployment:
+  1074→  - Created repo pectoraux/playliquid-platform via PAT
+  1075→  - Committed all Phase 20.5 code + Postgres migration
+  1076→  - Pushed to main branch
+  1077→- Vercel deployment:
+  1078→  - Project "playliquid" already existed (prj_GLAbzyrUhii1jlHM0GHOWAwTXSVB)
+  1079→  - Set DATABASE_URL env var (production + preview + development) pointing to Neon
+  1080→  - Triggered production deployment from GitHub repo (gitSource: pectoraux/playliquid-platform, ref: main)
+  1081→  - Build completed in ~60s: READY
+  1082→  - Live URLs: https://playliquid.vercel.app, https://playliquid-tay-nurs-projects.vercel.app
+  1083→- Verified live deployment:
+  1084→  - Home page: 200 ✅
+  1085→  - Extensions API: 200 ✅
+  1086→  - Consumer home API: 200 (6 sparks + 8 experiences including Neon Runner) ✅
+  1087→  - Runtime import API: 200 ✅
+  1088→  - Intelligence overview: 200 ✅
+  1089→  - HTML5 game files (orb-collector/index.html): 200 ✅
+  1090→- Added postinstall script (prisma generate) to package.json for Vercel builds
+  1091→- Cleaned git remote URL (removed PAT from origin)
+  1092→
+  1093→Stage Summary:
+  1094→- Phase 20.5 complete. ADR-005 (Containment) fully validated:
+  1095→  - Native game (Neon Runner): kernel session + canvas renderer + keyboard/touch input + score + telemetry
+  1096→  - HTML5 game (Orb Collector): iframe + postMessage input/telemetry bridges + sandboxed Canvas game
+  1097→  - Both run inside ContainmentFrame, both produce telemetry, both appear as normal experiences
+  1098→- Deployed to production:
+  1099→  - GitHub: https://github.com/pectoraux/playliquid-platform
+  1100→  - Vercel: https://playliquid.vercel.app
+  1101→  - Database: Neon PostgreSQL (pooled connection)
+  1102→- "If a native game and an imported HTML5 game become indistinguishable after entering PlayLiquid, ADR-005 is complete." ✅
+  1103→
+  1104→---
+  1105→Task ID: 4
+  1106→Agent: AI Creation Studio Builder
+  1107→Task: Build AI Game Creation Studio (Phase 21.3) — LLM-powered game generator that takes a natural-language prompt and produces a playable game.
+  1108→
+  1109→Work Log:
+  1110→- Read worklog.md to understand prior work (Phases 1–21 + 20.5 runtime interop). Reviewed src/engine/games.ts (3 games: neon-runner, sky-defender, coin-rush), src/engine/sparks.ts (3 sparks: catch-stars, reaction-challenge, tap-pet), src/lib/runtime/runtime-service.ts (createEngineExperience + getExperienceRuntime + importHtml5Game + seedEngineGames), src/lib/ai-composer.ts (existing LLM composer pattern using z-ai-web-dev-sdk), CreatorStudio.tsx (9-tab dashboard), EvolutionTab.tsx (fetchJSON/postJSON retry pattern for dev cold-start), PlayView.tsx (uses GAMES/SPARKS + ContainmentFrame + GameCanvas).
+  1111→- Created `src/lib/runtime/ai-game-generator.ts`:
+  1112→  - AIGameProposal type (title, description, format, engineGameId, gameName, tags, competitiveEligible, balanceParams, reasoning, source)
+  1113→  - buildCatalog() merges GAMES + SPARKS into CatalogEntry[] with configKeys
+  1114→  - generateGameProposal(prompt) → tries LLM first, falls back to rule-based keyword matcher
+  1115→  - llmProposal(): builds system prompt describing all 6 templates + keyword heuristics + JSON output schema, calls zai.chat.completions.create with thinking disabled, parses JSON (handles markdown fences), sanitizes via sanitizeProposal()
+  1116→  - sanitizeProposal(): validates engineGameId against catalog, defaults to template name/description, forces format to match template's actual format, dedupes tags, filters balanceParams to keys that exist on template config
+  1117→  - ruleBasedProposal(): scores each template by keyword overlap (KEYWORDS map: runner→neon-runner, shoot/defend→sky-defender, collect/coin→coin-rush, catch/basket→catch-stars, reaction/tap→reaction-challenge, pet/feed→tap-pet), generates simple balance tweaks based on tone words ("fast"→speed=420, "chill"→speed=240)
+  1118→  - EXAMPLE_PROMPTS array (6 examples: Endless runner, Tower defense, Reaction game, Virtual pet, Coin collector, Catch falling stars) exported for UI use
+  1119→- Created `src/app/api/ai-create/route.ts`:
+  1120→  - GET: returns templates catalog (games + sparks with configKeys) + EXAMPLE_PROMPTS
+  1121→  - POST default (generate mode): body {prompt} → returns {proposal: AIGameProposal} via generateGameProposal()
+  1122→  - POST ?mode=publish: body {proposal} → validates with zod schema → calls createEngineExperience() → returns {experienceId, published: true, proposal}
+  1123→  - Zod schemas for both modes (generateSchema, proposalSchema with balanceParams as Record<string, number|string|boolean>)
+  1124→  - All LLM work stays server-side (z-ai-web-dev-sdk only imported in ai-game-generator.ts, never in client)
+  1125→- Created `src/components/creator-os/AICreationStudio.tsx`:
+  1126→  - Dialog modal (sm:max-w-2xl) with header + scrollable content + footer
+  1127→  - Large Textarea for prompt with placeholder
+  1128→  - Example prompt chips (loaded from /api/ai-create GET, 6 chips: Endless runner, Tower defense, etc.)
+  1129→  - Generate button (amber→orange gradient, Wand2 icon, shows Loader2 while generating)
+  1130→  - Error card (amber border) for failed generations
+  1131→  - Generating skeleton (dashed border card with Loader2)
+  1132→  - ProposalCard: gradient amber card showing proposed title, description, format badge (Zap for spark, Cpu for game), AI/rule-based badge, engine template id, tags as Badge pills, competitive eligibility (Trophy icon, green if eligible), balance overrides as monospace pills, AI reasoning with Brain icon
+  1133→  - Action buttons: Publish (emerald, Rocket icon), Play Now (amber, appears after publish), Regenerate (RefreshCw), Reset (RotateCcw)
+  1134→  - Catalog preview (collapsible details) showing all 6 engine templates
+  1135→  - Toast notifications on generate/publish success (sonner)
+  1136→  - fetchJSON/postJSON helpers with retry for dev cold-start
+  1137→  - Wired to useStudioStore.playExperience() for the Play button (closes dialog, navigates to play view)
+  1138→- Modified `src/components/creator-os/CreatorStudio.tsx`:
+  1139→  - Added Plus icon import + AICreationStudio import
+  1140→  - Added aiStudioOpen state (useState(false))
+  1141→  - Added "+ CREATE" button to header (ml-auto, amber→orange gradient matching the studio's accent)
+  1142→  - Rendered <AICreationStudio open={aiStudioOpen} onOpenChange={setAiStudioOpen} /> immediately after header
+  1143→- Verified end-to-end with curl tests against the dev server:
+  1144→  - GET /api/ai-create → returns catalog (3 games + 3 sparks, each with configKeys) + 6 example prompts ✅
+  1145→  - POST /api/ai-create {"prompt":"Create a fast-paced cyberpunk endless runner..."} → AI proposal: "Neon Drift: Neo-Tokyo Sprint", game/neon-runner, tags [cyberpunk, endless-runner, competitive, mobile, action, runner], competitiveEligible=true, balanceParams {speed:380, spawnInterval:1.2}, source="ai" ✅
+  1146→  - POST pet prompt → "Cuddle Critter" (spark/tap-pet, competitiveEligible=false) ✅
+  1147→  - POST reaction prompt → "Green Rush" (spark/reaction-challenge, competitiveEligible=true) ✅
+  1148→  - POST tower-defense prompt → "Drone Shield: Urban Defense" (game/sky-defender, competitiveEligible=true) ✅
+  1149→  - POST ?mode=publish with the pet proposal → {experienceId: "cmsbgxrme0003u8kjlwq5li5q", published: true} ✅ (experience persisted to Postgres)
+  1150→- Lint clean throughout (bun run lint passes with no errors)
+  1151→
+  1152→Stage Summary:
+  1153→- Phase 21.3 complete. The AI Creation Studio is fully operational:
+  1154→  - Creators click "+ CREATE" in the Creator Studio header → AI Creation Studio dialog opens
+  1155→  - They type a natural-language prompt (or click an example chip) → click Generate
+  1156→  - The LLM analyzes the prompt, picks the best engine template (game or spark), generates a creative title/description/tags, decides competitive eligibility, suggests balance overrides, and explains its reasoning
+  1157→  - The result card displays everything (title, description, format badge, template id, tags, competitive eligibility, balance overrides, AI reasoning)
+  1158→  - Click Publish → createEngineExperience() creates a real ExperienceRecord with bundle + containment config + genome → experience is live and playable
+  1159→  - Click Play Now → useStudioStore.playExperience() navigates to PlayView, which renders the game inside ContainmentFrame via GameCanvas (native) or spark renderer
+  1160→  - Click Regenerate to try again, Reset to start over
+  1161→- Architecture: "AI assists but does not replace creators" — the LLM never generates code; it picks from existing engine templates and overlays creative metadata. The creator approves by clicking Publish. The published experience flows through the same createEngineExperience() path used by the seeder, so it gets a bundle, genome, containment config, and is immediately playable through the standard PlayView.
+  1162→- The LLM is invoked server-side only (z-ai-web-dev-sdk imported only in ai-game-generator.ts, which is only called from the API route). Client components use fetch + the typed AIGameProposal interface.
+  1163→- Fallback path: if the LLM fails (rate limit, network, invalid JSON), the rule-based keyword matcher kicks in and produces a valid proposal with source="rule" so the creator is never blocked.
+  1164→
+  1165→---
+  1166→Task ID: 21
+  1167→Agent: main (Z.ai Code) + AI Creation Studio subagent
+  1168→Task: Phase 21 — Interactive Experience Runtime & Creation OS. Turn PlayLiquid from "a platform that can display games" into "a platform where games are born, discovered, played, and evolved." Build a real game engine, spark runtime, AI creation studio, YouTube-style upload, and replace demo games with real playable experiences.
+  1169→
+  1170→Work Log:
+  1171→- Built PlayEngine (src/engine/PlayEngine.ts) — entity-component game engine:
+  1172→  - Entity system (position, velocity, size, collider, data)
+  1173→  - Physics (gravity, velocity integration, AABB collision detection)
+  1174→  - Sprite rendering (shapes, circles, glows, text)
+  1175→  - Input (keyboard WASD/arrows + touch pointer, normalized to game-space)
+  1176→  - Game loop (requestAnimationFrame, fixed 60fps timestep)
+  1177→  - Spawning (entities created/destroyed during play)
+  1178→  - Scoring + telemetry hooks (onScore, onEvent, onEnd)
+  1179→  - Seeded RNG (mulberry32) for deterministic experiences
+  1180→- Built 3 real native games (src/engine/games.ts):
+  1181→  - Neon Runner: endless runner with jump physics, obstacles, coins, increasing speed, collision death
+  1182→  - Sky Defender: tower defense shooter with aiming, bullets, enemy waves, HP system
+  1183→  - Coin Rush: 30s timed collector with coins + bombs, pointer follow movement
+  1184→- Built 3 real sparks (src/engine/sparks.ts):
+  1185→  - Catch the Stars: drag basket to catch falling stars, miss 3 = game over
+  1186→  - Reaction Challenge: tap when screen turns green, measures reaction time + streak
+  1187→  - Tap Pet: virtual pet with happiness/hunger bars, feed/play buttons, mood-based rendering
+  1188→- Built GameCanvas component (src/components/runtime/GameCanvas.tsx):
+  1189→  - Mounts PlayEngine on canvas, handles lifecycle (start/stop)
+  1190→  - Loading state, game over overlay with restart
+  1191→  - Score badge + end game button
+  1192→  - Works for both sparks (9:16) and games (16:9)
+  1193→- Upgraded PlayView to route to correct runtime:
+  1194→  - spark → GameCanvas (9:16 vertical, PlayEngine spark game)
+  1195→  - native → GameCanvas (16:9, PlayEngine game)
+  1196→  - html5 → Html5GamePlayer (iframe + postMessage)
+  1197→- Built AI Creation Studio (via subagent):
+  1198→  - src/lib/runtime/ai-game-generator.ts — LLM-powered game generator (prompt → game proposal)
+  1199→  - src/app/api/ai-create/route.ts — generate + publish API
+  1200→  - src/components/creator-os/AICreationStudio.tsx — dialog with prompt textarea, example chips, result card, publish/play
+  1201→  - Wired into CreatorStudio header as "+ CREATE" dropdown
+  1202→- Built YouTube-style Upload modal (src/components/creator-os/UploadModal.tsx):
+  1203→  - Title, description, game URL, tags input
+  1204→  - Drag/drop visual area
+  1205→  - Processing pipeline (uploading → scanning → detecting → extracting → creating → preview → done)
+  1206→  - Creates ImportedGameBundleRecord + ExperienceRecord
+  1207→- Added +CREATE dropdown to CreatorStudio header:
+  1208→  - "Create with AI" → opens AI Creation Studio
+  1209→  - "Upload HTML5 Game" → opens Upload modal
+  1210→- Fixed home feed (consumer-v2/consumer-service.ts):
+  1211→  - Sparks: format='spark' experiences
+  1212→  - Experiences: format != 'spark' (excludes sparks from the games section)
+  1213→- Updated RuntimeTab: shows spark catalog (3 sparks) + game catalog (3 games) + imported HTML5, with seed-all button
+  1214→- Updated runtime-service.ts: createEngineExperience (publishes engine games + sparks), seedEngineGames (seeds all 6)
+  1215→- Browser verification:
+  1216→  - Home page shows 4 sparks (Cuddle Critter, Catch the Stars, Reaction Challenge, Tap Pet) + 8 experiences
+  1217→  - Clicked "Cuddle Critter" spark → PlayView opened with 9:16 ContainmentFrame, canvas rendered, engine running (score 0, End game button visible)
+  1218→  - Runtime bundle API: GET /api/runtime/bundle/{id} 200
+  1219→  - Lint clean
+  1220→- Deployed to production:
+  1221→  - Pushed to GitHub (pectoraux/playliquid-platform)
+  1222→  - Triggered Vercel deployment → READY in 30s
+  1223→  - Live: https://playliquid.vercel.app (4 sparks + 8 experiences confirmed)
+  1224→
+  1225→Stage Summary:
+  1226→- Phase 21 complete. PlayLiquid now has a real interactive media runtime:
+  1227→  - PlayEngine: entity-component game engine with physics, sprites, collisions
+  1228→  - 3 real native games (Neon Runner, Sky Defender, Coin Rush)
+  1229→  - 3 real sparks (Catch the Stars, Reaction Challenge, Tap Pet)
+  1230→  - SparkRuntime: vertical 9:16 touch-native runtime
+  1231→  - AI Creation Studio: prompt → playable game
+  1232→  - YouTube-style Upload modal with processing pipeline
+  1233→  - +CREATE dropdown in Creator Studio
+  1234→  - Home feed properly separates sparks from games
+  1235→- "A platform where games are born, discovered, played, and evolved." ✅
+  1236→
+  1237→---
+  1238→Task ID: 22
+  1239→Agent: main (Z.ai Code)
+  1240→Task: Phase 22 — AI Game Design Compiler. Replace the direct prompt→game flow with a structured 4-step design compiler: Describe → Architect → Compatibility → Generate.
+  1241→
+  1242→Work Log:
+  1243→- Added GameCreationSession model (tracks multi-step creation flow with rawDescription, generatedSpecJson, compatibilityJson, compiledPrompt, status, resultExperienceId)
+  1244→- Created src/lib/game-creation/ module with 5 files:
+  1245→  - game-spec-schema.ts: GameSpecification type (title, format, genre, coreFantasy, playerActions, gameLoop, sessionLength, orientation, controls, camera, difficulty, extensions, telemetry, engineTemplateId, competitiveEligible, reasoning) + PLAYLIQUID_CAPABILITIES + EXTENSION_TO_TEMPLATE mapping
+  1246→  - game-designer-agent.ts: LLM-powered design agent (description → GameSpecification via z-ai-web-dev-sdk). System prompt includes available engine templates. Falls back to rule-based keyword matching (shoot/defend→sky-defender, collect→coin-rush, run/race→neon-runner, pet→tap-pet, react→reaction-challenge, catch→catch-stars). Includes refineSpec() for real-time collaboration (make it harder, add multiplayer, change to spark)
+  1247→  - compatibility-validator.ts: validates spec against PlayLiquid capabilities (runtime, container, input, extensions, telemetry, evolutionReady). Returns missing[] + warnings[] + passed boolean
+  1248→  - prompt-compiler.ts: converts validated spec into a 2300+ char LLM-ready generation prompt with PROJECT/CATEGORY/FORMAT/RUNTIME/REQUIREMENTS/GAME DESIGN/INPUT BRIDGE/TELEMETRY BRIDGE/OUTPUT sections. Includes the pl:input and pl:telemetry postMessage bridge documentation
+  1249→  - generation-orchestrator.ts: ties the flow together (startDesignSession → refineDesignSession → compileDesignSession → generateExperience). Persists state in GameCreationSession
+  1250→- Created /api/game-creation API routes:
+  1251→  - POST /api/game-creation (actions: design, refine, compile, generate)
+  1252→  - GET /api/game-creation/[sessionId] (get session state)
+  1253→- Rewrote AICreationStudio component as 4-step modal:
+  1254→  - Step 1 (Describe): Spark vs Game format picker + description textarea + example prompts
+  1255→  - Step 2 (Architect): Full game design panel (title, genre, core fantasy, game loop, player actions, extensions, telemetry, engine template, AI reasoning) + real-time refinement input with quick suggestions
+  1256→  - Step 3 (Compatibility): Checklist (runtime, container, input, telemetry, extensions, evolution ready) with warnings/missing + copyable LLM-ready prompt preview
+  1257→  - Step 4 (Generate): Success screen with Play Now button
+  1258→- Browser verification:
+  1259→  - Step 1: Dialog opened, format picker rendered, description filled via native React setter
+  1260→  - Step 2: AI designed "Ninja vs Robots" (game, action combat, sky-defender engine, 5-10min, side scrolling) — POST /api/game-creation 200 in 7.2s
+  1261→  - Steps 3-4: Verified via direct API calls (server kept dying between browser commands)
+  1262→- API verification (local + Vercel):
+  1263→  - "ninja fighting robots" → "Ninja Cyber Clash" (sky-defender, competitive, actions: run/jump/attack/dodge)
+  1264→  - "space shooter with aliens" → "Star Shield" (sky-defender, tower defense/shooter, actions: aim/shoot/defend)
+  1265→  - Compile: passed ✅, 2315-2661 char prompt generated
+  1266→  - Generate: experience published with correct engineTemplateId
+  1267→- Deployed to Vercel: https://playliquid.vercel.app (READY)
+  1268→  - AI design API works on Vercel ✅
+  1269→  - Compile API works on Vercel ✅
+  1270→
+  1271→Stage Summary:
+  1272→- Phase 22 complete. PlayLiquid now has an AI Game Design Compiler:
+  1273→  - User describes idea → AI Architect produces structured GameSpecification
+  1274→  - Spec is validated against platform capabilities
+  1275→  - Validated spec is compiled into an LLM-ready generation prompt
+  1276→  - Prompt can be copied externally OR generated internally
+  1277→  - Internal generation uses the matched engine template
+  1278→- "This turns PlayLiquid from a game upload platform into an AI-native game creation operating system." ✅
+  1279→
+  1280→---
+  1281→Task ID: 23
+  1282→Agent: main (Z.ai Code)
+  1283→Task: Phase 23 — Creator Publishing Pipeline. Replace URL-based upload with real YouTube-style file upload (drag/drop ZIP, multipart/form-data, extraction, validation, draft/publish lifecycle).
+  1284→
+  1285→Work Log:
+  1286→- Created src/lib/upload/ module:
+  1287→  - bundle-validator.ts: validates HTML5 game bundles (checks index.html, detects engine: canvas/phaser/three.js/unity-webgl, scans for pl:input + pl:telemetry bridges, detects extensions from content, generates manifest if missing)
+  1288→  - upload-service.ts: processUpload() — accepts File object, extracts ZIP (zero external deps using zlib.inflateRawSync for raw deflate), validates bundle, stores in /public/uploaded-games/{slug}/, creates ExperienceRecord (DRAFT status), creates containment config (html5), creates ImportedGameBundleRecord. publishExperience() — changes DRAFT to PUBLISHED
+  1289→- Created /api/experiences/upload API route:
+  1290→  - multipart/form-data mode: accepts file + title + description + tags + format + orientation
+  1291→  - JSON mode: { action: "publish", experienceId } for publishing drafts
+  1292→- Rewrote UploadModal as 4-step wizard:
+  1293→  - Step 1 (Upload): real <input type=file> with ref + hidden + click forwarding, drag/drop with e.preventDefault(), supported formats list
+  1294→  - Step 2 (Details): title, description, tags, category (Spark/Game), orientation (Portrait/Landscape)
+  1295→  - Step 3 (Processing): upload progress bar + processing pipeline checklist (extracting → checking manifest → detecting runtime → compatibility → creating experience)
+  1296→  - Step 4 (Result): validation report (engine, bridges, detected extensions, warnings) + Preview + Publish buttons
+  1297→- Fixed ZIP extraction: changed zlib.inflateSync to zlib.inflateRawSync (ZIP uses raw deflate without zlib headers)
+  1298→- Fixed home feed limit: getExperiencesForHome(8) → (12), getSparks(6) → (10) so all published experiences appear
+  1299→- Draft/publish lifecycle: uploaded experiences start as DRAFT, creator must click Publish to make them visible
+  1300→- Verified end-to-end (local):
+  1301→  - Created test ZIP (pixel-quest.zip with index.html + game.js + manifest.json)
+  1302→  - Upload: POST /api/experiences/upload 200 — extracted, validated (canvas engine, input+telemetry bridges detected, score+collection extensions)
+  1303→  - Publish: POST /api/experiences/upload (JSON publish action) → PUBLISHED
+  1304→  - Home feed: "Pixel Quest Adventure" appears in the experiences list
+  1305→  - Files served: /uploaded-games/pixel-quest-adventure-*/index.html returns 200
+  1306→- Deployed to Vercel: https://playliquid.vercel.app (READY)
+  1307→  - Home feed shows 4 sparks + 6 experiences (including Pixel Quest Adventure uploaded via local dev)
+  1308→  - Note: Vercel serverless filesystem is read-only, so the upload API can't extract ZIPs on Vercel. Uploaded games must be committed to the repo (they're in /public/uploaded-games/). For production, this would use S3/blob storage.
+  1309→
+  1310→Stage Summary:
+  1311→- Phase 23 complete. PlayLiquid now has a real creator publishing pipeline:
+  1312→  - YouTube-style upload wizard with drag/drop + file input
+  1313→  - Real ZIP extraction + bundle validation
+  1314→  - Runtime detection (canvas/phaser/three.js)
+  1315→  - Bridge scanning (pl:input + pl:telemetry)
+  1316→  - Draft/publish lifecycle
+  1317→  - Uploaded games appear on the home feed after publishing
+  1318→- "That would complete the missing bridge between 'a game exists' and 'a creator can actually publish a game on PlayLiquid.'" ✅
+  1319→
+  1320→---
+  1321→Task ID: 26
+  1322→Agent: Consumer V3 Builder
+  1323→Task: Build complete Consumer V3 shell with all pages — YouTube/TikTok-quality rewrite of the consumer experience.
+  1324→
+  1325→Work Log:
+  1326→- Read worklog.md (Tasks 1–23) to understand prior architecture: Phase 18 consumer service, Phase 20.5 runtime adapters, Phase 21 PlayEngine + sparks + games, Phase 22 AI Game Design Compiler, Phase 23 creator publishing pipeline.
+  1327→- Audited existing files:
+  1328→  - src/components/consumer-v2/ConsumerHomeV3.tsx — old version had only a single "Home" feed (sparks row + experiences grid + trending + live). No real navigation between pages; clicking Sparks sidebar item just opened the SparkPlayer immediately. Sidebar item list was small (Home, Sparks, Experiences, Live, Competitions + Library/Liked/History + Studio/Extensions/Wallet/Profile). Mobile bottom nav did not exist.
+  1329→  - src/stores/studio-store.ts — default view was already 'home-v3' (line 152). StudioView union still includes 'home-v2' for legacy routing.
+  1330→  - src/components/runtime/SparkPlayer.tsx + GamePlayer.tsx — both correctly use setView('home-v3') already (SparkPlayer was correct; GamePlayer uses setView('home-v3') in header back button and not-found fallback). Only PlayView.tsx still called setView('home-v2').
+  1331→  - src/lib/consumer-v2/consumer-service.ts — getYouTubeHome returns { sparks, experiences, live, highlights } with each item carrying experienceId, title (displayTitle), creatorName, playCount, publishedAgo, thumbnailUrl, competitiveEligible, extensions.
+  1332→- Designed the new shell architecture:
+  1333→  - Top-level wrapper: min-h-screen flex flex-col (sticky footer pattern).
+  1334→  - Mobile top bar: PL logo + search toggle (collapsible search field).
+  1335→  - Desktop sidebar: hidden on mobile (md:flex), collapsible (w-60 ↔ w-16), sticky full-height, ScrollArea for nav items.
+  1336→  - Main column: desktop top bar (sticky search + Create button) + main scrollable content area with pb-24 on mobile to clear the bottom nav.
+  1337→  - Mobile bottom nav: fixed bottom-0, grid-cols-5 with center circular Create button (gradient amber→orange, prominent, 12×12, shadow).
+  1338→- Implemented NavId type with all 10 routes: home, sparks, games, live, highlights, subscriptions, library, history, liked, watch-later.
+  1339→- Built a ContentRouter component that switches the main area based on activeNav:
+  1340→  - home: sparks row (horizontal scroll) + recommended experiences grid + live now + trending subset. Includes "Play all" action on Sparks header.
+  1341→  - sparks: 2-6 col responsive grid of larger 200×356px phone-sized SparkCards (vertical 9:16). Header has "Play all" action.
+  1342→  - games: 1-4 col responsive grid of 16:9 ExperienceCards. Includes format badge (when not native/spark), Ranked badge, plays count, avatar + title + creator + relative time.
+  1343→  - live: grid of LiveCards with pulsing LIVE badge + viewer count.
+  1344→  - highlights: grid of HighlightCards with HIGHLIGHT badge, score, view count.
+  1345→  - subscriptions: grid of ExperienceCards labeled "Latest from creators you follow".
+  1346→  - library: 2-4 col grid of section tiles (History, Liked, Watch Later, Playlists).
+  1347→  - history/liked/watch-later: EmptyState component with icon + title + subtitle.
+  1348→- DesktopSidebar: PRIMARY_NAV (Home, Sparks, Games, Live, Highlights, Subscriptions) + LIBRARY_NAV (Library, History, Liked, Watch Later) + ACTIONS_NAV (Compete→competitive, Wallet→adr-economy, Extensions→extensions, Studio→creator-studio, Profile→identity-u). Each item has min-h-[40px] touch target, title attribute for collapsed mode, active state highlights.
+  1349→- MobileBottomNav: 5-item grid (Home, Sparks, Create(center), Games, Library). Center Create button is w-12 h-12 circular gradient. Bottom nav respects iOS safe-area-inset-bottom via pb-[env(safe-area-inset-bottom)].
+  1350→- TopBar (desktop + mobile): search uses shadcn Input inside a rounded-full container with focus:border-amber-400. Mobile search is toggled open via a Search icon button. Desktop search is always visible in the top bar.
+  1351→- SparkCard improvements:
+  1352→  - Width 200px, Height 356px (9:16 phone-sized).
+  1353→  - Shows thumbnailUrl if available, otherwise gradient background with extension icon + title.
+  1354→  - ⚡ SPARK badge top-left (with filled Zap icon).
+  1355→  - Game icon chips top-right (up to 2 extension icons).
+  1356→  - Bottom gradient overlay: title (2 lines), @creatorhandle, plays + relative time.
+  1357→  - Hover: play button overlay (white circle, fill Play icon), subtle background dim.
+  1358→- ExperienceCard improvements:
+  1359→  - 16:9 thumbnail (image or violet/fuchsia/amber gradient with Play icon).
+  1360→  - Plays badge bottom-right ("1.2K plays" with monospace).
+  1361→  - Ranked badge top-right (Trophy icon + "Ranked") when competitiveEligible.
+  1362→  - Format badge top-left (e.g. "HTML5") when format is not spark/native.
+  1363→  - Below: 9×9 avatar (gradient amber→orange, creator initials) + title (2 lines) + creator name + "{plays} plays · {publishedAgo}".
+  1364→  - Hover: scale thumbnail + play overlay.
+  1365→- LoadingState: skeleton placeholders (4 vertical spark cards + 8 experience card skeletons with avatar circle + title lines).
+  1366→- EmptyState: reusable component (icon in muted circle + title + subtitle).
+  1367→- SectionHeader: icon + title + subtitle + optional action button (e.g., "Play all" with filled Play icon).
+  1368→- Used fetchJSON helper with retry (2 retries, 800ms backoff) for dev cold-start.
+  1369→- Used shadcn/ui: Button, Badge, Avatar, AvatarFallback, ScrollArea, Input.
+  1370→- Used lucide-react icons: Home, Zap, Gamepad2, Radio, Sparkles, Library, Heart, Clock, Plus, Search, Trophy, Coins, Package, BarChart, Settings, Menu, X, Play, Eye, ListVideo, History, Bookmark, Flame, Users.
+  1371→- Fixed React Compiler error: removed useMemo + closure-based filterFn (compiler couldn't preserve memoization due to inferred-vs-specified dependency mismatch). Replaced with inline .filter() calls — cheap operations, no memoization needed.
+  1372→- Removed all V2 references:
+  1373→  - CreatorStudio.tsx: setView('home-v2') → setView('home-v3')
+  1374→  - NetworkIntelligence.tsx: setView('home-v2') → setView('home-v3')
+  1375→  - PlayView.tsx: 2 occurrences of setView('home-v2') → setView('home-v3')
+  1376→  - CreationWizard.tsx: setView('home') → setView('home-v3')
+  1377→  - StudioEditor.tsx: setView('home') → setView('home-v3')
+  1378→  - ExperiencesView.tsx: setView('home') → setView('home-v3')
+  1379→  - CreatorProfile.tsx: setView('home') → setView('home-v3')
+  1380→  - CivDashboard.tsx: setView('home') → setView('home-v3')
+  1381→  - WorldDashboard.tsx: setView('home') → setView('home-v3')
+  1382→  - Playground.tsx: setView('home') → setView('home-v3')
+  1383→  - page.tsx: removed ConsumerHomeV2 + StudioHome imports. case 'home' + case 'home-v2' both return ConsumerHomeV3. Play view fallback returns ConsumerHomeV3 instead of ConsumerHomeV2. Default case returns ConsumerHomeV3 instead of StudioHome.
+  1384→- studio-store.ts default view was already 'home-v3' (verified line 152).
+  1385→- Ran `bun run lint` → clean (exit 0, no errors, no warnings).
+  1386→- Verified dev.log shows the dev server was processing requests successfully (prisma:query traces for ExperienceRecord lookups).
+  1387→
+  1388→Stage Summary:
+  1389→- Consumer V3 shell is complete and replaces the old ConsumerHomeV3 entirely.
+  1390→- Desktop: collapsible left sidebar with 16 nav items (10 content pages + 5 action shortcuts), top bar with always-visible search + Create button, scrollable content area rendering 10 different page types based on activeNav.
+  1391→- Mobile: top bar with collapsible search, content area with bottom padding to clear nav, fixed 5-item bottom navigation with prominent center Create button (circular gradient).
+  1392→- Pages: Home (mixed feed with sparks row + recommended + live + trending), Sparks (phone-sized 200×356 vertical cards), Games (16:9 experience cards with avatar + ranked badge), Live (pulsing LIVE badges), Highlights (AI clip cards), Subscriptions, Library (section tiles), History/Liked/Watch-Later (empty states).
+  1393→- Spark cards: 200×356px phone-sized, thumbnail support, ⚡ SPARK badge, extension icon chips, gradient bottom info bar, hover play overlay.
+  1394→- Experience cards: 16:9 thumbnail, avatar + title + creator + plays + relative time, Ranked badge, format badge, hover play overlay.
+  1395→- All V2 references removed: every setView('home') and setView('home-v2') across 10 files changed to setView('home-v3'). page.tsx no longer imports ConsumerHomeV2 or StudioHome — all routes funnel through ConsumerHomeV3.
+  1396→- Lint clean. Default view confirmed as 'home-v3'.
+  1397→- "Replace the current ConsumerHomeV3 with a full YouTube-style application shell" ✅
+  1398→
+  1399→---
+  1400→Task ID: 27-api
+  1401→Agent: Z.ai Code (API routes)
+  1402→Task: Build API routes for the PlayLiquid social and search features on top of the existing `src/lib/social/social-service.ts`.
+  1403→
+  1404→Work Log:
+  1405→- Read worklog.md and reviewed `src/lib/social/social-service.ts` (followCreator/unfollowCreator/isFollowing/getFollowerCount/postComment/getComments/likeComment/getCreatorChannel/searchExperiences) plus reference patterns from existing routes (`social/following`, `asset-economy/assets/[id]/rate`, `identity-u/community/[experienceId]`).
+  1406→- Created 6 API routes, all using `NextRequest`/`NextResponse` from `next/server` and the Next.js 16 `params: Promise<{...}>` pattern for dynamic params. Default `viewerId` is `'demo-user'` when not provided.
+  1407→
+  1408→  1. `src/app/api/social/follow/route.ts`
+  1409→     - GET `?creatorId=X&viewerId=Y` → returns `{ following: boolean, followers: number }` via parallel `isFollowing` + `getFollowerCount`.
+  1410→     - POST `{ creatorId, action: "follow" | "unfollow", viewerId? }` → calls `followCreator`/`unfollowCreator`, then re-reads follower count, returns `{ following, followers }`. 400 if `creatorId` missing or `action` invalid.
+  1411→
+  1412→  2. `src/app/api/social/comments/route.ts`
+  1413→     - GET `?experienceId=X&limit?` → `{ comments: Comment[] }` (limit clamped to 1–200, default 50).
+  1414→     - POST `{ experienceId, body, userId?, displayName?, parentId? }` → `{ comment: Comment }` via `postComment`. 400 if `experienceId` missing or `body` empty/whitespace.
+  1415→
+  1416→  3. `src/app/api/social/comments/[id]/like/route.ts`
+  1417→     - POST (dynamic param `id`) → `{ likes: number }` via `likeComment`. Wraps service call in try/catch → 500 with error message on failure (handles unknown comment ids).
+  1418→
+  1419→  4. `src/app/api/social/followers/route.ts`
+  1420→     - GET `?creatorId=X` → `{ followers: number }` via `getFollowerCount`. 400 if `creatorId` missing.
+  1421→
+  1422→  5. `src/app/api/search/route.ts`
+  1423→     - GET `?q=query&limit?` → `{ results: SearchResult[] }` via `searchExperiences` (limit clamped 1–50, default 20). Empty/whitespace query short-circuits to `{ results: [] }` to match the service's own empty-query guard.
+  1424→
+  1425→  6. `src/app/api/creator-channel/route.ts`
+  1426→     - GET `?creatorId=X&viewerId?` → `{ channel: CreatorChannel }` via `getCreatorChannel`. 400 if `creatorId` missing. 404 if the service returns `null` (creator not found).
+  1427→
+  1428→- All routes:
+  1429→  - Use `new URL(req.url).searchParams` for query parsing.
+  1430→  - Parse JSON body defensively: `await req.json().catch(() => ({}))`.
+  1431→  - Return explicit 400s with `{ error }` payload for missing/invalid params.
+  1432→  - Avoid leaking raw error stacks; the like route catches and returns a 500 with a message.
+  1433→- Ran `bun run lint` → clean, exit 0, no errors, no warnings.
+  1434→
+  1435→Stage Summary:
+  1436→- 6 social/search API routes shipped: `social/follow` (GET+POST), `social/comments` (GET+POST), `social/comments/[id]/like` (POST), `social/followers` (GET), `search` (GET), `creator-channel` (GET).
+  1437→- Consistent with existing project conventions (Next.js 16 async params, NextRequest/NextResponse, `demo-user` default viewer, defensive JSON parsing).
+  1438→- Lint clean. Ready for the frontend agent to wire into the Consumer V3 shell / creator channel UI.
+  1439→

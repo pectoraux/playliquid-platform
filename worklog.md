@@ -1436,3 +1436,87 @@ Stage Summary:
 - 6 social/search API routes shipped: `social/follow` (GET+POST), `social/comments` (GET+POST), `social/comments/[id]/like` (POST), `social/followers` (GET), `search` (GET), `creator-channel` (GET).
 - Consistent with existing project conventions (Next.js 16 async params, NextRequest/NextResponse, `demo-user` default viewer, defensive JSON parsing).
 - Lint clean. Ready for the frontend agent to wire into the Consumer V3 shell / creator channel UI.
+
+---
+Task ID: 25
+Agent: Z.ai Code (Consumer V3 Header/Sidebar Rebuild)
+Task: Rebuild the PlayLiquid Consumer V3 header and sidebar to match YouTube exactly — sticky global header with logo + center search + Create/Bell/Avatar dropdowns, sidebar cleanup (remove Create/Profile/Compete; add Downloads), mobile-aware responsive header.
+
+Work Log:
+- Read `worklog.md` for context (Task 24 built the original ConsumerHomeV3 YouTube-style shell; Task 27-api shipped social/search API routes).
+- Read `src/components/consumer-v2/ConsumerHomeV3.tsx` (1103 lines) to map the existing structure: separate `DesktopTopBar` + `MobileTopBar` components, `DesktopSidebar` with its own logo+toggle block, ACTIONS_NAV containing Compete/Wallet/Extensions/Studio/Profile, LIBRARY_NAV without Downloads.
+- Confirmed shadcn `dropdown-menu` component exists at `src/components/ui/dropdown-menu.tsx` (Radix-based, exports DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, etc.).
+
+Changes made to `src/components/consumer-v2/ConsumerHomeV3.tsx`:
+
+1. Imports — extended the lucide-react import list with `Bell, Download, ChevronDown, User, Mail, Upload` and added a new shadcn import block:
+   ```tsx
+   import {
+     DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+     DropdownMenuItem, DropdownMenuSeparator,
+   } from '@/components/ui/dropdown-menu';
+   ```
+
+2. NavId type — added `'downloads'` as a valid union member (alongside the existing `'home' | 'sparks' | ... | 'search'`). The ContentRouter switch's `default` case handles it (renders HomePage), so the renderContent switch is unchanged per the task constraint.
+
+3. Sidebar nav arrays:
+   - `LIBRARY_NAV`: appended `{ id: 'downloads', icon: Download, label: 'Downloads' }` after Watch Later.
+   - `ACTIONS_NAV`: trimmed from 5 items to 3 — kept Wallet (adr-economy), Extensions (extensions), Studio (creator-studio). Removed Compete (was redundant with the Tournaments item already in PRIMARY_NAV) and Profile (moved into the header's profile dropdown).
+
+4. `ConsumerHomeV3` main return — replaced the dual `<MobileTopBar />` + `<DesktopTopBar />` pattern with a single shared `<GlobalHeader />` rendered at the top of the `<div className="min-h-screen flex flex-col bg-background">` root. The flex row below now only contains `<DesktopSidebar />` (no longer needs `onToggle`) and the main content wrapper. Added `min-h-0` to the main wrapper to ensure proper flex scrolling.
+
+5. `DesktopSidebar`:
+   - Removed the `onToggle` prop from the function signature and type.
+   - Removed the entire `{/* Logo + toggle */}` block at the top of the aside (the logo + hamburger now live in the GlobalHeader).
+   - Changed sticky positioning from `sticky top-0 h-screen` to `sticky top-14 h-[calc(100vh-3.5rem)] z-10` so the sidebar sticks just below the 56px (h-14) global header instead of overlapping it.
+   - Added `pt-2` to the inner `<nav>` so the first item isn't flush against the top edge (the logo block used to provide this padding).
+
+6. New `GlobalHeader` component (replaces both DesktopTopBar and MobileTopBar) — a single sticky header at `top-0 z-40 h-14 bg-background/95 backdrop-blur border-b border-border`. Layout:
+   - **Left**: hamburger button (desktop only, `hidden md:flex`, toggles `sidebarOpen`) + PlayLiquid logo (w-7 h-7 gradient box with "PL" + "PlayLiquid" wordmark hidden on xs).
+   - **Center (desktop)**: `<SearchBar />` rendered inside `hidden md:flex flex-1 max-w-2xl mx-auto px-4`. Expands/centers like YouTube.
+   - **Mobile spacer**: `<div className="flex-1 md:hidden" />` pushes the right cluster to the edge.
+   - **Right cluster**: mobile search icon button (toggles expandable search), Create button (desktop = pill with label, mobile = icon-only 40×40 round), `<NotificationsBell />`, `<ProfileDropdown />`.
+   - **Mobile expandable search**: rendered below the header row when `mobileSearchOpen` is true, uses the same `<SearchBar />` component with `autoFocus`.
+
+7. New `SearchBar` component — extracted the rounded-full search input (Search icon + Input + clear-X button) into a reusable component used by both desktop and mobile-expanding variants. Focus state highlights the border with `amber-400` and switches background to `bg-background`. Enter key triggers `onSubmit`.
+
+8. New `NotificationsBell` component — uses `DropdownMenu`:
+   - Trigger: 40×40 round button with Bell icon, plus a small rose-500 dot indicator at top-right (ring-2 ring-background for crisp edge).
+   - Content (`w-80 p-0`): "Notifications" header with Bell icon + 4 sample notifications defined in a `NOTIFICATIONS` constant. Each notification has its own icon (Upload/Trophy/Heart/Coins), text, relative time (2h/30m/1d/2d ago), and a colored circular badge (violet/amber/rose/emerald, with dark-mode variants). List has `max-h-96 overflow-y-auto` for long-list scrolling.
+
+9. New `ProfileDropdown` component — uses `DropdownMenu`:
+   - Trigger: 36×36 round avatar with "SD" fallback, gradient amber→orange, ring-2 ring-border that highlights amber on hover.
+   - Content (`w-64 p-0`):
+     - Header: 40×40 avatar + "Studio Demo Creator" + email "demo@playliquid.io" (with Mail icon).
+     - Separator.
+     - Menu items (using `onSelect` for proper Radix close-then-navigate behavior):
+       - **My Channel** → `onNavigate('creator-studio')`
+       - **Studio** → `onNavigate('creator-studio')`
+       - **Wallet** → `onNavigate('adr-economy')`
+       - **Library** → `onOpenLibrary()` (sets `activeNav` to `'library'`)
+       - Separator
+       - **Settings** → `onNavigate('identity-u')`
+
+10. Layout/sticky behavior — header is `sticky top-0 z-40`, sidebar is `sticky top-14 z-10` (just below the header), main content scrolls naturally inside the flex row. The mobile bottom nav (`fixed bottom-0 z-30 md:hidden`) is unchanged.
+
+11. Preserved:
+   - All existing page rendering logic (ContentRouter switch statement) — untouched.
+   - Mobile bottom nav 5-item grid (Home, Sparks, Create-center, Games, Library) — untouched.
+   - All card components (SparkCard, ExperienceCard, LiveCard, HighlightCard) — untouched.
+   - All page components (HomePage, SparksPage, GamesPage, LivePage, HighlightsPage, SubscriptionsPage, LibraryPage, TournamentsPage, SearchPage) — untouched.
+   - All EmptyState/LoadingState/SectionHeader/NavItem helpers — untouched.
+   - The `useStudioStore` `setView` + `playExperience` + `playSparkQueue` wiring — untouched.
+
+Validation:
+- Ran `bun run lint` → clean (exit 0, no errors, no warnings). The eslint config has `@typescript-eslint/no-unused-vars` off, so the `ChevronDown` import (requested by the spec even though not directly used) doesn't trigger an error.
+- Verified the dev server log shows the project starting cleanly (Next.js 16.1.3 with Turbopack, Ready in 947ms). The dev server is managed by the sandbox system; the file changes will be picked up via Turbopack's hot reload on next request.
+- Final file is 1251 lines (was 1103) — net +148 lines for the new GlobalHeader/SearchBar/NotificationsBell/ProfileDropdown components, minus the removed DesktopTopBar/MobileTopBar/sidebar-logo-block.
+
+Stage Summary:
+- Header is now a single sticky `GlobalHeader` component shared across desktop and mobile, matching the YouTube pattern: hamburger + logo on the left, large centered rounded-full search bar (desktop) or expandable search (mobile), and a right cluster with Create + Notifications bell + Profile avatar dropdown.
+- NotificationsBell dropdown shows 4 sample notifications with distinct icons (Upload/Trophy/Heart/Coins) and relative timestamps, plus a red unread dot indicator.
+- ProfileDropdown shows the signed-in user (avatar + name + email) and routes to My Channel / Studio / Wallet / Library / Settings.
+- Sidebar cleaned: ACTIONS_NAV is now just Wallet/Extensions/Studio (Compete removed since Tournaments already exists in PRIMARY_NAV; Profile removed since it's in the header dropdown; Create removed since it's now in the header). LIBRARY_NAV gained a Downloads item with the Download icon. The sidebar no longer renders its own logo+toggle block (the logo lives in the header now), and its sticky position moved from `top-0 h-screen` to `top-14 h-[calc(100vh-3.5rem)]` so it sits below the header without overlap.
+- Mobile bottom nav (Home/Sparks/Create/Games/Library) preserved unchanged.
+- All existing page rendering logic (ContentRouter switch) preserved unchanged.
+- Lint clean. Ready for user preview.

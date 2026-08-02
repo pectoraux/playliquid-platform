@@ -8,9 +8,17 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import {
   Home, Zap, Gamepad2, Radio, Sparkles, Library, Heart, Clock,
   Plus, Search, Trophy, Coins, Package, BarChart, Settings, Menu, X,
   Play, Eye, ListVideo, History, Bookmark, Flame, Users, Loader2,
+  Bell, Download, ChevronDown, User, Mail, Upload,
 } from 'lucide-react';
 
 // ─── fetchJSON helper (retry for dev cold-start) ──────────────────────────
@@ -32,7 +40,8 @@ async function fetchJSON<T = any>(url: string, retries = 2): Promise<T> {
 
 type NavId =
   | 'home' | 'sparks' | 'games' | 'live' | 'highlights' | 'tournaments'
-  | 'subscriptions' | 'library' | 'history' | 'liked' | 'watch-later' | 'search';
+  | 'subscriptions' | 'library' | 'history' | 'liked' | 'watch-later'
+  | 'downloads' | 'search';
 
 interface Experience {
   experienceId: string;
@@ -126,32 +135,29 @@ export function ConsumerHomeV3() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Mobile top bar */}
-      <MobileTopBar
+      {/* ── Global Header (shared desktop + mobile, sticky) ── */}
+      <GlobalHeader
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         onCreate={() => setView('creator-studio')}
+        onNavigate={(v) => setView(v)}
+        onOpenLibrary={() => setActiveNav('library')}
+        onOpenSearch={() => setActiveNav('search')}
       />
 
       <div className="flex flex-1 min-h-0">
         {/* ── Desktop Left Sidebar (collapsible) ── */}
         <DesktopSidebar
           open={sidebarOpen}
-          onToggle={() => setSidebarOpen(!sidebarOpen)}
           activeNav={activeNav}
           setActiveNav={setActiveNav}
           onNavigate={(v) => setView(v)}
         />
 
         {/* ── Main Content ── */}
-        <div className="flex-1 min-w-0 flex flex-col">
-          {/* Desktop top bar */}
-          <DesktopTopBar
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            onCreate={() => setView('creator-studio')}
-          />
-
+        <div className="flex-1 min-w-0 flex flex-col min-h-0">
           <main className="flex-1 overflow-y-auto p-4 pb-24 md:pb-6 space-y-6 max-w-7xl w-full mx-auto">
             {loading ? (
               <LoadingState />
@@ -563,42 +569,27 @@ const LIBRARY_NAV: SidebarItem[] = [
   { id: 'history', icon: History, label: 'History' },
   { id: 'liked', icon: Heart, label: 'Liked' },
   { id: 'watch-later', icon: Bookmark, label: 'Watch Later' },
+  { id: 'downloads', icon: Download, label: 'Downloads' },
 ];
 
 const ACTIONS_NAV: SidebarNavAction[] = [
-  { icon: Trophy, label: 'Compete', view: 'competitive' },
   { icon: Coins, label: 'Wallet', view: 'adr-economy' },
   { icon: Package, label: 'Extensions', view: 'extensions' },
   { icon: BarChart, label: 'Studio', view: 'creator-studio' },
-  { icon: Settings, label: 'Profile', view: 'identity-u' },
 ];
 
 function DesktopSidebar({
-  open, onToggle, activeNav, setActiveNav, onNavigate,
+  open, activeNav, setActiveNav, onNavigate,
 }: {
   open: boolean;
-  onToggle: () => void;
   activeNav: NavId;
   setActiveNav: (n: NavId) => void;
   onNavigate: (v: any) => void;
 }) {
   return (
-    <aside className={`hidden md:flex ${open ? 'w-60' : 'w-16'} shrink-0 border-r border-border bg-card/30 transition-all duration-200 flex-col sticky top-0 h-screen`}>
-      {/* Logo + toggle */}
-      <div className="p-3 flex items-center gap-2">
-        <button onClick={onToggle} className="p-1.5 rounded hover:bg-muted transition-colors" aria-label="Toggle sidebar">
-          {open ? <Menu className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-        {open && (
-          <div className="flex items-center gap-1.5">
-            <div className="w-6 h-6 rounded bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold">PL</div>
-            <span className="text-sm font-bold">PlayLiquid</span>
-          </div>
-        )}
-      </div>
-
+    <aside className={`hidden md:flex ${open ? 'w-60' : 'w-16'} shrink-0 border-r border-border bg-card/30 transition-all duration-200 flex-col sticky top-14 h-[calc(100vh-3.5rem)] z-10`}>
       <ScrollArea className="flex-1">
-        <nav className="px-2 space-y-0.5 pb-4">
+        <nav className="px-2 space-y-0.5 pt-2 pb-4">
           {PRIMARY_NAV.map((item) => (
             <NavItem
               key={item.id}
@@ -648,87 +639,243 @@ function DesktopSidebar({
   );
 }
 
-// ─── Top bars ──────────────────────────────────────────────────────────────
+// ─── Global Header (YouTube-style, shared desktop + mobile) ───────────────
 
-function DesktopTopBar({
-  searchQuery, setSearchQuery, onCreate,
+function GlobalHeader({
+  sidebarOpen, onToggleSidebar, searchQuery, setSearchQuery, onCreate,
+  onNavigate, onOpenLibrary, onOpenSearch,
 }: {
+  sidebarOpen: boolean;
+  onToggleSidebar: () => void;
   searchQuery: string;
   setSearchQuery: (v: string) => void;
   onCreate: () => void;
+  onNavigate: (v: any) => void;
+  onOpenLibrary: () => void;
+  onOpenSearch: () => void;
 }) {
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
   return (
-    <header className="hidden md:flex sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border px-4 py-2.5 items-center gap-3">
-      <div className="flex-1 max-w-xl flex items-center gap-2">
-        <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-muted/50 focus-within:border-amber-400 transition-colors">
-          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && searchQuery.trim()) { setActiveNav('search' as NavId); } }}
-            placeholder="Search experiences, creators, sparks..."
-            className="flex-1 h-6 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
+      <div className="flex items-center gap-2 px-3 md:px-4 h-14">
+        {/* Left: hamburger (desktop) + logo */}
+        <button
+          onClick={onToggleSidebar}
+          className="hidden md:flex w-10 h-10 items-center justify-center rounded-full hover:bg-muted transition-colors shrink-0"
+          aria-label="Toggle sidebar"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div className="flex items-center gap-1.5 shrink-0 cursor-pointer select-none" onClick={onOpenSearch}>
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white text-[11px] font-bold shadow-sm">PL</div>
+          <span className="text-base font-bold tracking-tight hidden sm:inline">PlayLiquid</span>
+        </div>
+
+        {/* Center: search (desktop) */}
+        <div className="hidden md:flex flex-1 max-w-2xl mx-auto px-4">
+          <SearchBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            onSubmit={onOpenSearch}
           />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} aria-label="Clear search">
-              <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-            </button>
-          )}
+        </div>
+
+        {/* Spacer for mobile (push right cluster) */}
+        <div className="flex-1 md:hidden" />
+
+        {/* Right cluster */}
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Mobile search icon */}
+          <button
+            onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+            className="md:hidden w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            aria-label="Search"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+
+          {/* Create button (desktop, with label) */}
+          <Button
+            size="sm"
+            variant="default"
+            className="hidden md:inline-flex gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:opacity-90 text-white"
+            onClick={onCreate}
+          >
+            <Plus className="w-4 h-4" /> Create
+          </Button>
+
+          {/* Create button (mobile, icon only) */}
+          <button
+            onClick={onCreate}
+            className="md:hidden w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            aria-label="Create"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+
+          {/* Notifications bell */}
+          <NotificationsBell />
+
+          {/* Profile avatar dropdown */}
+          <ProfileDropdown onNavigate={onNavigate} onOpenLibrary={onOpenLibrary} />
         </div>
       </div>
-      <Button
-        size="sm"
-        variant="default"
-        className="gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:opacity-90 text-white"
-        onClick={onCreate}
-      >
-        <Plus className="w-4 h-4" /> Create
-      </Button>
+
+      {/* Mobile search expandable */}
+      {mobileSearchOpen && (
+        <div className="md:hidden border-t border-border p-2">
+          <SearchBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            onSubmit={() => setMobileSearchOpen(false)}
+            autoFocus
+          />
+        </div>
+      )}
     </header>
   );
 }
 
-function MobileTopBar({
-  searchQuery, setSearchQuery, onCreate,
+// ─── Search Bar ───────────────────────────────────────────────────────────
+
+function SearchBar({
+  searchQuery, setSearchQuery, onSubmit, autoFocus,
 }: {
   searchQuery: string;
   setSearchQuery: (v: string) => void;
-  onCreate: () => void;
+  onSubmit: () => void;
+  autoFocus?: boolean;
 }) {
-  const [searchOpen, setSearchOpen] = useState(false);
   return (
-    <header className="md:hidden sticky top-0 z-30 bg-background/90 backdrop-blur border-b border-border px-3 py-2 flex items-center gap-2">
-      <div className="flex items-center gap-1.5">
-        <div className="w-6 h-6 rounded bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold">PL</div>
-        <span className="text-sm font-bold">PlayLiquid</span>
-      </div>
-      <div className="ml-auto flex items-center gap-1">
-        <button
-          onClick={() => setSearchOpen(!searchOpen)}
-          className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
-          aria-label="Search"
-        >
-          <Search className="w-5 h-5" />
+    <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-muted/40 focus-within:border-amber-400 focus-within:bg-background transition-colors">
+      <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+      <Input
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter' && searchQuery.trim()) onSubmit(); }}
+        placeholder="Search experiences, creators, sparks..."
+        className="flex-1 h-6 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+        autoFocus={autoFocus}
+      />
+      {searchQuery && (
+        <button onClick={() => setSearchQuery('')} aria-label="Clear search" className="shrink-0">
+          <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
         </button>
-      </div>
-      {searchOpen && (
-        <div className="absolute top-full left-0 right-0 bg-background border-b border-border p-2 flex items-center gap-2">
-          <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-muted/50">
-            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search..."
-              className="flex-1 h-6 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
-              autoFocus
-            />
-            <button onClick={() => { setSearchQuery(''); setSearchOpen(false); }} aria-label="Close search">
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Notifications Bell dropdown ──────────────────────────────────────────
+
+interface NotificationItem {
+  icon: any;
+  text: string;
+  time: string;
+  bg: string;
+  color: string;
+}
+
+const NOTIFICATIONS: NotificationItem[] = [
+  { icon: Upload, text: 'Alex Rivers uploaded a new game', time: '2h ago', bg: 'bg-violet-100 dark:bg-violet-900/40', color: 'text-violet-600 dark:text-violet-300' },
+  { icon: Trophy, text: 'Tournament starts in 30 minutes', time: '30m ago', bg: 'bg-amber-100 dark:bg-amber-900/40', color: 'text-amber-600 dark:text-amber-300' },
+  { icon: Heart, text: 'Your comment got 5 likes', time: '1d ago', bg: 'bg-rose-100 dark:bg-rose-900/40', color: 'text-rose-600 dark:text-rose-300' },
+  { icon: Coins, text: 'You won 50L in the Neon Runner tournament!', time: '2d ago', bg: 'bg-emerald-100 dark:bg-emerald-900/40', color: 'text-emerald-600 dark:text-emerald-300' },
+];
+
+function NotificationsBell() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors relative"
+          aria-label="Notifications"
+        >
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-background" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 p-0 max-h-[28rem] overflow-hidden">
+        <div className="px-3 py-2.5 border-b border-border text-sm font-semibold flex items-center gap-2">
+          <Bell className="w-4 h-4" /> Notifications
+        </div>
+        <div className="max-h-96 overflow-y-auto">
+          {NOTIFICATIONS.map((n, i) => (
+            <DropdownMenuItem
+              key={i}
+              className="flex items-start gap-3 p-3 cursor-pointer rounded-none focus:bg-muted/60"
+            >
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${n.bg}`}>
+                <n.icon className={`w-4 h-4 ${n.color}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm leading-tight">{n.text}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{n.time}</p>
+              </div>
+            </DropdownMenuItem>
+          ))}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+// ─── Profile dropdown ─────────────────────────────────────────────────────
+
+function ProfileDropdown({
+  onNavigate, onOpenLibrary,
+}: {
+  onNavigate: (v: any) => void;
+  onOpenLibrary: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className="ml-1 w-9 h-9 rounded-full overflow-hidden ring-2 ring-border hover:ring-amber-400 transition-all flex items-center justify-center"
+          aria-label="Open profile menu"
+        >
+          <Avatar className="w-9 h-9">
+            <AvatarFallback className="text-[11px] bg-gradient-to-br from-amber-400 to-orange-600 text-white font-semibold">SD</AvatarFallback>
+          </Avatar>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64 p-0">
+        {/* Header */}
+        <div className="p-3 flex items-center gap-3">
+          <Avatar className="w-10 h-10 shrink-0">
+            <AvatarFallback className="bg-gradient-to-br from-amber-400 to-orange-600 text-white font-semibold">SD</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold truncate">Studio Demo Creator</div>
+            <div className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+              <Mail className="w-3 h-3 shrink-0" /> demo@playliquid.io
+            </div>
           </div>
         </div>
-      )}
-    </header>
+        <DropdownMenuSeparator className="my-0" />
+        <div className="p-1">
+          <DropdownMenuItem className="gap-3 cursor-pointer rounded-md" onSelect={() => onNavigate('creator-studio')}>
+            <User className="w-4 h-4" /> My Channel
+          </DropdownMenuItem>
+          <DropdownMenuItem className="gap-3 cursor-pointer rounded-md" onSelect={() => onNavigate('creator-studio')}>
+            <BarChart className="w-4 h-4" /> Studio
+          </DropdownMenuItem>
+          <DropdownMenuItem className="gap-3 cursor-pointer rounded-md" onSelect={() => onNavigate('adr-economy')}>
+            <Coins className="w-4 h-4" /> Wallet
+          </DropdownMenuItem>
+          <DropdownMenuItem className="gap-3 cursor-pointer rounded-md" onSelect={onOpenLibrary}>
+            <Library className="w-4 h-4" /> Library
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="my-0" />
+          <DropdownMenuItem className="gap-3 cursor-pointer rounded-md" onSelect={() => onNavigate('identity-u')}>
+            <Settings className="w-4 h-4" /> Settings
+          </DropdownMenuItem>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

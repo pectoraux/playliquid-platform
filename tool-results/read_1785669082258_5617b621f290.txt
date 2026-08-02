@@ -1,0 +1,1104 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import { useState, useEffect } from 'react';
+     4→     4→import { useStudioStore } from '@/stores/studio-store';
+     5→     5→import { Button } from '@/components/ui/button';
+     6→     6→import { Badge } from '@/components/ui/badge';
+     7→     7→import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+     8→     8→import { ScrollArea } from '@/components/ui/scroll-area';
+     9→     9→import { Input } from '@/components/ui/input';
+    10→    10→import {
+    11→    11→  Home, Zap, Gamepad2, Radio, Sparkles, Library, Heart, Clock,
+    12→    12→  Plus, Search, Trophy, Coins, Package, BarChart, Settings, Menu, X,
+    13→    13→  Play, Eye, ListVideo, History, Bookmark, Flame, Users, Loader2,
+    14→    14→} from 'lucide-react';
+    15→    15→
+    16→    16→// ─── fetchJSON helper (retry for dev cold-start) ──────────────────────────
+    17→    17→
+    18→    18→async function fetchJSON<T = any>(url: string, retries = 2): Promise<T> {
+    19→    19→  try {
+    20→    20→    const res = await fetch(url);
+    21→    21→    return await res.json();
+    22→    22→  } catch (err) {
+    23→    23→    if (retries > 0) {
+    24→    24→      await new Promise((r) => setTimeout(r, 800));
+    25→    25→      return fetchJSON<T>(url, retries - 1);
+    26→    26→    }
+    27→    27→    throw err;
+    28→    28→  }
+    29→    29→}
+    30→    30→
+    31→    31→// ─── Nav types ────────────────────────────────────────────────────────────
+    32→    32→
+    33→    33→type NavId =
+    34→    34→  | 'home' | 'sparks' | 'games' | 'live' | 'highlights' | 'tournaments'
+    35→    35→  | 'subscriptions' | 'library' | 'history' | 'liked' | 'watch-later' | 'search';
+    36→    36→
+    37→    37→interface Experience {
+    38→    38→  experienceId: string;
+    39→    39→  title: string;
+    40→    40→  experienceName?: string;
+    41→    41→  description?: string;
+    42→    42→  creatorName: string;
+    43→    43→  creatorId?: string;
+    44→    44→  playCount: number;
+    45→    45→  publishedAgo?: string;
+    46→    46→  thumbnailUrl?: string | null;
+    47→    47→  competitiveEligible?: boolean;
+    48→    48→  format?: string;
+    49→    49→  extensions?: Array<{ icon: string; name: string; category?: string }>;
+    50→    50→}
+    51→    51→
+    52→    52→interface LiveStream {
+    53→    53→  id: string;
+    54→    54→  experienceId?: string;
+    55→    55→  experienceName?: string;
+    56→    56→  playerName?: string;
+    57→    57→  viewerCount: number;
+    58→    58→  startedAt?: number;
+    59→    59→}
+    60→    60→
+    61→    61→interface Highlight {
+    62→    62→  id: string;
+    63→    63→  experienceId?: string;
+    64→    64→  experienceName?: string;
+    65→    65→  displayName?: string;
+    66→    66→  triggerType?: string;
+    67→    67→  title?: string;
+    68→    68→  description?: string;
+    69→    69→  scoreAtHighlight?: number;
+    70→    70→  viewCount?: number;
+    71→    71→  createdAt?: number;
+    72→    72→}
+    73→    73→
+    74→    74→interface HomeData {
+    75→    75→  sparks: Experience[];
+    76→    76→  experiences: Experience[];
+    77→    77→  live: LiveStream[];
+    78→    78→  highlights: Highlight[];
+    79→    79→}
+    80→    80→
+    81→    81→/**
+    82→    82→ * ConsumerHomeV3 — Complete YouTube-style consumer shell.
+    83→    83→ * ----------------------------------------------------
+    84→    84→ * - Desktop: collapsible left sidebar (rail when collapsed)
+    85→    85→ * - Mobile: bottom navigation (5 items, prominent Create button)
+    86→    86→ * - Content area renders different pages based on activeNav
+    87→    87→ * - Top bar with search + Create button
+    88→    88→ */
+    89→    89→export function ConsumerHomeV3() {
+    90→    90→  const { setView, playExperience, playSparkQueue } = useStudioStore();
+    91→    91→  const [home, setHome] = useState<HomeData | null>(null);
+    92→    92→  const [loading, setLoading] = useState(true);
+    93→    93→  const [sidebarOpen, setSidebarOpen] = useState(true);
+    94→    94→  const [activeNav, setActiveNav] = useState<NavId>('home');
+    95→    95→  const [searchQuery, setSearchQuery] = useState('');
+    96→    96→
+    97→    97→  useEffect(() => {
+    98→    98→    let cancelled = false;
+    99→    99→    (async () => {
+   100→   100→      try {
+   101→   101→        const d = await fetchJSON<{ home: HomeData }>('/api/consumer-v2/home?userId=demo-user');
+   102→   102→        if (!cancelled) setHome(d.home);
+   103→   103→      } catch { /* ignore */ }
+   104→   104→      if (!cancelled) setLoading(false);
+   105→   105→    })();
+   106→   106→    return () => { cancelled = true; };
+   107→   107→  }, []);
+   108→   108→
+   109→   109→  const sparks = home?.sparks ?? [];
+   110→   110→  const experiences = home?.experiences ?? [];
+   111→   111→  const live = home?.live ?? [];
+   112→   112→  const highlights = home?.highlights ?? [];
+   113→   113→
+   114→   114→  // Search filter (applies to cards rendered on home/sparks/games pages)
+   115→   115→  const q = searchQuery.trim().toLowerCase();
+   116→   116→  const sparksFiltered = sparks.filter((e) =>
+   117→   117→    !q || (e.title?.toLowerCase().includes(q) ?? false) || (e.creatorName?.toLowerCase().includes(q) ?? false),
+   118→   118→  );
+   119→   119→  const experiencesFiltered = experiences.filter((e) =>
+   120→   120→    !q || (e.title?.toLowerCase().includes(q) ?? false) || (e.creatorName?.toLowerCase().includes(q) ?? false),
+   121→   121→  );
+   122→   122→
+   123→   123→  const openSpark = (index: number) => {
+   124→   124→    if (sparks.length > 0) playSparkQueue(sparks, index);
+   125→   125→  };
+   126→   126→
+   127→   127→  return (
+   128→   128→    <div className="min-h-screen flex flex-col bg-background">
+   129→   129→      {/* Mobile top bar */}
+   130→   130→      <MobileTopBar
+   131→   131→        searchQuery={searchQuery}
+   132→   132→        setSearchQuery={setSearchQuery}
+   133→   133→        onCreate={() => setView('creator-studio')}
+   134→   134→      />
+   135→   135→
+   136→   136→      <div className="flex flex-1 min-h-0">
+   137→   137→        {/* ── Desktop Left Sidebar (collapsible) ── */}
+   138→   138→        <DesktopSidebar
+   139→   139→          open={sidebarOpen}
+   140→   140→          onToggle={() => setSidebarOpen(!sidebarOpen)}
+   141→   141→          activeNav={activeNav}
+   142→   142→          setActiveNav={setActiveNav}
+   143→   143→          onNavigate={(v) => setView(v)}
+   144→   144→        />
+   145→   145→
+   146→   146→        {/* ── Main Content ── */}
+   147→   147→        <div className="flex-1 min-w-0 flex flex-col">
+   148→   148→          {/* Desktop top bar */}
+   149→   149→          <DesktopTopBar
+   150→   150→            searchQuery={searchQuery}
+   151→   151→            setSearchQuery={setSearchQuery}
+   152→   152→            onCreate={() => setView('creator-studio')}
+   153→   153→          />
+   154→   154→
+   155→   155→          <main className="flex-1 overflow-y-auto p-4 pb-24 md:pb-6 space-y-6 max-w-7xl w-full mx-auto">
+   156→   156→            {loading ? (
+   157→   157→              <LoadingState />
+   158→   158→            ) : (
+   159→   159→              <ContentRouter
+   160→   160→                activeNav={activeNav}
+   161→   161→                sparks={sparksFiltered}
+   162→   162→                experiences={experiencesFiltered}
+   163→   163→                live={live}
+   164→   164→                highlights={highlights}
+   165→   165→                onPlaySpark={openSpark}
+   166→   166→                onPlayExperience={playExperience}
+   167→   167→                onPlayAllSparks={() => openSpark(0)}
+   168→   168→              />
+   169→   169→            )}
+   170→   170→          </main>
+   171→   171→        </div>
+   172→   172→      </div>
+   173→   173→
+   174→   174→      {/* ── Mobile bottom navigation ── */}
+   175→   175→      <MobileBottomNav
+   176→   176→        activeNav={activeNav}
+   177→   177→        setActiveNav={setActiveNav}
+   178→   178→        onCreate={() => setView('creator-studio')}
+   179→   179→      />
+   180→   180→    </div>
+   181→   181→  );
+   182→   182→}
+   183→   183→
+   184→   184→// ─── Content router ────────────────────────────────────────────────────────
+   185→   185→
+   186→   186→function ContentRouter({
+   187→   187→  activeNav, sparks, experiences, live, highlights,
+   188→   188→  onPlaySpark, onPlayExperience, onPlayAllSparks,
+   189→   189→}: {
+   190→   190→  activeNav: NavId;
+   191→   191→  sparks: Experience[];
+   192→   192→  experiences: Experience[];
+   193→   193→  live: LiveStream[];
+   194→   194→  highlights: Highlight[];
+   195→   195→  onPlaySpark: (i: number) => void;
+   196→   196→  onPlayExperience: (id: string) => void;
+   197→   197→  onPlayAllSparks: () => void;
+   198→   198→}) {
+   199→   199→  switch (activeNav) {
+   200→   200→    case 'home':
+   201→   201→      return <HomePage sparks={sparks} experiences={experiences} live={live} onPlaySpark={onPlaySpark} onPlayExperience={onPlayExperience} onPlayAllSparks={onPlayAllSparks} />;
+   202→   202→    case 'sparks':
+   203→   203→      return <SparksPage sparks={sparks} onPlay={onPlaySpark} onPlayAll={onPlayAllSparks} />;
+   204→   204→    case 'games':
+   205→   205→      return <GamesPage experiences={experiences} onPlay={onPlayExperience} />;
+   206→   206→    case 'live':
+   207→   207→      return <LivePage live={live} />;
+   208→   208→    case 'highlights':
+   209→   209→      return <HighlightsPage highlights={highlights} />;
+   210→   210→    case 'tournaments':
+   211→   211→      return <TournamentsPage />;
+   212→   212→    case 'subscriptions':
+   213→   213→      return <SubscriptionsPage experiences={experiences} onPlay={onPlayExperience} />;
+   214→   214→    case 'library':
+   215→   215→      return <LibraryPage />;
+   216→   216→    case 'history':
+   217→   217→      return <EmptyState icon={History} title="No history yet" subtitle="Experiences you watch will appear here" />;
+   218→   218→    case 'liked':
+   219→   219→      return <EmptyState icon={Heart} title="No liked content yet" subtitle="Tap the heart on experiences you enjoy" />;
+   220→   220→    case 'watch-later':
+   221→   221→      return <EmptyState icon={Bookmark} title="Nothing saved yet" subtitle="Bookmark experiences to play them later" />;
+   222→   222→    case 'search':
+   223→   223→      return <SearchPage />;
+   224→   224→    default:
+   225→   225→      return <HomePage sparks={sparks} experiences={experiences} live={live} onPlaySpark={onPlaySpark} onPlayExperience={onPlayExperience} onPlayAllSparks={onPlayAllSparks} />;
+   226→   226→  }
+   227→   227→}
+   228→   228→
+   229→   229→// ─── Pages ─────────────────────────────────────────────────────────────────
+   230→   230→
+   231→   231→function HomePage({
+   232→   232→  sparks, experiences, live, onPlaySpark, onPlayExperience, onPlayAllSparks,
+   233→   233→}: {
+   234→   234→  sparks: Experience[];
+   235→   235→  experiences: Experience[];
+   236→   236→  live: LiveStream[];
+   237→   237→  onPlaySpark: (i: number) => void;
+   238→   238→  onPlayExperience: (id: string) => void;
+   239→   239→  onPlayAllSparks: () => void;
+   240→   240→}) {
+   241→   241→  const hasContent = sparks.length > 0 || experiences.length > 0 || live.length > 0;
+   242→   242→  if (!hasContent) {
+   243→   243→    return <EmptyState icon={Sparkles} title="No experiences yet" subtitle="Be the first to publish on PlayLiquid — tap Create to begin." />;
+   244→   244→  }
+   245→   245→
+   246→   246→  return (
+   247→   247→    <>
+   248→   248→      {/* Sparks row (horizontal scroll) */}
+   249→   249→      {sparks.length > 0 && (
+   250→   250→        <section>
+   251→   251→          <SectionHeader
+   252→   252→            icon={<Zap className="w-5 h-5 text-rose-500" />}
+   253→   253→            title="Sparks"
+   254→   254→            subtitle="Quick interactive moments"
+   255→   255→            action={sparks.length > 1 ? { label: 'Play all', onClick: onPlayAllSparks } : undefined}
+   256→   256→          />
+   257→   257→          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+   258→   258→            {sparks.map((spark, i) => (
+   259→   259→              <SparkCard key={spark.experienceId} spark={spark} onClick={() => onPlaySpark(i)} />
+   260→   260→            ))}
+   261→   261→          </div>
+   262→   262→        </section>
+   263→   263→      )}
+   264→   264→
+   265→   265→      {/* Recommended experiences */}
+   266→   266→      {experiences.length > 0 && (
+   267→   267→        <section>
+   268→   268→          <SectionHeader
+   269→   269→            icon={<Gamepad2 className="w-5 h-5 text-violet-500" />}
+   270→   270→            title="Recommended"
+   271→   271→            subtitle="Experiences picked for you"
+   272→   272→          />
+   273→   273→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+   274→   274→            {experiences.map((exp) => (
+   275→   275→              <ExperienceCard key={exp.experienceId} exp={exp} onPlay={() => onPlayExperience(exp.experienceId)} />
+   276→   276→            ))}
+   277→   277→          </div>
+   278→   278→        </section>
+   279→   279→      )}
+   280→   280→
+   281→   281→      {/* Live now */}
+   282→   282→      {live.length > 0 && (
+   283→   283→        <section>
+   284→   284→          <SectionHeader
+   285→   285→            icon={<Radio className="w-5 h-5 text-red-500" />}
+   286→   286→            title="Live Now"
+   287→   287→            subtitle={`${live.length} streaming`}
+   288→   288→          />
+   289→   289→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+   290→   290→            {live.map((stream) => (
+   291→   291→              <LiveCard key={stream.id} stream={stream} />
+   292→   292→            ))}
+   293→   293→          </div>
+   294→   294→        </section>
+   295→   295→      )}
+   296→   296→
+   297→   297→      {/* Trending (subset of experiences) */}
+   298→   298→      {experiences.length > 2 && (
+   299→   299→        <section>
+   300→   300→          <SectionHeader
+   301→   301→            icon={<Flame className="w-5 h-5 text-amber-500" />}
+   302→   302→            title="Trending"
+   303→   303→            subtitle="What everyone is playing right now"
+   304→   304→          />
+   305→   305→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+   306→   306→            {experiences.slice(0, Math.min(8, experiences.length)).map((exp) => (
+   307→   307→              <ExperienceCard key={`trending-${exp.experienceId}`} exp={exp} onPlay={() => onPlayExperience(exp.experienceId)} />
+   308→   308→            ))}
+   309→   309→          </div>
+   310→   310→        </section>
+   311→   311→      )}
+   312→   312→    </>
+   313→   313→  );
+   314→   314→}
+   315→   315→
+   316→   316→function SparksPage({ sparks, onPlay, onPlayAll }: {
+   317→   317→  sparks: Experience[];
+   318→   318→  onPlay: (i: number) => void;
+   319→   319→  onPlayAll: () => void;
+   320→   320→}) {
+   321→   321→  if (sparks.length === 0) {
+   322→   322→    return <EmptyState icon={Zap} title="No sparks yet" subtitle="Sparks are quick interactive moments. Create one with AI." />;
+   323→   323→  }
+   324→   324→  return (
+   325→   325→    <section>
+   326→   326→      <SectionHeader
+   327→   327→        icon={<Zap className="w-5 h-5 text-rose-500" />}
+   328→   328→        title="Sparks"
+   329→   329→        subtitle={`${sparks.length} quick interactive moments`}
+   330→   330→        action={sparks.length > 1 ? { label: 'Play all', onClick: onPlayAll } : undefined}
+   331→   331→      />
+   332→   332→      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+   333→   333→        {sparks.map((spark, i) => (
+   334→   334→          <SparkCard key={spark.experienceId} spark={spark} onClick={() => onPlay(i)} />
+   335→   335→        ))}
+   336→   336→      </div>
+   337→   337→    </section>
+   338→   338→  );
+   339→   339→}
+   340→   340→
+   341→   341→function GamesPage({ experiences, onPlay }: {
+   342→   342→  experiences: Experience[];
+   343→   343→  onPlay: (id: string) => void;
+   344→   344→}) {
+   345→   345→  if (experiences.length === 0) {
+   346→   346→    return <EmptyState icon={Gamepad2} title="No games yet" subtitle="Published games will appear here. Tap Create to publish one." />;
+   347→   347→  }
+   348→   348→  return (
+   349→   349→    <section>
+   350→   350→      <SectionHeader
+   351→   351→        icon={<Gamepad2 className="w-5 h-5 text-violet-500" />}
+   352→   352→        title="Games"
+   353→   353→        subtitle={`${experiences.length} experiences to play`}
+   354→   354→      />
+   355→   355→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+   356→   356→        {experiences.map((exp) => (
+   357→   357→          <ExperienceCard key={exp.experienceId} exp={exp} onPlay={() => onPlay(exp.experienceId)} />
+   358→   358→        ))}
+   359→   359→      </div>
+   360→   360→    </section>
+   361→   361→  );
+   362→   362→}
+   363→   363→
+   364→   364→function LivePage({ live }: { live: LiveStream[] }) {
+   365→   365→  if (live.length === 0) {
+   366→   366→    return <EmptyState icon={Radio} title="No live streams" subtitle="When creators go live, you'll see them here." />;
+   367→   367→  }
+   368→   368→  return (
+   369→   369→    <section>
+   370→   370→      <SectionHeader
+   371→   371→        icon={<Radio className="w-5 h-5 text-red-500" />}
+   372→   372→        title="Live Now"
+   373→   373→        subtitle={`${live.length} streaming`}
+   374→   374→      />
+   375→   375→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+   376→   376→        {live.map((stream) => (
+   377→   377→          <LiveCard key={stream.id} stream={stream} />
+   378→   378→        ))}
+   379→   379→      </div>
+   380→   380→    </section>
+   381→   381→  );
+   382→   382→}
+   383→   383→
+   384→   384→function HighlightsPage({ highlights }: { highlights: Highlight[] }) {
+   385→   385→  if (highlights.length === 0) {
+   386→   386→    return <EmptyState icon={Sparkles} title="No highlights yet" subtitle="AI-generated highlight clips will appear here after your next great play session." />;
+   387→   387→  }
+   388→   388→  return (
+   389→   389→    <section>
+   390→   390→      <SectionHeader
+   391→   391→        icon={<Sparkles className="w-5 h-5 text-amber-500" />}
+   392→   392→        title="Highlights"
+   393→   393→        subtitle="AI-generated clips from great play sessions"
+   394→   394→      />
+   395→   395→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+   396→   396→        {highlights.map((h) => (
+   397→   397→          <HighlightCard key={h.id} highlight={h} />
+   398→   398→        ))}
+   399→   399→      </div>
+   400→   400→    </section>
+   401→   401→  );
+   402→   402→}
+   403→   403→
+   404→   404→function SubscriptionsPage({ experiences, onPlay }: {
+   405→   405→  experiences: Experience[];
+   406→   406→  onPlay: (id: string) => void;
+   407→   407→}) {
+   408→   408→  if (experiences.length === 0) {
+   409→   409→    return <EmptyState icon={Users} title="No subscriptions yet" subtitle="Follow creators to see their latest experiences here." />;
+   410→   410→  }
+   411→   411→  return (
+   412→   412→    <section>
+   413→   413→      <SectionHeader
+   414→   414→        icon={<Users className="w-5 h-5 text-violet-500" />}
+   415→   415→        title="Subscriptions"
+   416→   416→        subtitle="Latest from creators you follow"
+   417→   417→      />
+   418→   418→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+   419→   419→        {experiences.map((exp) => (
+   420→   420→          <ExperienceCard key={exp.experienceId} exp={exp} onPlay={() => onPlay(exp.experienceId)} />
+   421→   421→        ))}
+   422→   422→      </div>
+   423→   423→    </section>
+   424→   424→  );
+   425→   425→}
+   426→   426→
+   427→   427→function LibraryPage() {
+   428→   428→  const sections = [
+   429→   429→    { icon: History, label: 'History', desc: 'Recently watched' },
+   430→   430→    { icon: Heart, label: 'Liked', desc: 'Experiences you loved' },
+   431→   431→    { icon: Bookmark, label: 'Watch Later', desc: 'Saved for later' },
+   432→   432→    { icon: ListVideo, label: 'Playlists', desc: 'Your collections' },
+   433→   433→  ];
+   434→   434→  return (
+   435→   435→    <section>
+   436→   436→      <SectionHeader
+   437→   437→        icon={<Library className="w-5 h-5 text-violet-500" />}
+   438→   438→        title="Library"
+   439→   439→        subtitle="Your collections and history"
+   440→   440→      />
+   441→   441→      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+   442→   442→        {sections.map((s) => (
+   443→   443→          <div key={s.label} className="rounded-xl border border-border bg-card/40 p-4 hover:bg-muted/40 transition-colors cursor-pointer">
+   444→   444→            <s.icon className="w-6 h-6 text-muted-foreground mb-2" />
+   445→   445→            <div className="text-sm font-medium">{s.label}</div>
+   446→   446→            <div className="text-[10px] text-muted-foreground mt-0.5">{s.desc}</div>
+   447→   447→          </div>
+   448→   448→        ))}
+   449→   449→      </div>
+   450→   450→    </section>
+   451→   451→  );
+   452→   452→}
+   453→   453→
+   454→   454→function TournamentsPage() {
+   455→   455→  return (
+   456→   456→    <section>
+   457→   457→      <SectionHeader
+   458→   458→        icon={<Trophy className="w-5 h-5 text-amber-500" />}
+   459→   459→        title="Tournaments"
+   460→   460→        subtitle="Compete for prizes and glory"
+   461→   461→      />
+   462→   462→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+   463→   463→        {[
+   464→   464→          { title: 'Neon Runner Championship', prize: '500L', entrants: 124, status: 'Registration Open', startsIn: '2 days' },
+   465→   465→          { title: 'Sky Defense Showdown', prize: '1,200L', entrants: 89, status: 'Live Now', startsIn: 'Started' },
+   466→   466→          { title: 'Coin Rush Sprint', prize: '250L', entrants: 56, status: 'Starting Soon', startsIn: '1 hour' },
+   467→   467→        ].map((t, i) => (
+   468→   468→          <div key={i} className="rounded-xl border border-border bg-card/40 overflow-hidden hover:shadow-md transition-all cursor-pointer">
+   469→   469→            <div className="relative aspect-video bg-gradient-to-br from-amber-300 to-orange-400 dark:from-amber-800 dark:to-orange-900 flex items-center justify-center">
+   470→   470→              <Trophy className="w-10 h-10 text-white/70" />
+   471→   471→              <Badge className={`absolute top-2 left-2 text-[8px] h-4 ${t.status === 'Live Now' ? 'bg-red-500 text-white animate-pulse' : 'bg-emerald-500 text-white'}`}>{t.status}</Badge>
+   472→   472→            </div>
+   473→   473→            <div className="p-2.5">
+   474→   474→              <h3 className="text-xs font-bold line-clamp-1">{t.title}</h3>
+   475→   475→              <div className="flex items-center justify-between mt-1 text-[10px] text-muted-foreground">
+   476→   476→                <span className="text-amber-600 dark:text-amber-400 font-medium">🏆 {t.prize}</span>
+   477→   477→                <span>{t.entrants} entrants</span>
+   478→   478→              </div>
+   479→   479→              <div className="text-[9px] text-muted-foreground mt-0.5">{t.startsIn}</div>
+   480→   480→            </div>
+   481→   481→          </div>
+   482→   482→        ))}
+   483→   483→      </div>
+   484→   484→      <div className="mt-4 text-center">
+   485→   485→        <Button variant="outline" size="sm" className="gap-1.5"><Zap className="w-3.5 h-3.5" /> Create Tournament</Button>
+   486→   486→      </div>
+   487→   487→    </section>
+   488→   488→  );
+   489→   489→}
+   490→   490→
+   491→   491→function SearchPage() {
+   492→   492→  const [query, setQuery] = useState('');
+   493→   493→  const [results, setResults] = useState<any[]>([]);
+   494→   494→  const [searching, setSearching] = useState(false);
+   495→   495→  const { playExperience } = useStudioStore();
+   496→   496→
+   497→   497→  const search = async (q: string) => {
+   498→   498→    setQuery(q);
+   499→   499→    if (!q.trim()) { setResults([]); return; }
+   500→   500→    setSearching(true);
+   501→   501→    try {
+   502→   502→      const d = await fetchJSON<{ results: any[] }>(`/api/search?q=${encodeURIComponent(q)}`);
+   503→   503→      setResults(d.results ?? []);
+   504→   504→    } catch { setResults([]); }
+   505→   505→    setSearching(false);
+   506→   506→  };
+   507→   507→
+   508→   508→  return (
+   509→   509→    <section>
+   510→   510→      <SectionHeader icon={<Search className="w-5 h-5 text-muted-foreground" />} title="Search" subtitle="Find experiences, creators, sparks" />
+   511→   511→      <div className="flex items-center gap-2 px-3 py-2 rounded-full border border-border bg-muted/50 mb-4">
+   512→   512→        <Search className="w-4 h-4 text-muted-foreground" />
+   513→   513→        <input value={query} onChange={e => search(e.target.value)} placeholder="Search..." className="flex-1 bg-transparent text-sm focus:outline-none" autoFocus />
+   514→   514→        {searching && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+   515→   515→      </div>
+   516→   516→      {results.length > 0 ? (
+   517→   517→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+   518→   518→          {results.map(r => (
+   519→   519→            <div key={r.experienceId} className="rounded-xl overflow-hidden cursor-pointer group hover:bg-muted/30" onClick={() => playExperience(r.experienceId)}>
+   520→   520→              <div className="relative aspect-video bg-gradient-to-br from-violet-300 to-fuchsia-300 dark:from-violet-800 dark:to-fuchsia-800 flex items-center justify-center">
+   521→   521→                {r.thumbnailUrl ? <img src={r.thumbnailUrl} alt={r.title} className="w-full h-full object-cover" /> : <Gamepad2 className="w-8 h-8 text-white/50" />}
+   522→   522→              </div>
+   523→   523→              <div className="p-2">
+   524→   524→                <h3 className="text-xs font-medium line-clamp-2">{r.displayTitle ?? r.title}</h3>
+   525→   525→                <p className="text-[10px] text-muted-foreground">{r.creatorName} · {r.playCount} plays · {r.publishedAgo}</p>
+   526→   526→              </div>
+   527→   527→            </div>
+   528→   528→          ))}
+   529→   529→        </div>
+   530→   530→      ) : query.trim() && !searching ? (
+   531→   531→        <p className="text-sm text-muted-foreground text-center py-8">No results for "{query}"</p>
+   532→   532→      ) : null}
+   533→   533→    </section>
+   534→   534→  );
+   535→   535→}
+   536→   536→
+   537→   537→// ─── Sidebar (desktop) ────────────────────────────────────────────────────
+   538→   538→
+   539→   539→interface SidebarItem {
+   540→   540→  id: NavId;
+   541→   541→  icon: any;
+   542→   542→  label: string;
+   543→   543→}
+   544→   544→
+   545→   545→interface SidebarNavAction {
+   546→   546→  icon: any;
+   547→   547→  label: string;
+   548→   548→  view: string;
+   549→   549→}
+   550→   550→
+   551→   551→const PRIMARY_NAV: SidebarItem[] = [
+   552→   552→  { id: 'home', icon: Home, label: 'Home' },
+   553→   553→  { id: 'sparks', icon: Zap, label: 'Sparks' },
+   554→   554→  { id: 'games', icon: Gamepad2, label: 'Games' },
+   555→   555→  { id: 'live', icon: Radio, label: 'Live' },
+   556→   556→  { id: 'highlights', icon: Sparkles, label: 'Highlights' },
+   557→   557→  { id: 'tournaments', icon: Trophy, label: 'Tournaments' },
+   558→   558→  { id: 'subscriptions', icon: Users, label: 'Subscriptions' },
+   559→   559→];
+   560→   560→
+   561→   561→const LIBRARY_NAV: SidebarItem[] = [
+   562→   562→  { id: 'library', icon: Library, label: 'Library' },
+   563→   563→  { id: 'history', icon: History, label: 'History' },
+   564→   564→  { id: 'liked', icon: Heart, label: 'Liked' },
+   565→   565→  { id: 'watch-later', icon: Bookmark, label: 'Watch Later' },
+   566→   566→];
+   567→   567→
+   568→   568→const ACTIONS_NAV: SidebarNavAction[] = [
+   569→   569→  { icon: Trophy, label: 'Compete', view: 'competitive' },
+   570→   570→  { icon: Coins, label: 'Wallet', view: 'adr-economy' },
+   571→   571→  { icon: Package, label: 'Extensions', view: 'extensions' },
+   572→   572→  { icon: BarChart, label: 'Studio', view: 'creator-studio' },
+   573→   573→  { icon: Settings, label: 'Profile', view: 'identity-u' },
+   574→   574→];
+   575→   575→
+   576→   576→function DesktopSidebar({
+   577→   577→  open, onToggle, activeNav, setActiveNav, onNavigate,
+   578→   578→}: {
+   579→   579→  open: boolean;
+   580→   580→  onToggle: () => void;
+   581→   581→  activeNav: NavId;
+   582→   582→  setActiveNav: (n: NavId) => void;
+   583→   583→  onNavigate: (v: any) => void;
+   584→   584→}) {
+   585→   585→  return (
+   586→   586→    <aside className={`hidden md:flex ${open ? 'w-60' : 'w-16'} shrink-0 border-r border-border bg-card/30 transition-all duration-200 flex-col sticky top-0 h-screen`}>
+   587→   587→      {/* Logo + toggle */}
+   588→   588→      <div className="p-3 flex items-center gap-2">
+   589→   589→        <button onClick={onToggle} className="p-1.5 rounded hover:bg-muted transition-colors" aria-label="Toggle sidebar">
+   590→   590→          {open ? <Menu className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+   591→   591→        </button>
+   592→   592→        {open && (
+   593→   593→          <div className="flex items-center gap-1.5">
+   594→   594→            <div className="w-6 h-6 rounded bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold">PL</div>
+   595→   595→            <span className="text-sm font-bold">PlayLiquid</span>
+   596→   596→          </div>
+   597→   597→        )}
+   598→   598→      </div>
+   599→   599→
+   600→   600→      <ScrollArea className="flex-1">
+   601→   601→        <nav className="px-2 space-y-0.5 pb-4">
+   602→   602→          {PRIMARY_NAV.map((item) => (
+   603→   603→            <NavItem
+   604→   604→              key={item.id}
+   605→   605→              icon={item.icon}
+   606→   606→              label={item.label}
+   607→   607→              active={activeNav === item.id}
+   608→   608→              expanded={open}
+   609→   609→              onClick={() => setActiveNav(item.id)}
+   610→   610→            />
+   611→   611→          ))}
+   612→   612→
+   613→   613→          {open && <div className="my-2 border-t border-border" />}
+   614→   614→
+   615→   615→          {LIBRARY_NAV.map((item) => (
+   616→   616→            <NavItem
+   617→   617→              key={item.id}
+   618→   618→              icon={item.icon}
+   619→   619→              label={item.label}
+   620→   620→              active={activeNav === item.id}
+   621→   621→              expanded={open}
+   622→   622→              onClick={() => setActiveNav(item.id)}
+   623→   623→            />
+   624→   624→          ))}
+   625→   625→
+   626→   626→          {open && <div className="my-2 border-t border-border" />}
+   627→   627→
+   628→   628→          {ACTIONS_NAV.map((item) => (
+   629→   629→            <NavItem
+   630→   630→              key={item.label}
+   631→   631→              icon={item.icon}
+   632→   632→              label={item.label}
+   633→   633→              active={false}
+   634→   634→              expanded={open}
+   635→   635→              onClick={() => onNavigate(item.view)}
+   636→   636→            />
+   637→   637→          ))}
+   638→   638→        </nav>
+   639→   639→      </ScrollArea>
+   640→   640→
+   641→   641→      {/* Footer */}
+   642→   642→      {open && (
+   643→   643→        <div className="border-t border-border p-3 text-[10px] text-muted-foreground">
+   644→   644→          PlayLiquid · Free to play
+   645→   645→        </div>
+   646→   646→      )}
+   647→   647→    </aside>
+   648→   648→  );
+   649→   649→}
+   650→   650→
+   651→   651→// ─── Top bars ──────────────────────────────────────────────────────────────
+   652→   652→
+   653→   653→function DesktopTopBar({
+   654→   654→  searchQuery, setSearchQuery, onCreate,
+   655→   655→}: {
+   656→   656→  searchQuery: string;
+   657→   657→  setSearchQuery: (v: string) => void;
+   658→   658→  onCreate: () => void;
+   659→   659→}) {
+   660→   660→  return (
+   661→   661→    <header className="hidden md:flex sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border px-4 py-2.5 items-center gap-3">
+   662→   662→      <div className="flex-1 max-w-xl flex items-center gap-2">
+   663→   663→        <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-muted/50 focus-within:border-amber-400 transition-colors">
+   664→   664→          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+   665→   665→          <Input
+   666→   666→            value={searchQuery}
+   667→   667→            onChange={(e) => setSearchQuery(e.target.value)}
+   668→   668→            onKeyDown={(e) => { if (e.key === 'Enter' && searchQuery.trim()) { setActiveNav('search' as NavId); } }}
+   669→   669→            placeholder="Search experiences, creators, sparks..."
+   670→   670→            className="flex-1 h-6 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+   671→   671→          />
+   672→   672→          {searchQuery && (
+   673→   673→            <button onClick={() => setSearchQuery('')} aria-label="Clear search">
+   674→   674→              <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+   675→   675→            </button>
+   676→   676→          )}
+   677→   677→        </div>
+   678→   678→      </div>
+   679→   679→      <Button
+   680→   680→        size="sm"
+   681→   681→        variant="default"
+   682→   682→        className="gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:opacity-90 text-white"
+   683→   683→        onClick={onCreate}
+   684→   684→      >
+   685→   685→        <Plus className="w-4 h-4" /> Create
+   686→   686→      </Button>
+   687→   687→    </header>
+   688→   688→  );
+   689→   689→}
+   690→   690→
+   691→   691→function MobileTopBar({
+   692→   692→  searchQuery, setSearchQuery, onCreate,
+   693→   693→}: {
+   694→   694→  searchQuery: string;
+   695→   695→  setSearchQuery: (v: string) => void;
+   696→   696→  onCreate: () => void;
+   697→   697→}) {
+   698→   698→  const [searchOpen, setSearchOpen] = useState(false);
+   699→   699→  return (
+   700→   700→    <header className="md:hidden sticky top-0 z-30 bg-background/90 backdrop-blur border-b border-border px-3 py-2 flex items-center gap-2">
+   701→   701→      <div className="flex items-center gap-1.5">
+   702→   702→        <div className="w-6 h-6 rounded bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold">PL</div>
+   703→   703→        <span className="text-sm font-bold">PlayLiquid</span>
+   704→   704→      </div>
+   705→   705→      <div className="ml-auto flex items-center gap-1">
+   706→   706→        <button
+   707→   707→          onClick={() => setSearchOpen(!searchOpen)}
+   708→   708→          className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
+   709→   709→          aria-label="Search"
+   710→   710→        >
+   711→   711→          <Search className="w-5 h-5" />
+   712→   712→        </button>
+   713→   713→      </div>
+   714→   714→      {searchOpen && (
+   715→   715→        <div className="absolute top-full left-0 right-0 bg-background border-b border-border p-2 flex items-center gap-2">
+   716→   716→          <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-muted/50">
+   717→   717→            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+   718→   718→            <Input
+   719→   719→              value={searchQuery}
+   720→   720→              onChange={(e) => setSearchQuery(e.target.value)}
+   721→   721→              placeholder="Search..."
+   722→   722→              className="flex-1 h-6 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+   723→   723→              autoFocus
+   724→   724→            />
+   725→   725→            <button onClick={() => { setSearchQuery(''); setSearchOpen(false); }} aria-label="Close search">
+   726→   726→              <X className="w-4 h-4 text-muted-foreground" />
+   727→   727→            </button>
+   728→   728→          </div>
+   729→   729→        </div>
+   730→   730→      )}
+   731→   731→    </header>
+   732→   732→  );
+   733→   733→}
+   734→   734→
+   735→   735→// ─── Mobile bottom nav ─────────────────────────────────────────────────────
+   736→   736→
+   737→   737→interface BottomNavItem {
+   738→   738→  id: NavId;
+   739→   739→  icon: any;
+   740→   740→  label: string;
+   741→   741→}
+   742→   742→
+   743→   743→const BOTTOM_NAV: BottomNavItem[] = [
+   744→   744→  { id: 'home', icon: Home, label: 'Home' },
+   745→   745→  { id: 'sparks', icon: Zap, label: 'Sparks' },
+   746→   746→];
+   747→   747→
+   748→   748→const BOTTOM_NAV_RIGHT: BottomNavItem[] = [
+   749→   749→  { id: 'games', icon: Gamepad2, label: 'Games' },
+   750→   750→  { id: 'library', icon: Library, label: 'Library' },
+   751→   751→];
+   752→   752→
+   753→   753→function MobileBottomNav({
+   754→   754→  activeNav, setActiveNav, onCreate,
+   755→   755→}: {
+   756→   756→  activeNav: NavId;
+   757→   757→  setActiveNav: (n: NavId) => void;
+   758→   758→  onCreate: () => void;
+   759→   759→}) {
+   760→   760→  return (
+   761→   761→    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border grid grid-cols-5 items-center px-1 pt-1 pb-[env(safe-area-inset-bottom)]">
+   762→   762→      {BOTTOM_NAV.map((item) => (
+   763→   763→        <BottomNavButton
+   764→   764→          key={item.id}
+   765→   765→          icon={item.icon}
+   766→   766→          label={item.label}
+   767→   767→          active={activeNav === item.id}
+   768→   768→          onClick={() => setActiveNav(item.id)}
+   769→   769→        />
+   770→   770→      ))}
+   771→   771→      {/* Center Create button — circular, gradient */}
+   772→   772→      <div className="flex justify-center">
+   773→   773→        <button
+   774→   774→          onClick={onCreate}
+   775→   775→          aria-label="Create"
+   776→   776→          className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-600 text-white flex items-center justify-center shadow-lg shadow-amber-500/30 active:scale-95 transition-transform"
+   777→   777→        >
+   778→   778→          <Plus className="w-6 h-6" />
+   779→   779→        </button>
+   780→   780→      </div>
+   781→   781→      {BOTTOM_NAV_RIGHT.map((item) => (
+   782→   782→        <BottomNavButton
+   783→   783→          key={item.id}
+   784→   784→          icon={item.icon}
+   785→   785→          label={item.label}
+   786→   786→          active={activeNav === item.id}
+   787→   787→          onClick={() => setActiveNav(item.id)}
+   788→   788→        />
+   789→   789→      ))}
+   790→   790→    </nav>
+   791→   791→  );
+   792→   792→}
+   793→   793→
+   794→   794→function BottomNavButton({
+   795→   795→  icon: Icon, label, active, onClick,
+   796→   796→}: {
+   797→   797→  icon: any;
+   798→   798→  label: string;
+   799→   799→  active: boolean;
+   800→   800→  onClick: () => void;
+   801→   801→}) {
+   802→   802→  return (
+   803→   803→    <button
+   804→   804→      onClick={onClick}
+   805→   805→      className="flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 min-h-[44px] min-w-[44px] rounded-lg transition-colors"
+   806→   806→    >
+   807→   807→      <Icon className={`w-5 h-5 ${active ? 'text-amber-500' : 'text-muted-foreground'}`} />
+   808→   808→      <span className={`text-[9px] font-medium ${active ? 'text-amber-500' : 'text-muted-foreground'}`}>{label}</span>
+   809→   809→    </button>
+   810→   810→  );
+   811→   811→}
+   812→   812→
+   813→   813→// ─── Nav Item (sidebar) ────────────────────────────────────────────────────
+   814→   814→
+   815→   815→function NavItem({ icon: Icon, label, active, expanded, onClick }: {
+   816→   816→  icon: any;
+   817→   817→  label: string;
+   818→   818→  active?: boolean;
+   819→   819→  expanded: boolean;
+   820→   820→  onClick?: () => void;
+   821→   821→}) {
+   822→   822→  return (
+   823→   823→    <button
+   824→   824→      onClick={onClick}
+   825→   825→      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors min-h-[40px] ${
+   826→   826→        active
+   827→   827→          ? 'bg-muted font-medium text-foreground'
+   828→   828→          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+   829→   829→      } ${!expanded && 'justify-center'}`}
+   830→   830→      title={label}
+   831→   831→    >
+   832→   832→      <Icon className="w-5 h-5 shrink-0" />
+   833→   833→      {expanded && <span className="truncate">{label}</span>}
+   834→   834→    </button>
+   835→   835→  );
+   836→   836→}
+   837→   837→
+   838→   838→// ─── Section header ────────────────────────────────────────────────────────
+   839→   839→
+   840→   840→function SectionHeader({
+   841→   841→  icon, title, subtitle, action,
+   842→   842→}: {
+   843→   843→  icon: React.ReactNode;
+   844→   844→  title: string;
+   845→   845→  subtitle?: string;
+   846→   846→  action?: { label: string; onClick: () => void };
+   847→   847→}) {
+   848→   848→  return (
+   849→   849→    <div className="flex items-center gap-2 mb-3">
+   850→   850→      {icon}
+   851→   851→      <h2 className="text-base font-bold">{title}</h2>
+   852→   852→      {subtitle && <span className="text-xs text-muted-foreground hidden sm:inline">{subtitle}</span>}
+   853→   853→      {action && (
+   854→   854→        <button
+   855→   855→          onClick={action.onClick}
+   856→   856→          className="ml-auto text-xs text-amber-600 dark:text-amber-400 hover:underline font-medium flex items-center gap-1"
+   857→   857→        >
+   858→   858→          {action.label}
+   859→   859→          <Play className="w-3 h-3 fill-current" />
+   860→   860→        </button>
+   861→   861→      )}
+   862→   862→    </div>
+   863→   863→  );
+   864→   864→}
+   865→   865→
+   866→   866→// ─── Empty state ───────────────────────────────────────────────────────────
+   867→   867→
+   868→   868→function EmptyState({ icon: Icon, title, subtitle }: {
+   869→   869→  icon: any;
+   870→   870→  title: string;
+   871→   871→  subtitle?: string;
+   872→   872→}) {
+   873→   873→  return (
+   874→   874→    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+   875→   875→      <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+   876→   876→        <Icon className="w-8 h-8 text-muted-foreground/60" />
+   877→   877→      </div>
+   878→   878→      <h3 className="text-base font-semibold mb-1">{title}</h3>
+   879→   879→      {subtitle && <p className="text-sm text-muted-foreground max-w-sm">{subtitle}</p>}
+   880→   880→    </div>
+   881→   881→  );
+   882→   882→}
+   883→   883→
+   884→   884→// ─── Loading state ─────────────────────────────────────────────────────────
+   885→   885→
+   886→   886→function LoadingState() {
+   887→   887→  return (
+   888→   888→    <div className="space-y-6">
+   889→   889→      {/* Sparks skeleton */}
+   890→   890→      <div className="flex gap-3 overflow-hidden">
+   891→   891→        {Array.from({ length: 4 }).map((_, i) => (
+   892→   892→          <div key={i} className="w-[200px] h-[356px] rounded-xl bg-muted/50 animate-pulse shrink-0" />
+   893→   893→        ))}
+   894→   894→      </div>
+   895→   895→      {/* Grid skeleton */}
+   896→   896→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+   897→   897→        {Array.from({ length: 8 }).map((_, i) => (
+   898→   898→          <div key={i} className="space-y-2">
+   899→   899→            <div className="aspect-video rounded-xl bg-muted/50 animate-pulse" />
+   900→   900→            <div className="flex gap-2">
+   901→   901→              <div className="w-8 h-8 rounded-full bg-muted/50 animate-pulse shrink-0" />
+   902→   902→              <div className="flex-1 space-y-1.5">
+   903→   903→                <div className="h-3 rounded bg-muted/50 animate-pulse w-3/4" />
+   904→   904→                <div className="h-2 rounded bg-muted/50 animate-pulse w-1/2" />
+   905→   905→              </div>
+   906→   906→            </div>
+   907→   907→          </div>
+   908→   908→        ))}
+   909→   909→      </div>
+   910→   910→    </div>
+   911→   911→  );
+   912→   912→}
+   913→   913→
+   914→   914→// ─── Spark Card (phone-sized, 9:16) ────────────────────────────────────────
+   915→   915→
+   916→   916→function SparkCard({ spark, onClick }: { spark: Experience; onClick?: () => void }) {
+   917→   917→  const icon = spark.extensions?.[0]?.icon ?? '⚡';
+   918→   918→  return (
+   919→   919→    <div
+   920→   920→      className="relative shrink-0 w-[200px] h-[356px] rounded-xl overflow-hidden cursor-pointer group bg-gradient-to-b from-rose-500/20 via-violet-500/20 to-amber-500/20"
+   921→   921→      onClick={onClick}
+   922→   922→    >
+   923→   923→      {/* Background */}
+   924→   924→      {spark.thumbnailUrl ? (
+   925→   925→        <img
+   926→   926→          src={spark.thumbnailUrl}
+   927→   927→          alt={spark.title}
+   928→   928→          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+   929→   929→        />
+   930→   930→      ) : (
+   931→   931→        <div className="absolute inset-0 flex flex-col items-center justify-center p-3">
+   932→   932→          <div className="text-4xl mb-2">{icon}</div>
+   933→   933→          <div className="text-xs font-bold text-center line-clamp-3">{spark.title}</div>
+   934→   934→        </div>
+   935→   935→      )}
+   936→   936→
+   937→   937→      {/* Play button overlay */}
+   938→   938→      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+   939→   939→        <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur flex items-center justify-center">
+   940→   940→          <Play className="w-6 h-6 text-white fill-white" />
+   941→   941→        </div>
+   942→   942→      </div>
+   943→   943→
+   944→   944→      {/* SPARK badge */}
+   945→   945→      <Badge className="absolute top-2 left-2 text-[8px] h-4 bg-rose-500 text-white gap-0.5">
+   946→   946→        <Zap className="w-2.5 h-2.5 fill-white" /> SPARK
+   947→   947→      </Badge>
+   948→   948→
+   949→   949→      {/* Game icon top-right */}
+   950→   950→      {spark.extensions && spark.extensions.length > 0 && (
+   951→   951→        <div className="absolute top-2 right-2 flex gap-0.5">
+   952→   952→          {spark.extensions.slice(0, 2).map((ext, i) => (
+   953→   953→            <span key={i} className="w-5 h-5 rounded bg-black/50 backdrop-blur flex items-center justify-center text-[10px]">
+   954→   954→              {ext.icon}
+   955→   955→            </span>
+   956→   956→          ))}
+   957→   957→        </div>
+   958→   958→      )}
+   959→   959→
+   960→   960→      {/* Bottom info */}
+   961→   961→      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+   962→   962→        <div className="text-[11px] font-semibold text-white line-clamp-2 leading-tight mb-1">{spark.title}</div>
+   963→   963→        <div className="flex items-center justify-between text-[9px] text-white/80">
+   964→   964→          <span className="truncate">@{spark.creatorName?.toLowerCase().replace(/\s+/g, '') ?? 'creator'}</span>
+   965→   965→        </div>
+   966→   966→        <div className="text-[9px] text-white/60 mt-0.5">
+   967→   967→          {formatCount(spark.playCount)} plays · {spark.publishedAgo ?? 'recently'}
+   968→   968→        </div>
+   969→   969→      </div>
+   970→   970→    </div>
+   971→   971→  );
+   972→   972→}
+   973→   973→
+   974→   974→// ─── Experience Card (YouTube-style 16:9) ──────────────────────────────────
+   975→   975→
+   976→   976→function ExperienceCard({ exp, onPlay }: { exp: Experience; onPlay?: () => void }) {
+   977→   977→  return (
+   978→   978→    <div
+   979→   979→      className="rounded-xl overflow-hidden cursor-pointer group hover:bg-muted/30 transition-colors"
+   980→   980→      onClick={onPlay}
+   981→   981→    >
+   982→   982→      {/* Thumbnail 16:9 */}
+   983→   983→      <div className="relative aspect-video overflow-hidden bg-muted">
+   984→   984→        {exp.thumbnailUrl ? (
+   985→   985→          <img
+   986→   986→            src={exp.thumbnailUrl}
+   987→   987→            alt={exp.title}
+   988→   988→            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+   989→   989→          />
+   990→   990→        ) : (
+   991→   991→          <div className="w-full h-full bg-gradient-to-br from-violet-300 via-fuchsia-300 to-amber-300 dark:from-violet-800 dark:via-fuchsia-800 dark:to-amber-800 flex items-center justify-center">
+   992→   992→            <Play className="w-10 h-10 text-white/70 group-hover:scale-110 transition-transform" />
+   993→   993→          </div>
+   994→   994→        )}
+   995→   995→        {/* Play overlay */}
+   996→   996→        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+   997→   997→          <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur flex items-center justify-center">
+   998→   998→            <Play className="w-6 h-6 text-white fill-white" />
+   999→   999→          </div>
+  1000→  1000→        </div>
+  1001→  1001→        {/* Plays badge */}
+  1002→  1002→        <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/70 text-white text-[9px] font-mono">
+  1003→  1003→          {formatCount(exp.playCount)} plays
+  1004→  1004→        </div>
+  1005→  1005→        {/* Ranked badge */}
+  1006→  1006→        {exp.competitiveEligible && (
+  1007→  1007→          <Badge className="absolute top-1.5 right-1.5 text-[8px] h-4 bg-emerald-500 text-white gap-0.5">
+  1008→  1008→            <Trophy className="w-2.5 h-2.5" /> Ranked
+  1009→  1009→          </Badge>
+  1010→  1010→        )}
+  1011→  1011→        {/* Format badge */}
+  1012→  1012→        {exp.format && exp.format !== 'spark' && exp.format !== 'native' && (
+  1013→  1013→          <Badge className="absolute top-1.5 left-1.5 text-[8px] h-4 bg-violet-500 text-white">
+  1014→  1014→            {exp.format.toUpperCase()}
+  1015→  1015→          </Badge>
+  1016→  1016→        )}
+  1017→  1017→      </div>
+  1018→  1018→      {/* Info — YouTube style: avatar + title + creator + stats */}
+  1019→  1019→      <div className="flex gap-2 p-2">
+  1020→  1020→        <Avatar className="w-9 h-9 shrink-0">
+  1021→  1021→          <AvatarFallback className="text-[10px] bg-gradient-to-br from-amber-400 to-orange-600 text-white">
+  1022→  1022→            {exp.creatorName?.slice(0, 2).toUpperCase() ?? 'PL'}
+  1023→  1023→          </AvatarFallback>
+  1024→  1024→        </Avatar>
+  1025→  1025→        <div className="flex-1 min-w-0">
+  1026→  1026→          <h3 className="text-sm font-medium line-clamp-2 leading-tight">{exp.title}</h3>
+  1027→  1027→          <p className="text-xs text-muted-foreground mt-0.5 truncate">{exp.creatorName}</p>
+  1028→  1028→          <p className="text-xs text-muted-foreground">
+  1029→  1029→            {formatCount(exp.playCount)} plays · {exp.publishedAgo ?? 'recently'}
+  1030→  1030→          </p>
+  1031→  1031→        </div>
+  1032→  1032→      </div>
+  1033→  1033→    </div>
+  1034→  1034→  );
+  1035→  1035→}
+  1036→  1036→
+  1037→  1037→// ─── Live Card ─────────────────────────────────────────────────────────────
+  1038→  1038→
+  1039→  1039→function LiveCard({ stream }: { stream: LiveStream }) {
+  1040→  1040→  const title = stream.experienceName ?? 'Live Session';
+  1041→  1041→  const creator = stream.playerName ?? 'Unknown';
+  1042→  1042→  return (
+  1043→  1043→    <div className="rounded-xl overflow-hidden cursor-pointer group">
+  1044→  1044→      <div className="relative aspect-video bg-gradient-to-br from-red-200 to-rose-300 dark:from-red-900 dark:to-rose-900 flex items-center justify-center overflow-hidden">
+  1045→  1045→        <Eye className="w-8 h-8 text-white/70" />
+  1046→  1046→        <Badge className="absolute top-1.5 left-1.5 text-[8px] h-4 bg-red-500 text-white flex items-center gap-0.5">
+  1047→  1047→          <Radio className="w-2.5 h-2.5 animate-pulse" /> LIVE
+  1048→  1048→        </Badge>
+  1049→  1049→        <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/60 text-white text-[9px] font-mono flex items-center gap-0.5">
+  1050→  1050→          <Eye className="w-2.5 h-2.5" /> {stream.viewerCount}
+  1051→  1051→        </div>
+  1052→  1052→      </div>
+  1053→  1053→      <div className="p-2">
+  1054→  1054→        <h3 className="text-sm font-medium line-clamp-2">{title}</h3>
+  1055→  1055→        <p className="text-xs text-muted-foreground mt-0.5">{creator}</p>
+  1056→  1056→      </div>
+  1057→  1057→    </div>
+  1058→  1058→  );
+  1059→  1059→}
+  1060→  1060→
+  1061→  1061→// ─── Highlight Card ────────────────────────────────────────────────────────
+  1062→  1062→
+  1063→  1063→function HighlightCard({ highlight }: { highlight: Highlight }) {
+  1064→  1064→  const title = highlight.title ?? highlight.experienceName ?? 'Highlight';
+  1065→  1065→  return (
+  1066→  1066→    <div className="rounded-xl overflow-hidden cursor-pointer group">
+  1067→  1067→      <div className="relative aspect-video bg-gradient-to-br from-amber-200 to-orange-300 dark:from-amber-900 dark:to-orange-900 flex items-center justify-center overflow-hidden">
+  1068→  1068→        <Sparkles className="w-8 h-8 text-white/70" />
+  1069→  1069→        <Badge className="absolute top-1.5 left-1.5 text-[8px] h-4 bg-amber-500 text-white flex items-center gap-0.5">
+  1070→  1070→          <Sparkles className="w-2.5 h-2.5" /> HIGHLIGHT
+  1071→  1071→        </Badge>
+  1072→  1072→        {typeof highlight.scoreAtHighlight === 'number' && (
+  1073→  1073→          <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/60 text-white text-[9px] font-mono">
+  1074→  1074→            {highlight.scoreAtHighlight.toLocaleString()} pts
+  1075→  1075→          </div>
+  1076→  1076→        )}
+  1077→  1077→        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+  1078→  1078→          <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur flex items-center justify-center">
+  1079→  1079→            <Play className="w-6 h-6 text-white fill-white" />
+  1080→  1080→          </div>
+  1081→  1081→        </div>
+  1082→  1082→      </div>
+  1083→  1083→      <div className="p-2">
+  1084→  1084→        <h3 className="text-sm font-medium line-clamp-2">{title}</h3>
+  1085→  1085→        {highlight.description && (
+  1086→  1086→          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{highlight.description}</p>
+  1087→  1087→        )}
+  1088→  1088→        <p className="text-xs text-muted-foreground mt-0.5">
+  1089→  1089→          {highlight.displayName ?? 'Anonymous'} · {formatCount(highlight.viewCount ?? 0)} views
+  1090→  1090→        </p>
+  1091→  1091→      </div>
+  1092→  1092→    </div>
+  1093→  1093→  );
+  1094→  1094→}
+  1095→  1095→
+  1096→  1096→// ─── Format count (YouTube-style: 1.2K, 3.4M) ──────────────────────────────
+  1097→  1097→
+  1098→  1098→function formatCount(n: number): string {
+  1099→  1099→  if (!n || n < 0) return '0';
+  1100→  1100→  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace('.0', '') + 'M';
+  1101→  1101→  if (n >= 1_000) return (n / 1_000).toFixed(1).replace('.0', '') + 'K';
+  1102→  1102→  return String(n);
+  1103→  1103→}
+  1104→  1104→
