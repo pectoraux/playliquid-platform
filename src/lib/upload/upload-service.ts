@@ -1,40 +1,42 @@
 /**
- * Phase 23 — Upload Service
- * -------------------------
+ * Phase 24 — Upload Service (Vercel-compatible)
+ * ---------------------------------------------
  * Handles real file uploads (multipart/form-data), ZIP extraction,
- * storage, and experience creation.
+ * and experience creation — all in-memory with DB-backed file storage.
  *
- * Flow:
- *   File upload → extract ZIP → validate → store in /public/uploaded-games/
- *   → create ExperienceRecord (draft) → return experienceId
+ * Vercel's serverless filesystem is read-only, so we:
+ *   1. Extract the ZIP in memory (Buffer)
+ *   2. Store each file's content as base64 in UploadedGameFileRecord
+ *   3. Serve files via /api/uploaded-games/[slug]/[...path] API route
  *
- * Uses Node's built-in zlib + a minimal ZIP reader (no external deps).
+ * This works on both local dev and Vercel serverless.
  */
 
-import { promises as fs } from 'fs';
-import path from 'path';
 import { db } from '@/lib/db';
 import { ensureDemoCreator } from '@/lib/studio-service';
 import { updateContainmentConfig } from '@/lib/economy/containment-service';
 import { validateBundle, generateManifest, type BundleValidation } from './bundle-validator';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploaded-games');
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB (DB storage has practical limits)
 
 export interface UploadResult {
   experienceId: string;
   validation: BundleValidation;
-  storagePath: string;
   publicUrl: string;
+}
+
+interface ExtractedFile {
+  path: string;
+  content: Buffer;
 }
 
 /**
  * Process an uploaded ZIP file:
- *   1. Save to temp
- *   2. Extract to /public/uploaded-games/{slug}/
+ *   1. Read file into memory
+ *   2. Extract ZIP in memory
  *   3. Validate the bundle
- *   4. Create ExperienceRecord (draft status)
- *   5. Create containment config (html5)
+ *   4. Store each file as base64 in UploadedGameFileRecord
+ *   5. Create ExperienceRecord (draft status)
  *   6. Return result
  */
 export async function processUpload(params: {
@@ -52,52 +54,38 @@ export async function processUpload(params: {
   // Generate a slug from the filename or title
   const baseName = params.title ?? file.name.replace(/\.zip$/i, '');
   const slug = `${baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${Date.now().toString(36).slice(-4)}`;
-  const experienceDir = path.join(UPLOAD_DIR, slug);
 
-  // Ensure upload dir exists
-  await fs.mkdir(UPLOAD_DIR, { recursive: true });
-  await fs.mkdir(experienceDir, { recursive: true });
-
-  // Read the file buffer
+  // Read the file into memory
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  // Extract ZIP
-  const extractedFiles = await extractZip(buffer, experienceDir);
+  // Extract ZIP in memory
+  const extractedFiles = extractZip(buffer);
+
+  if (extractedFiles.length === 0) {
+    throw new Error('No files found in the uploaded archive');
+  }
 
   // Read file contents for validation (text files only, < 100KB each)
   const fileContents: Record<string, string> = {};
-  for (const filePath of extractedFiles) {
-    const ext = path.extname(filePath).toLowerCase();
-    if (['.html', '.js', '.css', '.json', '.txt'].includes(ext)) {
-      try {
-        const fullPath = path.join(experienceDir, filePath);
-        const stat = await fs.stat(fullPath);
-        if (stat.size < 100_000) {
-          fileContents[filePath] = await fs.readFile(fullPath, 'utf-8');
-        }
-      } catch { /* skip binary/large files */ }
+  for (const f of extractedFiles) {
+    const ext = f.path.split('.').pop()?.toLowerCase() ?? '';
+    if (['html', 'js', 'css', 'json', 'txt'].includes(ext) && f.content.length < 100_000) {
+      fileContents[f.path] = f.content.toString('utf-8');
     }
   }
 
   // Validate
-  const validation = validateBundle(extractedFiles, fileContents);
+  const validation = validateBundle(extractedFiles.map((f) => f.path), fileContents);
   if (!validation.valid) {
-    // Clean up invalid bundle
-    await fs.rm(experienceDir, { recursive: true, force: true }).catch(() => {});
     throw new Error(`Bundle validation failed: ${validation.errors.join(', ')}`);
   }
 
-  // Generate manifest if missing
-  if (!validation.hasManifest) {
-    const manifest = generateManifest(baseName, validation);
-    await fs.writeFile(path.join(experienceDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
-  }
+  // Store files in the database (base64-encoded)
+  const creator = await ensureDemoCreator();
+  const publicUrl = `/api/uploaded-games/${slug}/`;
 
   // Create experience record (draft status)
-  const creator = await ensureDemoCreator();
-  const publicUrl = `/uploaded-games/${slug}/`;
-
   const experience = await db.experienceRecord.create({
     data: {
       slug,
@@ -115,7 +103,7 @@ export async function processUpload(params: {
         engine: validation.engine,
         uploaded: true,
       }),
-      status: 'DRAFT', // Start as draft — creator must publish
+      status: 'DRAFT',
       format: 'game',
     },
   });
@@ -141,10 +129,40 @@ export async function processUpload(params: {
     },
   });
 
+  // Store each file in the database
+  for (const f of extractedFiles) {
+    const ext = f.path.split('.').pop()?.toLowerCase() ?? '';
+    const mimeType = getMimeType(ext);
+    await db.uploadedGameFileRecord.create({
+      data: {
+        experienceId: experience.id,
+        slug,
+        filePath: f.path,
+        content: f.content.toString('base64'),
+        mimeType,
+        size: f.content.length,
+      },
+    });
+  }
+
+  // If no manifest exists, generate one and store it
+  if (!validation.hasManifest) {
+    const manifest = generateManifest(baseName, validation);
+    await db.uploadedGameFileRecord.create({
+      data: {
+        experienceId: experience.id,
+        slug,
+        filePath: 'manifest.json',
+        content: Buffer.from(JSON.stringify(manifest, null, 2)).toString('base64'),
+        mimeType: 'application/json',
+        size: JSON.stringify(manifest).length,
+      },
+    });
+  }
+
   return {
     experienceId: experience.id,
     validation,
-    storagePath: experienceDir,
     publicUrl,
   };
 }
@@ -162,28 +180,77 @@ export async function publishExperience(experienceId: string): Promise<void> {
   });
 }
 
-// ─── Minimal ZIP extraction (no external deps) ─────────────────────────────
-// Uses Node's zlib to decompress. Parses the ZIP Central Directory.
+/**
+ * Get a file from the database by slug + path.
+ */
+export async function getUploadedFile(slug: string, filePath: string): Promise<{
+  content: Buffer;
+  mimeType: string;
+} | null> {
+  const record = await db.uploadedGameFileRecord.findFirst({
+    where: { slug, filePath },
+  });
+  if (!record) return null;
+  return {
+    content: Buffer.from(record.content, 'base64'),
+    mimeType: record.mimeType,
+  };
+}
 
-async function extractZip(buffer: Buffer, destDir: string): Promise<string[]> {
-  // For simplicity and reliability, we use the 'unzipper' approach via
-  // Node's built-in zlib + manual ZIP parsing. However, since we want
-  // zero external deps, we'll use a different approach:
-  // If the file is actually a ZIP, we parse it; otherwise we treat it
-  // as a single HTML file.
+/**
+ * List all files for a slug.
+ */
+export async function listUploadedFiles(slug: string): Promise<string[]> {
+  const records = await db.uploadedGameFileRecord.findMany({
+    where: { slug },
+    select: { filePath: true },
+  });
+  return records.map((r) => r.filePath);
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+function getMimeType(ext: string): string {
+  const types: Record<string, string> = {
+    html: 'text/html',
+    htm: 'text/html',
+    js: 'application/javascript',
+    css: 'text/css',
+    json: 'application/json',
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    svg: 'image/svg+xml',
+    ico: 'image/x-icon',
+    woff: 'font/woff',
+    woff2: 'font/woff2',
+    ttf: 'font/ttf',
+    otf: 'font/otf',
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    ogg: 'audio/ogg',
+    mp4: 'video/mp4',
+    webm: 'video/webm',
+    txt: 'text/plain',
+  };
+  return types[ext] ?? 'application/octet-stream';
+}
+
+// ─── In-memory ZIP extraction (zero external deps) ─────────────────────────
+
+function extractZip(buffer: Buffer): ExtractedFile[] {
+  const files: ExtractedFile[] = [];
 
   // Check if it's a ZIP (PK magic bytes)
   const isZip = buffer[0] === 0x50 && buffer[1] === 0x4b;
 
   if (!isZip) {
     // Treat as a single HTML file
-    const fileName = 'index.html';
-    await fs.writeFile(path.join(destDir, fileName), buffer);
-    return [fileName];
+    files.push({ path: 'index.html', content: buffer });
+    return files;
   }
-
-  // Parse ZIP using the Central Directory
-  const files: string[] = [];
 
   // Find End of Central Directory record
   let eocdOffset = -1;
@@ -209,7 +276,6 @@ async function extractZip(buffer: Buffer, destDir: string): Promise<string[]> {
 
     const compressionMethod = buffer.readUInt16LE(offset + 10);
     const compressedSize = buffer.readUInt32LE(offset + 20);
-    const uncompressedSize = buffer.readUInt32LE(offset + 24);
     const fileNameLength = buffer.readUInt16LE(offset + 28);
     const extraFieldLength = buffer.readUInt16LE(offset + 30);
     const fileCommentLength = buffer.readUInt16LE(offset + 32);
@@ -219,7 +285,6 @@ async function extractZip(buffer: Buffer, destDir: string): Promise<string[]> {
 
     // Skip directories
     if (!fileName.endsWith('/')) {
-      // Read local file header to find data offset
       const localFileNameLength = buffer.readUInt16LE(localHeaderOffset + 26);
       const localExtraFieldLength = buffer.readUInt16LE(localHeaderOffset + 28);
       const dataOffset = localHeaderOffset + 30 + localFileNameLength + localExtraFieldLength;
@@ -227,26 +292,17 @@ async function extractZip(buffer: Buffer, destDir: string): Promise<string[]> {
 
       let fileData: Buffer;
       if (compressionMethod === 0) {
-        // Stored (no compression)
         fileData = compressedData;
       } else if (compressionMethod === 8) {
-        // Deflate (raw) — ZIP uses raw deflate without zlib headers
-        const zlib = await import('zlib');
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const zlib = require('zlib');
         fileData = zlib.inflateRawSync(compressedData);
       } else {
-        // Unsupported compression — skip
         offset += 46 + fileNameLength + extraFieldLength + fileCommentLength;
         continue;
       }
 
-      // Ensure directory exists
-      const filePath = path.join(destDir, fileName);
-      const fileDir = path.dirname(filePath);
-      await fs.mkdir(fileDir, { recursive: true });
-
-      // Write file
-      await fs.writeFile(filePath, fileData);
-      files.push(fileName);
+      files.push({ path: fileName, content: fileData });
     }
 
     offset += 46 + fileNameLength + extraFieldLength + fileCommentLength;

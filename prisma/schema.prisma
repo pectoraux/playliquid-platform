@@ -1772,3 +1772,20 @@ model GameCreationSession {
   @@index([userId])
   @@index([status])
 }
+
+// ─── Phase 24: Uploaded game file storage (DB-backed for Vercel) ───────────
+// Vercel's serverless filesystem is read-only. We store extracted game files
+// in the database so they persist and can be served via a dynamic API route.
+model UploadedGameFileRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  slug            String   // the upload slug (e.g. "pixel-quest-adventure-f54a")
+  filePath        String   // relative path within the bundle (e.g. "index.html")
+  content         String   // base64-encoded file content
+  mimeType        String   @default("text/plain")
+  size            Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@index([experienceId])
+  @@index([slug])
+}
