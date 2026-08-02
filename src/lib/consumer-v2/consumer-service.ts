@@ -20,8 +20,8 @@ export interface YouTubeHome {
 
 export async function getYouTubeHome(userId: string): Promise<YouTubeHome> {
   const [sparks, experiences, live, highlights] = await Promise.all([
-    getSparks(6),
-    getExperiencesForHome(8),
+    getSparks(10),
+    getExperiencesForHome(12),
     getLiveStreams(5),
     getHighlightsForHome(6),
   ]);
