@@ -25,12 +25,14 @@ import { ConsumerHomeV2 } from '@/components/consumer-v2/ConsumerHomeV2';
 import { CreatorStudio } from '@/components/creator-os/CreatorStudio';
 import { NetworkIntelligence } from '@/components/intelligence/NetworkIntelligence';
 import { PlayView } from '@/components/runtime/PlayView';
+import { SparkPlayer } from '@/components/runtime/SparkPlayer';
+import { GamePlayer } from '@/components/runtime/GamePlayer';
 import { useEffect, useMemo } from 'react';
 import type { ExtensionManifest } from '@/kernel/types';
 import { Playground } from '@/components/playground/Playground';
 
 export default function Home() {
-  const { view, playExperienceId, draftId, bundle, setNodes, setEdges } = useStudioStore();
+  const { view, playExperienceId, sparkQueue, draftId, bundle, setNodes, setEdges } = useStudioStore();
   const { data: extData } = useExtensions();
 
   // Build manifest lookup map
@@ -97,7 +99,10 @@ export default function Home() {
     case 'network-intelligence':
       return <NetworkIntelligence />;
     case 'play':
-      return playExperienceId ? <PlayView experienceId={playExperienceId} /> : <ConsumerHomeV2 />;
+      if (sparkQueue.length > 0) {
+        return <SparkPlayer sparks={sparkQueue} initialIndex={Math.max(0, sparkQueue.findIndex((s) => s.experienceId === playExperienceId))} />;
+      }
+      return playExperienceId ? <GamePlayer experienceId={playExperienceId} /> : <ConsumerHomeV2 />;
     case 'wizard':
       return <CreationWizard />;
     case 'editor':

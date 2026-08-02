@@ -77,6 +77,8 @@ const defaultIntent: ExperienceIntent = {
 export interface StudioStore {
   view: StudioView;
   playExperienceId: string | null;
+  sparkQueue: Array<{ experienceId: string; title: string; creatorName: string; creatorId: string; playCount: number; format: string; extensions: any[] }>;
+  playSparkQueue: (sparks: Array<{ experienceId: string; title: string; creatorName: string; creatorId: string; playCount: number; format: string; extensions: any[] }>, startIndex?: number) => void;
   draftId: string | null;
   draftTitle: string;
   draftDescription: string;
@@ -109,6 +111,7 @@ export interface StudioStore {
   setView: (v: StudioView) => void;
   playExperience: (experienceId: string) => void;
   setPlayExperienceId: (id: string | null) => void;
+  playSparkQueue: (sparks: any[], startIndex?: number) => void;
   setDraft: (params: { id: string; title: string; description: string; bundle: ExperienceBundle; intent: ExperienceIntent; parentExperienceId?: string }) => void;
   setBundle: (b: ExperienceBundle) => void;
   setTitle: (t: string) => void;
@@ -147,6 +150,7 @@ const emptyBundle: ExperienceBundle = {
 export const useStudioStore = create<StudioStore>((set) => ({
   view: 'home-v2',  // front door is the YouTube-style consumer home
   playExperienceId: null,
+  sparkQueue: [],
   draftId: null,
   draftTitle: 'Untitled Experience',
   draftDescription: '',
@@ -171,6 +175,7 @@ export const useStudioStore = create<StudioStore>((set) => ({
   setView: (v) => set({ view: v }),
   playExperience: (experienceId) => set({ playExperienceId: experienceId, view: 'play' }),
   setPlayExperienceId: (id) => set({ playExperienceId: id }),
+  playSparkQueue: (sparks, startIndex = 0) => set({ sparkQueue: sparks, playExperienceId: sparks[startIndex]?.experienceId ?? null, view: 'play' }),
   setDraft: (params) =>
     set({
       draftId: params.id,

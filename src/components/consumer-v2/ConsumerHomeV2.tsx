@@ -19,7 +19,7 @@ import {
 const MICRO = 1_000_000;
 
 export function ConsumerHomeV2() {
-  const { setView, playExperience } = useStudioStore();
+  const { setView, playExperience, playSparkQueue } = useStudioStore();
   const [home, setHome] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sparkIndex, setSparkIndex] = useState(0);
@@ -79,7 +79,7 @@ export function ConsumerHomeV2() {
           {/* Spark Feed — horizontal scroll of vertical cards */}
           <div className="flex gap-3 overflow-x-auto pb-3">
             {sparks.map((spark: any, i: number) => (
-              <SparkCard key={spark.experienceId} spark={spark} onClick={() => playExperience(spark.experienceId)} />
+              <SparkCard key={spark.experienceId} spark={spark} onClick={() => playSparkQueue(sparks, i)} />
             ))}
             {sparks.length === 0 && <p className="text-sm text-muted-foreground">No Sparks yet</p>}
           </div>
