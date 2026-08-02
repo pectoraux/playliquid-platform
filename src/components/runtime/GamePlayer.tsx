@@ -67,6 +67,8 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
   const [showShare, setShowShare] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [comment, setComment] = useState('');
+  const [liked, setLiked] = useState(false);
+  const [saved, setSaved] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -83,16 +85,22 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
         setRecommended((home.home?.experiences ?? []).filter((e: any) => e.experienceId !== experienceId).slice(0, 10));
         // Load social data
         if (rt.runtime?.creatorId) {
-          const [followRes, commentRes] = await Promise.all([
+          const [followRes, commentRes, likeRes, saveRes] = await Promise.all([
             fetchJSON<{ following: boolean; followers: number }>(`/api/social/follow?creatorId=${rt.runtime.creatorId}&viewerId=demo-user`),
             fetchJSON<{ comments: Comment[] }>(`/api/social/comments?experienceId=${experienceId}`),
+            fetchJSON<{ liked: boolean }>(`/api/social/like?experienceId=${experienceId}&userId=demo-user`),
+            fetchJSON<{ saved: boolean }>(`/api/social/save?experienceId=${experienceId}&listType=watch-later&userId=demo-user`),
           ]);
           if (!cancelled) {
             setSubscribed(followRes.following);
             setSubscriberCount(followRes.followers);
             setComments(commentRes.comments ?? []);
+            setLiked(likeRes.liked);
+            setSaved(saveRes.saved);
           }
         }
+        // Record play in history
+        postJSON('/api/social/history', { experienceId, experienceTitle: rt.runtime?.title ?? '' }).catch(() => {});
       } catch {}
       if (!cancelled) setLoading(false);
     })();
@@ -120,6 +128,16 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
     const res = await postJSON<{ following: boolean; followers: number }>('/api/social/follow', { creatorId: runtime.creatorId, action, viewerId: 'demo-user' });
     setSubscribed(res.following);
     setSubscriberCount(res.followers);
+  };
+
+  const handleLike = async () => {
+    const res = await postJSON<{ liked: boolean; likeCount: number }>('/api/social/like', { experienceId, userId: 'demo-user' });
+    setLiked(res.liked);
+  };
+
+  const handleSave = async () => {
+    const res = await postJSON<{ saved: boolean }>('/api/social/save', { experienceId, listType: 'watch-later', userId: 'demo-user' });
+    setSaved(res.saved);
   };
 
   const postComment = async () => {
@@ -185,10 +203,11 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
                   <Button size="sm" variant={subscribed ? 'secondary' : 'default'} className="h-7 text-xs ml-2 rounded-full" onClick={handleSubscribe}>{subscribed ? 'Subscribed' : 'Subscribe'}</Button>
                 </div>
                 <div className="flex items-center bg-muted rounded-full overflow-hidden">
-                  <button onClick={() => { setLiked(!liked); }} className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-muted-foreground/10"><ThumbsUp className={`w-4 h-4 ${liked ? 'fill-foreground' : ''}`} /><span className="text-xs font-medium">{liked ? '1' : '0'}</span></button>
+                  <button onClick={handleLike} className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-muted-foreground/10"><ThumbsUp className={`w-4 h-4 ${liked ? 'fill-amber-500 text-amber-500' : ''}`} /><span className="text-xs font-medium">{liked ? 'Liked' : 'Like'}</span></button>
                   <Separator orientation="vertical" className="h-5" />
                   <button onClick={() => { setLiked(false); }} className="px-3 py-1.5 hover:bg-muted-foreground/10"><ThumbsDown className="w-4 h-4" /></button>
                 </div>
+                <Button size="sm" variant={saved ? 'secondary' : 'outline'} className="h-8 text-xs gap-1.5 rounded-full" onClick={handleSave}>{saved ? '✓ Saved' : 'Save'}</Button>
                 <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 rounded-full" onClick={() => setShowShare(true)}><Share2 className="w-3.5 h-3.5" /> Share</Button>
                 <Button size="sm" className="h-8 text-xs gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600"><Zap className="w-3.5 h-3.5" /> Challenge</Button>
               </div>

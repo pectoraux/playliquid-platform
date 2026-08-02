@@ -1820,3 +1820,39 @@ model ExperienceCommentV2 {
   @@index([experienceId])
   @@index([parentId])
 }
+
+// ─── Phase 28: Network OS — Likes, Saves, Playlists ────────────────────────
+model ExperienceLikeRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  userId          String   @default("demo-user")
+  createdAt       DateTime @default(now())
+
+  @@unique([experienceId, userId])
+  @@index([experienceId])
+}
+
+model SavedExperienceRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  userId          String   @default("demo-user")
+  listType        String   @default("watch-later")  // watch-later | liked | playlist
+  playlistName    String?
+  createdAt       DateTime @default(now())
+
+  @@unique([experienceId, userId, listType])
+  @@index([userId])
+}
+
+model PlayHistoryRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  experienceTitle String
+  userId          String   @default("demo-user")
+  score           Int      @default(0)
+  durationMs      Int      @default(0)
+  playedAt        DateTime @default(now())
+
+  @@index([userId, playedAt])
+  @@index([experienceId])
+}
