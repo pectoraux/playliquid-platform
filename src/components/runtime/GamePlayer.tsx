@@ -60,7 +60,6 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
   const [runtime, setRuntime] = useState<ExperienceRuntime | null>(null);
   const [recommended, setRecommended] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [liked, setLiked] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
