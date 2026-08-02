@@ -101,6 +101,9 @@ export function ConsumerHomeV3() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeNav, setActiveNav] = useState<NavId>('home');
+  const [showCreateMenu, setShowCreateMenu] = useState(false);
+  const [showAIStudio, setShowAIStudio] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -141,7 +144,7 @@ export function ConsumerHomeV3() {
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        onCreate={() => setView('creator-studio')}
+        onCreate={() => setShowCreateMenu(true)}
         onNavigate={(v) => setView(v)}
         onOpenLibrary={() => setActiveNav('library')}
         onOpenSearch={() => setActiveNav('search')}
@@ -181,8 +184,192 @@ export function ConsumerHomeV3() {
       <MobileBottomNav
         activeNav={activeNav}
         setActiveNav={setActiveNav}
-        onCreate={() => setView('creator-studio')}
+        onCreate={() => setShowCreateMenu(true)}
       />
+
+      {/* ── Create dropdown modal ── */}
+      {showCreateMenu && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowCreateMenu(false)}>
+          <div className="bg-background rounded-2xl p-4 max-w-xs w-full mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-bold mb-3">Create</h3>
+            <button
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
+              onClick={() => { setShowCreateMenu(false); setShowAIStudio(true); }}
+            >
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center"><Sparkles className="w-5 h-5 text-white" /></div>
+              <div><div className="text-sm font-medium">Create with AI</div><div className="text-[10px] text-muted-foreground">Describe a game idea, AI builds it</div></div>
+            </button>
+            <button
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
+              onClick={() => { setShowCreateMenu(false); setShowUpload(true); }}
+            >
+              <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center"><Upload className="w-5 h-5 text-white" /></div>
+              <div><div className="text-sm font-medium">Upload HTML5 Game</div><div className="text-[10px] text-muted-foreground">Upload a .zip file</div></div>
+            </button>
+            <button
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
+              onClick={() => { setShowCreateMenu(false); setView('creator-studio'); }}
+            >
+              <div className="w-10 h-10 rounded-full bg-violet-500 flex items-center justify-center"><BarChart className="w-5 h-5 text-white" /></div>
+              <div><div className="text-sm font-medium">Creator Studio</div><div className="text-[10px] text-muted-foreground">Manage your experiences</div></div>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── AI Creation Studio modal ── */}
+      {showAIStudio && (
+        <AICreationStudioInline onClose={() => setShowAIStudio(false)} onPublished={(id) => { setShowAIStudio(false); playExperience(id); }} />
+      )}
+
+      {/* ── Upload modal ── */}
+      {showUpload && (
+        <UploadModalInline onClose={() => setShowUpload(false)} onPublished={(id) => { setShowUpload(false); playExperience(id); }} />
+      )}
+    </div>
+  );
+}
+
+// ─── Inline modals (simplified versions for the home page) ────────────────
+
+function AICreationStudioInline({ onClose, onPublished }: { onClose: () => void; onPublished: (id: string) => void }) {
+  const [prompt, setPrompt] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const generate = async () => {
+    if (!prompt.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/game-creation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'design', description: prompt, formatHint: 'game' }),
+      });
+      const d = await res.json();
+      if (d.error) throw new Error(d.error);
+      setResult({ sessionId: d.sessionId, spec: d.spec });
+    } catch (e) { setError((e as Error).message); }
+    setLoading(false);
+  };
+
+  const publish = async () => {
+    if (!result?.sessionId) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/game-creation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate', sessionId: result.sessionId }),
+      });
+      const d = await res.json();
+      if (d.error) throw new Error(d.error);
+      onPublished(d.experienceId);
+    } catch (e) { setError((e as Error).message); }
+    setLoading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="bg-background rounded-2xl p-5 max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold">Create with AI</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+        </div>
+        {!result ? (
+          <div className="space-y-3">
+            <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Describe your game idea... (e.g. 'fast ninja fighting robots')" className="w-full min-h-[80px] p-3 text-sm rounded-lg border border-border bg-muted/50 focus:outline-none focus:border-amber-400" />
+            <div className="flex flex-wrap gap-1.5">
+              {['Endless runner', 'Tower defense', 'Reaction game', 'Space shooter'].map((ex) => (
+                <button key={ex} onClick={() => setPrompt(ex)} className="text-[10px] px-2 py-1 rounded-full border border-border hover:bg-muted">{ex}</button>
+              ))}
+            </div>
+            {error && <p className="text-xs text-red-500">{error}</p>}
+            <Button size="sm" onClick={generate} disabled={loading || !prompt.trim()} className="w-full gap-1.5">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} Generate
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="rounded-lg bg-muted/50 p-3">
+              <div className="text-sm font-bold">{result.spec.title}</div>
+              <div className="text-[10px] text-muted-foreground mt-1">{result.spec.description}</div>
+              <div className="flex flex-wrap gap-1 mt-2">
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-500 text-white">{result.spec.format}</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted">{result.spec.engineTemplateId}</span>
+                {result.spec.competitiveEligible && <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500 text-white">🏆 Competitive</span>}
+              </div>
+              <div className="text-[9px] text-muted-foreground mt-2">{result.spec.reasoning}</div>
+            </div>
+            {error && <p className="text-xs text-red-500">{error}</p>}
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="flex-1" onClick={() => setResult(null)}>Regenerate</Button>
+              <Button size="sm" className="flex-1 gap-1.5" onClick={publish} disabled={loading}>
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />} Publish & Play
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function UploadModalInline({ onClose, onPublished }: { onClose: () => void; onPublished: (id: string) => void }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [title, setTitle] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const upload = async () => {
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', title || file.name);
+      const res = await fetch('/api/experiences/upload', { method: 'POST', body: formData });
+      const d = await res.json();
+      if (d.error) throw new Error(d.error);
+      // Publish
+      await fetch('/api/experiences/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'publish', experienceId: d.experienceId }),
+      });
+      onPublished(d.experienceId);
+    } catch (e) { setError((e as Error).message); }
+    setUploading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="bg-background rounded-2xl p-5 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold">Upload HTML5 Game</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+        </div>
+        <div
+          onClick={() => fileRef.current?.click()}
+          className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-amber-400 transition-colors mb-3"
+        >
+          <input ref={fileRef} type="file" accept=".zip,.html" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) { setFile(f); if (!title) setTitle(f.name.replace(/\.(zip|html)$/i, '')); } }} />
+          {file ? (
+            <div><Package className="w-8 h-8 mx-auto text-amber-500 mb-1" /><div className="text-xs font-medium">{file.name}</div><div className="text-[10px] text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</div></div>
+          ) : (
+            <div><Package className="w-8 h-8 mx-auto text-muted-foreground/40 mb-1" /><div className="text-xs">Drop .zip here or click</div></div>
+          )}
+        </div>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Game title" className="w-full h-8 px-3 text-xs rounded-lg border border-border bg-muted/50 mb-3 focus:outline-none focus:border-amber-400" />
+        {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
+        <Button size="sm" onClick={upload} disabled={!file || uploading} className="w-full gap-1.5">
+          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Upload & Publish
+        </Button>
+      </div>
     </div>
   );
 }
@@ -220,11 +407,11 @@ function ContentRouter({
     case 'library':
       return <LibraryPage />;
     case 'history':
-      return <EmptyState icon={History} title="No history yet" subtitle="Experiences you watch will appear here" />;
+      return <HistoryPage onPlay={onPlayExperience} />;
     case 'liked':
-      return <EmptyState icon={Heart} title="No liked content yet" subtitle="Tap the heart on experiences you enjoy" />;
+      return <LikedPage onPlay={onPlayExperience} />;
     case 'watch-later':
-      return <EmptyState icon={Bookmark} title="Nothing saved yet" subtitle="Bookmark experiences to play them later" />;
+      return <WatchLaterPage onPlay={onPlayExperience} />;
     case 'search':
       return <SearchPage />;
     default:
@@ -538,6 +725,154 @@ function SearchPage() {
       ) : null}
     </section>
   );
+}
+
+// ─── History Page (real data) ─────────────────────────────────────────────
+
+function HistoryPage({ onPlay }: { onPlay: (id: string) => void }) {
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const d = await fetchJSON<{ history: any[] }>('/api/social/history?userId=demo-user');
+        if (!cancelled) setHistory(d.history ?? []);
+      } catch {}
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) return <PulsingLogoLoader />;
+  if (history.length === 0) return <EmptyState icon={Clock} title="No history yet" subtitle="Experiences you play will appear here" />;
+
+  return (
+    <section>
+      <SectionHeader icon={<Clock className="w-5 h-5 text-violet-500" />} title="History" subtitle={`${history.length} experiences played`} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {history.map((item, i) => (
+          <div key={i} className="rounded-xl overflow-hidden cursor-pointer group hover:bg-muted/30" onClick={() => onPlay(item.experienceId)}>
+            <div className="relative aspect-video bg-gradient-to-br from-violet-300 to-fuchsia-300 dark:from-violet-800 dark:to-fuchsia-800 flex items-center justify-center">
+              <Play className="w-8 h-8 text-white/60 group-hover:scale-110 transition-transform" />
+            </div>
+            <div className="p-2">
+              <h3 className="text-xs font-medium line-clamp-2">{item.experienceTitle}</h3>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {item.score > 0 ? `Score: ${item.score}` : 'Played'} · {timeAgo(item.playedAt)}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─── Liked Page (real data) ───────────────────────────────────────────────
+
+function LikedPage({ onPlay }: { onPlay: (id: string) => void }) {
+  const [liked, setLiked] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const d = await fetchJSON<{ experiences: any[] }>('/api/social/like?userId=demo-user');
+        if (!cancelled) setLiked(d.experiences ?? []);
+      } catch {}
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) return <PulsingLogoLoader />;
+  if (liked.length === 0) return <EmptyState icon={Heart} title="No liked content yet" subtitle="Tap the Like button on experiences you enjoy" />;
+
+  return (
+    <section>
+      <SectionHeader icon={<Heart className="w-5 h-5 text-rose-500" />} title="Liked" subtitle={`${liked.length} liked experiences`} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {liked.map((exp) => (
+          <div key={exp.experienceId} className="rounded-xl overflow-hidden cursor-pointer group hover:bg-muted/30" onClick={() => onPlay(exp.experienceId)}>
+            <div className="relative aspect-video overflow-hidden">
+              {exp.thumbnailUrl ? <img src={exp.thumbnailUrl} alt={exp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" /> : <div className="w-full h-full bg-gradient-to-br from-violet-300 to-fuchsia-300 dark:from-violet-800 dark:to-fuchsia-800 flex items-center justify-center"><Play className="w-8 h-8 text-white/60" /></div>}
+            </div>
+            <div className="p-2">
+              <h3 className="text-xs font-medium line-clamp-2">{exp.displayTitle ?? exp.title}</h3>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{exp.creatorName}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─── Watch Later Page (real data) ─────────────────────────────────────────
+
+function WatchLaterPage({ onPlay }: { onPlay: (id: string) => void }) {
+  const [saved, setSaved] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const d = await fetchJSON<{ experiences: any[] }>('/api/social/save?listType=watch-later&userId=demo-user');
+        if (!cancelled) setSaved(d.experiences ?? []);
+      } catch {}
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) return <PulsingLogoLoader />;
+  if (saved.length === 0) return <EmptyState icon={Bookmark} title="Nothing saved yet" subtitle="Click Save on any experience to watch it later" />;
+
+  return (
+    <section>
+      <SectionHeader icon={<Bookmark className="w-5 h-5 text-amber-500" />} title="Watch Later" subtitle={`${saved.length} saved experiences`} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {saved.map((exp) => (
+          <div key={exp.experienceId} className="rounded-xl overflow-hidden cursor-pointer group hover:bg-muted/30" onClick={() => onPlay(exp.experienceId)}>
+            <div className="relative aspect-video overflow-hidden">
+              {exp.thumbnailUrl ? <img src={exp.thumbnailUrl} alt={exp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" /> : <div className="w-full h-full bg-gradient-to-br from-amber-300 to-orange-300 dark:from-amber-800 dark:to-orange-800 flex items-center justify-center"><Play className="w-8 h-8 text-white/60" /></div>}
+            </div>
+            <div className="p-2">
+              <h3 className="text-xs font-medium line-clamp-2">{exp.displayTitle ?? exp.title}</h3>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{exp.creatorName}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─── Pulsing PL Logo Loading State ───────────────────────────────────────
+
+function PulsingLogoLoader() {
+  return (
+    <div className="flex items-center justify-center py-24">
+      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white text-sm font-bold animate-pulse">
+        PL
+      </div>
+    </div>
+  );
+}
+
+// ─── Time Ago helper ──────────────────────────────────────────────────────
+
+function timeAgo(ts: number): string {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000), h = Math.floor(m / 60), d = Math.floor(h / 24);
+  if (m < 1) return 'just now';
+  if (h < 1) return `${m}m ago`;
+  if (d < 1) return `${h}h ago`;
+  return `${d}d ago`;
 }
 
 // ─── Sidebar (desktop) ────────────────────────────────────────────────────

@@ -68,6 +68,7 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
   const [comment, setComment] = useState('');
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showChallenge, setShowChallenge] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -208,7 +209,7 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
                 </div>
                 <Button size="sm" variant={saved ? 'secondary' : 'outline'} className="h-8 text-xs gap-1.5 rounded-full" onClick={handleSave}>{saved ? '✓ Saved' : 'Save'}</Button>
                 <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 rounded-full" onClick={() => setShowShare(true)}><Share2 className="w-3.5 h-3.5" /> Share</Button>
-                <Button size="sm" className="h-8 text-xs gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600"><Zap className="w-3.5 h-3.5" /> Challenge</Button>
+                <Button size="sm" className="h-8 text-xs gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600" onClick={() => setShowChallenge(true)}><Zap className="w-3.5 h-3.5" /> Challenge</Button>
               </div>
 
               {/* Description */}
@@ -257,7 +258,10 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
               <div className="text-xs font-medium text-muted-foreground mb-1">Up Next</div>
               {recommended.map(rec => (
                 <button key={rec.experienceId} onClick={() => playExperience(rec.experienceId)} className="flex gap-2 w-full text-left hover:bg-muted/50 rounded-lg p-1">
-                  <div className="relative w-40 h-[90px] shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-violet-300 to-fuchsia-300 dark:from-violet-800 dark:to-fuchsia-800 flex items-center justify-center"><Gamepad2 className="w-6 h-6 text-white/60" />{rec.competitiveEligible && <Badge className="absolute top-1 right-1 text-[7px] h-3 px-1 bg-emerald-500 text-white">🏆</Badge>}</div>
+                  <div className="relative w-40 h-[90px] shrink-0 rounded-lg overflow-hidden">
+                    {rec.thumbnailUrl ? <img src={rec.thumbnailUrl} alt={rec.title} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gradient-to-br from-violet-300 to-fuchsia-300 dark:from-violet-800 dark:to-fuchsia-800 flex items-center justify-center"><Gamepad2 className="w-6 h-6 text-white/60" /></div>}
+                    {rec.competitiveEligible && <Badge className="absolute top-1 right-1 text-[7px] h-3 px-1 bg-emerald-500 text-white">🏆</Badge>}
+                  </div>
                   <div className="flex-1 min-w-0 py-0.5"><div className="text-xs font-medium line-clamp-2 leading-tight">{rec.title}</div><div className="text-[10px] text-muted-foreground mt-0.5">{rec.creatorName}</div><div className="text-[10px] text-muted-foreground">{rec.playCount} plays · {rec.publishedAgo ?? 'recently'}</div></div>
                 </button>
               ))}
@@ -271,6 +275,29 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle className="flex items-center gap-2"><Share2 className="w-4 h-4" /> Share</DialogTitle></DialogHeader>
           <ShareContent experienceId={experienceId} title={runtime.title} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Challenge Modal */}
+      <Dialog open={showChallenge} onOpenChange={setShowChallenge}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" /> Challenge Mode</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-300 p-3">
+              <div className="text-sm font-bold">{runtime.title}</div>
+              <div className="text-[10px] text-muted-foreground mt-1">Enter ranked competition</div>
+            </div>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-center justify-between"><span className="text-muted-foreground">Entry:</span><span className="font-medium">Free</span></div>
+              <div className="flex items-center justify-between"><span className="text-muted-foreground">Prize Pool:</span><span className="font-medium text-amber-500">200 L</span></div>
+              <div className="flex items-center justify-between"><span className="text-muted-foreground">Players:</span><span className="font-medium">500</span></div>
+              <div className="flex items-center justify-between"><span className="text-muted-foreground">Your Rank:</span><span className="font-medium">#23</span></div>
+            </div>
+            <Button size="sm" className="w-full gap-1.5 bg-gradient-to-r from-amber-500 to-orange-600" onClick={() => setShowChallenge(false)}>
+              <Trophy className="w-3.5 h-3.5" /> Enter Challenge
+            </Button>
+            <p className="text-[9px] text-muted-foreground text-center">Requires purchased minutes. Free to play casually.</p>
+          </div>
         </DialogContent>
       </Dialog>
 
