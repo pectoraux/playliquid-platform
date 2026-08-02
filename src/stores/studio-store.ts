@@ -43,6 +43,7 @@ export type StudioView =
   | 'competitive'
   | 'extensions'
   | 'home-v2'
+  | 'home-v3'
   | 'creator-studio'
   | 'network-intelligence'
   | 'wizard'
@@ -148,7 +149,7 @@ const emptyBundle: ExperienceBundle = {
 };
 
 export const useStudioStore = create<StudioStore>((set) => ({
-  view: 'home-v2',  // front door is the YouTube-style consumer home
+  view: 'home-v3',  // front door is the YouTube-style consumer home
   playExperienceId: null,
   sparkQueue: [],
   draftId: null,

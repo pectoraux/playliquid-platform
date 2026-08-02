@@ -308,5 +308,21 @@ function extractZip(buffer: Buffer): ExtractedFile[] {
     offset += 46 + fileNameLength + extraFieldLength + fileCommentLength;
   }
 
+  // Strip common leading directory prefix (e.g. "pixel-quest-adventure/index.html" → "index.html")
+  // This happens when the ZIP contains a top-level folder with all files inside.
+  if (files.length > 0) {
+    const allPaths = files.map((f) => f.path);
+    // Check if all files share a common first path segment
+    const firstSegs = allPaths.map((p) => p.split('/')[0]);
+    const allSameFirstSeg = firstSegs.every((s) => s === firstSegs[0]);
+    const hasSubdirs = allPaths.every((p) => p.includes('/'));
+    if (allSameFirstSeg && hasSubdirs) {
+      const prefix = firstSegs[0] + '/';
+      for (const f of files) {
+        f.path = f.path.slice(prefix.length);
+      }
+    }
+  }
+
   return files;
 }

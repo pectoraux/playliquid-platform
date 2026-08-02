@@ -22,6 +22,7 @@ import { AdrEconomy } from '@/components/economy/AdrEconomy';
 import { CompetitivePlay } from '@/components/economy/CompetitivePlay';
 import { ExtensionUniverse } from '@/components/extensions/ExtensionUniverse';
 import { ConsumerHomeV2 } from '@/components/consumer-v2/ConsumerHomeV2';
+import { ConsumerHomeV3 } from '@/components/consumer-v2/ConsumerHomeV3';
 import { CreatorStudio } from '@/components/creator-os/CreatorStudio';
 import { NetworkIntelligence } from '@/components/intelligence/NetworkIntelligence';
 import { PlayView } from '@/components/runtime/PlayView';
@@ -74,6 +75,8 @@ export default function Home() {
       return <StudioHome />;
     case 'home-v2':
       return <ConsumerHomeV2 />;
+    case 'home-v3':
+      return <ConsumerHomeV3 />;
     case 'universe':
       return <ConsumerUniverse />;
     case 'identity':
