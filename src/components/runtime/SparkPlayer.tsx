@@ -143,23 +143,7 @@ export function SparkPlayer({ sparks, initialIndex = 0 }: { sparks: Spark[]; ini
         {currentIndex + 1} / {sparks.length}
       </div>
 
-      {/* Swipe hint arrows */}
-      {currentIndex > 0 && (
-        <button
-          onClick={goPrev}
-          className="absolute top-1/2 left-2 z-40 w-8 h-8 rounded-full bg-black/40 text-white/60 flex items-center justify-center hover:bg-black/60 hover:text-white"
-        >
-          <ChevronUp className="w-4 h-4" />
-        </button>
-      )}
-      {currentIndex < sparks.length - 1 && (
-        <button
-          onClick={goNext}
-          className="absolute bottom-1/2 right-2 z-40 w-8 h-8 rounded-full bg-black/40 text-white/60 flex items-center justify-center hover:bg-black/60 hover:text-white"
-        >
-          <ChevronDown className="w-4 h-4" />
-        </button>
-      )}
+      {/* No arrow buttons — TikTok uses scroll/swipe only */}
 
       {/* Main spark content — vertical 9:16 */}
       <div
