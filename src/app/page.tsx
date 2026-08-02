@@ -21,6 +21,7 @@ import { LivingCivilizations } from '@/components/living/LivingCivilizations';
 import { AdrEconomy } from '@/components/economy/AdrEconomy';
 import { CompetitivePlay } from '@/components/economy/CompetitivePlay';
 import { ExtensionUniverse } from '@/components/extensions/ExtensionUniverse';
+import { ConsumerHomeV2 } from '@/components/consumer-v2/ConsumerHomeV2';
 import { useEffect, useMemo } from 'react';
 import type { ExtensionManifest } from '@/kernel/types';
 import { Playground } from '@/components/playground/Playground';
@@ -66,6 +67,8 @@ export default function Home() {
   switch (view) {
     case 'home':
       return <StudioHome />;
+    case 'home-v2':
+      return <ConsumerHomeV2 />;
     case 'universe':
       return <ConsumerUniverse />;
     case 'identity':

@@ -801,3 +801,59 @@ ADR-001 Verification:
 ✅ Used Together recommendations work (co-occurrence analysis)
 ✅ Existing native extensions still compile (kernel unchanged)
 ✅ Existing experiences still run (runtime unchanged)
+
+---
+Task ID: 18
+Agent: main (Z.ai Code)
+Task: Phase 18 — Experience Operating System Consumer Alignment (YouTube-style home, SparkFeed, ContainmentFrame, graph transparency)
+
+Work Log:
+- Added 3 Prisma models: ReplayEventRecord (timeline events for replays), LiveStreamRecord (live gameplay sessions), SparkPresentationConfigRecord (portrait/autoplay/interaction config)
+- Built Consumer Service v2 (src/lib/consumer-v2/consumer-service.ts):
+  - getYouTubeHome: assembles Sparks + Experiences + Live + Highlights
+  - getSparks: experiences with spark format (portrait, vertical)
+  - getExperiencesForHome: long-form cards with extension graph
+  - getLiveStreams: active live sessions
+  - getHighlightsForHome: AI-generated clips
+  - getExperienceGraph: extension list for an experience
+  - getReplayEvents: timeline events for replays
+  - getSparkConfig: portrait/autoplay/interaction mode
+  - goLive: start a live stream
+- Built ContainmentFrame component (src/components/consumer-v2/ContainmentFrame.tsx):
+  - Fixed PlayLiquid viewport with aspect ratio enforcement
+  - Input normalization (touch → normalized 0-1 coordinates)
+  - Fullscreen handling
+  - Performance telemetry (FPS counter)
+  - PlayLiquid badge + boundary marker
+  - Every experience renders inside <PlayLiquidFrame><ExperienceRuntime /></PlayLiquidFrame>
+- Built ConsumerHomeV2 (src/components/consumer-v2/ConsumerHomeV2.tsx):
+  - YouTube-style home with 4 sections: Sparks, Experiences, Live Now, Best Moments
+  - Spark cards: vertical 9:16, ⚡ SPARK badge, extension pills, Play/Heart/Share/Fork buttons, contained in PlayLiquid frame
+  - Experience cards: 16:9 thumbnails, creator avatar, extension pills, play count, competitive badge
+  - Live cards: red LIVE badge, viewer count
+  - Highlight cards: trigger icon, score, views
+  - Navigation: Sparks | Experiences | Live | Highlights + Extensions | Compete | Wallet | Identity
+- Made ConsumerHomeV2 the default view (front door)
+- Built 5 API routes: home, sparks, highlights, live, replay-events
+
+Browser Verification:
+- YouTube-style home loads with 6 Sparks (vertical 9:16 cards with ⚡ badge, contained in PlayLiquid frame)
+- Experiences section: 8 cards with 16:9 thumbnails, creator avatars, extension pills (🏃🚶🏆🪙🌾)
+- Live section: "No live sessions right now" (correct — no streams active)
+- Highlights section: "No highlights yet" (correct — no competitive play yet to generate them)
+- Navigation works: Sparks | Experiences | Live | Highlights
+- Top nav: Extensions | Compete | Wallet | Identity
+- No console errors, lint clean
+
+Phase 18 Verification:
+✅ Shorts-style Spark feed (vertical 9:16 cards with ⚡ badge)
+✅ Experience marketplace (16:9 cards with extension pills)
+✅ Live plays section (ready for streams)
+✅ AI highlights section (ready for competitive highlights)
+✅ Experience exposes extension graph (5 extensions per card)
+✅ Extensions link to Extension Universe (accessible via nav)
+✅ All experiences render inside PlayLiquid frame (ContainmentFrame)
+✅ Watching earns nothing (passive viewing only)
+✅ Playing casually earns nothing (ADR-006 compliant)
+✅ Competition requires purchased minutes (competitive play view)
+✅ Winners earn only leaderboard payouts (prize settlement)

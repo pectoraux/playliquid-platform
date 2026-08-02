@@ -1466,3 +1466,46 @@ model ExtensionInstallationRecord {
   @@unique([extensionId, experienceId])
   @@index([experienceId])
 }
+
+// ─── Phase 18: Consumer Alignment — Replays, Live, Sparks ──────────────────
+
+model ReplayEventRecord {
+  id              String   @id @default(cuid())
+  replayId        String
+  timestamp       Int      // ms from start
+  eventType       String   // start | score_milestone | mechanic_activation | leaderboard_change | rare_event | near_miss | completion
+  extensionId     String?
+  description     String
+  scoreAtEvent    Int?
+  metadataJson    String   @default("{}")
+  createdAt       DateTime @default(now())
+
+  @@index([replayId])
+}
+
+model LiveStreamRecord {
+  id              String   @id @default(cuid())
+  sessionId       String
+  experienceId    String
+  experienceName  String
+  playerId        String
+  playerName      String
+  status          String   @default("LIVE")  // LIVE | ENDED
+  viewerCount     Int      @default(0)
+  peakViewers     Int      @default(0)
+  streamProvider  String   @default("internal")
+  startedAt       DateTime @default(now())
+  endedAt         DateTime?
+}
+
+model SparkPresentationConfigRecord {
+  id              String   @id @default(cuid())
+  experienceId    String   @unique
+  orientation     String   @default("portrait")  // portrait | landscape
+  maxDurationSeconds Int   @default(180)
+  autoplay        Boolean  @default(true)
+  previewAsset    String?
+  interactionMode String   @default("tap")  // tap | swipe | tilt | hold
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

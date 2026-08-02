@@ -42,6 +42,7 @@ export type StudioView =
   | 'adr-economy'
   | 'competitive'
   | 'extensions'
+  | 'home-v2'
   | 'wizard'
   | 'editor'
   | 'experiences'
@@ -139,7 +140,7 @@ const emptyBundle: ExperienceBundle = {
 };
 
 export const useStudioStore = create<StudioStore>((set) => ({
-  view: 'universe',  // front door is the consumer marketplace
+  view: 'home-v2',  // front door is the YouTube-style consumer home
   draftId: null,
   draftTitle: 'Untitled Experience',
   draftDescription: '',
