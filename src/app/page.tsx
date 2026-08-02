@@ -12,7 +12,6 @@ import { V3ShellWrapper } from '@/components/consumer-v2/V3ShellWrapper';
 import { ConsumerHomeV3 } from '@/components/consumer-v2/ConsumerHomeV3';
 import { CreatorStudio } from '@/components/creator-os/CreatorStudio';
 import { NetworkIntelligence } from '@/components/intelligence/NetworkIntelligence';
-import { PlayView } from '@/components/runtime/PlayView';
 import { SparkPlayer } from '@/components/runtime/SparkPlayer';
 import { GamePlayer } from '@/components/runtime/GamePlayer';
 import { useEffect, useMemo } from 'react';
@@ -81,13 +80,13 @@ export default function Home() {
     case 'creator':
       return <CreatorProfile />;
 
-    // ── V3-wrapped legacy views ──
+    // ── V3-wrapped views ──
     case 'extensions':
       return <V3ShellWrapper title="Extensions"><ExtensionUniverse /></V3ShellWrapper>;
     case 'adr-economy':
-      return <V3ShellWrapper title="Wallet"><PlayView experienceId="" /></V3ShellWrapper>;
+      return <V3ShellWrapper title="Wallet"><WalletPage /></V3ShellWrapper>;
     case 'competitive':
-      return <V3ShellWrapper title="Compete"><PlayView experienceId="" /></V3ShellWrapper>;
+      return <V3ShellWrapper title="Compete"><CompetePage /></V3ShellWrapper>;
     case 'network-intelligence':
       return <V3ShellWrapper title="Network Intelligence"><NetworkIntelligence /></V3ShellWrapper>;
     case 'kernel-dev':
@@ -106,4 +105,67 @@ export default function Home() {
     default:
       return <ConsumerHomeV3 />;
   }
+}
+
+// ─── Simple V3 pages for Wallet and Compete ────────────────────────────────
+
+function WalletPage() {
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <h2 className="text-xl font-bold mb-4">Wallet</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="rounded-xl border border-border bg-card/40 p-4">
+          <div className="text-[10px] text-muted-foreground mb-1">Liquid Balance</div>
+          <div className="text-2xl font-bold text-amber-500">0 L</div>
+        </div>
+        <div className="rounded-xl border border-border bg-card/40 p-4">
+          <div className="text-[10px] text-muted-foreground mb-1">Purchased Minutes</div>
+          <div className="text-2xl font-bold">0 min</div>
+        </div>
+        <div className="rounded-xl border border-border bg-card/40 p-4">
+          <div className="text-[10px] text-muted-foreground mb-1">Prize Earnings</div>
+          <div className="text-2xl font-bold text-emerald-500">0 L</div>
+        </div>
+      </div>
+      <div className="rounded-xl border border-border bg-card/40 p-4">
+        <h3 className="text-sm font-medium mb-2">Recent Transactions</h3>
+        <p className="text-xs text-muted-foreground">No transactions yet. Purchase Liquid to start competing.</p>
+      </div>
+      <button className="mt-4 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-medium">
+        Purchase Liquid
+      </button>
+    </div>
+  );
+}
+
+function CompetePage() {
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <h2 className="text-xl font-bold mb-4">Compete</h2>
+      <p className="text-sm text-muted-foreground mb-6">Enter tournaments and competitive sessions to win prizes.</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[
+          { title: 'Neon Runner Championship', prize: '500L', entrants: 124, status: 'Open' },
+          { title: 'Sky Defense Showdown', prize: '1,200L', entrants: 89, status: 'Live' },
+          { title: 'Coin Rush Sprint', prize: '250L', entrants: 56, status: 'Soon' },
+        ].map((t, i) => (
+          <div key={i} className="rounded-xl border border-border bg-card/40 overflow-hidden">
+            <div className="aspect-video bg-gradient-to-br from-amber-300 to-orange-400 dark:from-amber-800 dark:to-orange-900 flex items-center justify-center">
+              <span className="text-3xl">🏆</span>
+            </div>
+            <div className="p-3">
+              <h3 className="text-sm font-bold">{t.title}</h3>
+              <div className="flex items-center justify-between mt-1 text-[10px] text-muted-foreground">
+                <span className="text-amber-600 dark:text-amber-400 font-medium">Prize: {t.prize}</span>
+                <span>{t.entrants} entrants</span>
+              </div>
+              <div className={`mt-2 inline-block px-2 py-0.5 rounded-full text-[9px] font-medium ${t.status === 'Live' ? 'bg-red-500 text-white animate-pulse' : 'bg-emerald-500 text-white'}`}>
+                {t.status}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
