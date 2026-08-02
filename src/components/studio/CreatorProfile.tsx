@@ -26,7 +26,7 @@ export function CreatorProfile() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <Button onClick={() => setView('home')} variant="ghost" size="sm" className="mb-4 h-8">
+      <Button onClick={() => setView('home-v3')} variant="ghost" size="sm" className="mb-4 h-8">
         <ArrowLeft className="w-4 h-4" /> Back to Studio
       </Button>
 

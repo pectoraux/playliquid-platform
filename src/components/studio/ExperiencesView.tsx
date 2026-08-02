@@ -43,7 +43,7 @@ export function ExperiencesView() {
           <h1 className="text-2xl font-bold">Discover Experiences</h1>
           <p className="text-sm text-muted-foreground">Browse and fork experiences created with PlayLiquid Studio</p>
         </div>
-        <Button onClick={() => setView('home')} variant="outline" size="sm">
+        <Button onClick={() => setView('home-v3')} variant="outline" size="sm">
           ← Studio Home
         </Button>
       </div>

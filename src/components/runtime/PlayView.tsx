@@ -92,7 +92,7 @@ export function PlayView({ experienceId }: { experienceId: string }) {
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-3">
         <AlertCircle className="w-8 h-8 text-amber-500" />
         <p className="text-sm text-muted-foreground">{error ?? 'Experience not found'}</p>
-        <Button variant="outline" size="sm" onClick={() => setView('home-v2')}>Back to Home</Button>
+        <Button variant="outline" size="sm" onClick={() => setView('home-v3')}>Back to Home</Button>
       </div>
     );
   }
@@ -120,7 +120,7 @@ export function PlayView({ experienceId }: { experienceId: string }) {
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => setView('home-v2')} className="h-8">
+          <Button variant="ghost" size="sm" onClick={() => setView('home-v3')} className="h-8">
             <ArrowLeft className="w-4 h-4" /> Back
           </Button>
           <div className="flex-1 min-w-0">

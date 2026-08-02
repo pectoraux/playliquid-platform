@@ -127,7 +127,7 @@ export function Playground() {
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <header className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-30">
         <div className="max-w-[1600px] mx-auto px-4 py-3 flex items-center gap-4 flex-wrap">
-          <Button variant="ghost" size="sm" onClick={() => setView('home')} className="h-8">
+          <Button variant="ghost" size="sm" onClick={() => setView('home-v3')} className="h-8">
             <ArrowLeft className="w-4 h-4" /> Studio
           </Button>
           <Separator orientation="vertical" className="h-8" />

@@ -122,7 +122,7 @@ export function CreationWizard() {
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-30">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => { resetWizard(); setView('home'); }} className="h-8">
+          <Button variant="ghost" size="sm" onClick={() => { resetWizard(); setView('home-v3'); }} className="h-8">
             <ArrowLeft className="w-4 h-4" /> Back
           </Button>
           <div className="flex-1">

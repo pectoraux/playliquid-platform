@@ -178,7 +178,7 @@ export function StudioEditor() {
       {/* ── Toolbar ───────────────────────────────────────────────────── */}
       <header className="border-b border-border bg-card/50 backdrop-blur shrink-0">
         <div className="px-3 py-2 flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setView('home')} className="h-8 px-2">
+          <Button variant="ghost" size="sm" onClick={() => setView('home-v3')} className="h-8 px-2">
             <Home className="w-4 h-4" />
           </Button>
           <Separator orientation="vertical" className="h-6" />

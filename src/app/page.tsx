@@ -3,7 +3,6 @@
 import { useStudioStore } from '@/stores/studio-store';
 import { bundleToNodes } from '@/components/studio/GraphEditor';
 import { useExtensions } from '@/hooks/use-kernel';
-import { StudioHome } from '@/components/studio/StudioHome';
 import { CreationWizard } from '@/components/studio/CreationWizard';
 import { StudioEditor } from '@/components/studio/StudioEditor';
 import { ExperiencesView } from '@/components/studio/ExperiencesView';
@@ -21,7 +20,6 @@ import { LivingCivilizations } from '@/components/living/LivingCivilizations';
 import { AdrEconomy } from '@/components/economy/AdrEconomy';
 import { CompetitivePlay } from '@/components/economy/CompetitivePlay';
 import { ExtensionUniverse } from '@/components/extensions/ExtensionUniverse';
-import { ConsumerHomeV2 } from '@/components/consumer-v2/ConsumerHomeV2';
 import { ConsumerHomeV3 } from '@/components/consumer-v2/ConsumerHomeV3';
 import { CreatorStudio } from '@/components/creator-os/CreatorStudio';
 import { NetworkIntelligence } from '@/components/intelligence/NetworkIntelligence';
@@ -72,9 +70,9 @@ export default function Home() {
 
   switch (view) {
     case 'home':
-      return <StudioHome />;
+      return <ConsumerHomeV3 />;
     case 'home-v2':
-      return <ConsumerHomeV2 />;
+      return <ConsumerHomeV3 />;
     case 'home-v3':
       return <ConsumerHomeV3 />;
     case 'universe':
@@ -105,7 +103,7 @@ export default function Home() {
       if (sparkQueue.length > 0) {
         return <SparkPlayer sparks={sparkQueue} initialIndex={Math.max(0, sparkQueue.findIndex((s) => s.experienceId === playExperienceId))} />;
       }
-      return playExperienceId ? <GamePlayer experienceId={playExperienceId} /> : <ConsumerHomeV2 />;
+      return playExperienceId ? <GamePlayer experienceId={playExperienceId} /> : <ConsumerHomeV3 />;
     case 'wizard':
       return <CreationWizard />;
     case 'editor':
@@ -121,6 +119,6 @@ export default function Home() {
     case 'kernel-dev':
       return <Playground />;
     default:
-      return <StudioHome />;
+      return <ConsumerHomeV3 />;
   }
 }

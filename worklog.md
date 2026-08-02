@@ -1316,3 +1316,82 @@ Stage Summary:
   - Draft/publish lifecycle
   - Uploaded games appear on the home feed after publishing
 - "That would complete the missing bridge between 'a game exists' and 'a creator can actually publish a game on PlayLiquid.'" ✅
+
+---
+Task ID: 26
+Agent: Consumer V3 Builder
+Task: Build complete Consumer V3 shell with all pages — YouTube/TikTok-quality rewrite of the consumer experience.
+
+Work Log:
+- Read worklog.md (Tasks 1–23) to understand prior architecture: Phase 18 consumer service, Phase 20.5 runtime adapters, Phase 21 PlayEngine + sparks + games, Phase 22 AI Game Design Compiler, Phase 23 creator publishing pipeline.
+- Audited existing files:
+  - src/components/consumer-v2/ConsumerHomeV3.tsx — old version had only a single "Home" feed (sparks row + experiences grid + trending + live). No real navigation between pages; clicking Sparks sidebar item just opened the SparkPlayer immediately. Sidebar item list was small (Home, Sparks, Experiences, Live, Competitions + Library/Liked/History + Studio/Extensions/Wallet/Profile). Mobile bottom nav did not exist.
+  - src/stores/studio-store.ts — default view was already 'home-v3' (line 152). StudioView union still includes 'home-v2' for legacy routing.
+  - src/components/runtime/SparkPlayer.tsx + GamePlayer.tsx — both correctly use setView('home-v3') already (SparkPlayer was correct; GamePlayer uses setView('home-v3') in header back button and not-found fallback). Only PlayView.tsx still called setView('home-v2').
+  - src/lib/consumer-v2/consumer-service.ts — getYouTubeHome returns { sparks, experiences, live, highlights } with each item carrying experienceId, title (displayTitle), creatorName, playCount, publishedAgo, thumbnailUrl, competitiveEligible, extensions.
+- Designed the new shell architecture:
+  - Top-level wrapper: min-h-screen flex flex-col (sticky footer pattern).
+  - Mobile top bar: PL logo + search toggle (collapsible search field).
+  - Desktop sidebar: hidden on mobile (md:flex), collapsible (w-60 ↔ w-16), sticky full-height, ScrollArea for nav items.
+  - Main column: desktop top bar (sticky search + Create button) + main scrollable content area with pb-24 on mobile to clear the bottom nav.
+  - Mobile bottom nav: fixed bottom-0, grid-cols-5 with center circular Create button (gradient amber→orange, prominent, 12×12, shadow).
+- Implemented NavId type with all 10 routes: home, sparks, games, live, highlights, subscriptions, library, history, liked, watch-later.
+- Built a ContentRouter component that switches the main area based on activeNav:
+  - home: sparks row (horizontal scroll) + recommended experiences grid + live now + trending subset. Includes "Play all" action on Sparks header.
+  - sparks: 2-6 col responsive grid of larger 200×356px phone-sized SparkCards (vertical 9:16). Header has "Play all" action.
+  - games: 1-4 col responsive grid of 16:9 ExperienceCards. Includes format badge (when not native/spark), Ranked badge, plays count, avatar + title + creator + relative time.
+  - live: grid of LiveCards with pulsing LIVE badge + viewer count.
+  - highlights: grid of HighlightCards with HIGHLIGHT badge, score, view count.
+  - subscriptions: grid of ExperienceCards labeled "Latest from creators you follow".
+  - library: 2-4 col grid of section tiles (History, Liked, Watch Later, Playlists).
+  - history/liked/watch-later: EmptyState component with icon + title + subtitle.
+- DesktopSidebar: PRIMARY_NAV (Home, Sparks, Games, Live, Highlights, Subscriptions) + LIBRARY_NAV (Library, History, Liked, Watch Later) + ACTIONS_NAV (Compete→competitive, Wallet→adr-economy, Extensions→extensions, Studio→creator-studio, Profile→identity-u). Each item has min-h-[40px] touch target, title attribute for collapsed mode, active state highlights.
+- MobileBottomNav: 5-item grid (Home, Sparks, Create(center), Games, Library). Center Create button is w-12 h-12 circular gradient. Bottom nav respects iOS safe-area-inset-bottom via pb-[env(safe-area-inset-bottom)].
+- TopBar (desktop + mobile): search uses shadcn Input inside a rounded-full container with focus:border-amber-400. Mobile search is toggled open via a Search icon button. Desktop search is always visible in the top bar.
+- SparkCard improvements:
+  - Width 200px, Height 356px (9:16 phone-sized).
+  - Shows thumbnailUrl if available, otherwise gradient background with extension icon + title.
+  - ⚡ SPARK badge top-left (with filled Zap icon).
+  - Game icon chips top-right (up to 2 extension icons).
+  - Bottom gradient overlay: title (2 lines), @creatorhandle, plays + relative time.
+  - Hover: play button overlay (white circle, fill Play icon), subtle background dim.
+- ExperienceCard improvements:
+  - 16:9 thumbnail (image or violet/fuchsia/amber gradient with Play icon).
+  - Plays badge bottom-right ("1.2K plays" with monospace).
+  - Ranked badge top-right (Trophy icon + "Ranked") when competitiveEligible.
+  - Format badge top-left (e.g. "HTML5") when format is not spark/native.
+  - Below: 9×9 avatar (gradient amber→orange, creator initials) + title (2 lines) + creator name + "{plays} plays · {publishedAgo}".
+  - Hover: scale thumbnail + play overlay.
+- LoadingState: skeleton placeholders (4 vertical spark cards + 8 experience card skeletons with avatar circle + title lines).
+- EmptyState: reusable component (icon in muted circle + title + subtitle).
+- SectionHeader: icon + title + subtitle + optional action button (e.g., "Play all" with filled Play icon).
+- Used fetchJSON helper with retry (2 retries, 800ms backoff) for dev cold-start.
+- Used shadcn/ui: Button, Badge, Avatar, AvatarFallback, ScrollArea, Input.
+- Used lucide-react icons: Home, Zap, Gamepad2, Radio, Sparkles, Library, Heart, Clock, Plus, Search, Trophy, Coins, Package, BarChart, Settings, Menu, X, Play, Eye, ListVideo, History, Bookmark, Flame, Users.
+- Fixed React Compiler error: removed useMemo + closure-based filterFn (compiler couldn't preserve memoization due to inferred-vs-specified dependency mismatch). Replaced with inline .filter() calls — cheap operations, no memoization needed.
+- Removed all V2 references:
+  - CreatorStudio.tsx: setView('home-v2') → setView('home-v3')
+  - NetworkIntelligence.tsx: setView('home-v2') → setView('home-v3')
+  - PlayView.tsx: 2 occurrences of setView('home-v2') → setView('home-v3')
+  - CreationWizard.tsx: setView('home') → setView('home-v3')
+  - StudioEditor.tsx: setView('home') → setView('home-v3')
+  - ExperiencesView.tsx: setView('home') → setView('home-v3')
+  - CreatorProfile.tsx: setView('home') → setView('home-v3')
+  - CivDashboard.tsx: setView('home') → setView('home-v3')
+  - WorldDashboard.tsx: setView('home') → setView('home-v3')
+  - Playground.tsx: setView('home') → setView('home-v3')
+  - page.tsx: removed ConsumerHomeV2 + StudioHome imports. case 'home' + case 'home-v2' both return ConsumerHomeV3. Play view fallback returns ConsumerHomeV3 instead of ConsumerHomeV2. Default case returns ConsumerHomeV3 instead of StudioHome.
+- studio-store.ts default view was already 'home-v3' (verified line 152).
+- Ran `bun run lint` → clean (exit 0, no errors, no warnings).
+- Verified dev.log shows the dev server was processing requests successfully (prisma:query traces for ExperienceRecord lookups).
+
+Stage Summary:
+- Consumer V3 shell is complete and replaces the old ConsumerHomeV3 entirely.
+- Desktop: collapsible left sidebar with 16 nav items (10 content pages + 5 action shortcuts), top bar with always-visible search + Create button, scrollable content area rendering 10 different page types based on activeNav.
+- Mobile: top bar with collapsible search, content area with bottom padding to clear nav, fixed 5-item bottom navigation with prominent center Create button (circular gradient).
+- Pages: Home (mixed feed with sparks row + recommended + live + trending), Sparks (phone-sized 200×356 vertical cards), Games (16:9 experience cards with avatar + ranked badge), Live (pulsing LIVE badges), Highlights (AI clip cards), Subscriptions, Library (section tiles), History/Liked/Watch-Later (empty states).
+- Spark cards: 200×356px phone-sized, thumbnail support, ⚡ SPARK badge, extension icon chips, gradient bottom info bar, hover play overlay.
+- Experience cards: 16:9 thumbnail, avatar + title + creator + plays + relative time, Ranked badge, format badge, hover play overlay.
+- All V2 references removed: every setView('home') and setView('home-v2') across 10 files changed to setView('home-v3'). page.tsx no longer imports ConsumerHomeV2 or StudioHome — all routes funnel through ConsumerHomeV3.
+- Lint clean. Default view confirmed as 'home-v3'.
+- "Replace the current ConsumerHomeV3 with a full YouTube-style application shell" ✅
