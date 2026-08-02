@@ -335,6 +335,9 @@ model ExperienceMetrics {
   updatedAt         DateTime @updatedAt
 }
 
+// ─── Phase 20: Experience Evolution Operating System ───────────────────────
+// Status lifecycle: DISCOVERED → PROPOSED → CREATOR_REVIEW → EXPERIMENTING
+//                    → APPROVED | REJECTED | ROLLED_BACK
 model EvolutionProposal {
   id              String   @id @default(cuid())
   experienceId    String
@@ -342,9 +345,79 @@ model EvolutionProposal {
   proposedChangesJson String @default("{}")  // what to change in the graph
   predictedLift   Float    @default(0)     // e.g. 0.18 = +18% retention
   newBundleJson   String?  // the proposed fork bundle
-  status          String   @default("PENDING")  // PENDING | APPROVED | REJECTED | APPLIED
+  // ── Phase 20.2: structured proposal fields ──────────────────────────
+  problem         String?  // "78% of players quit after weather event."
+  evidence        String?  // "Players who encounter storm mechanic have 45% lower completion."
+  affectedExtensionsJson String @default("[]")  // ["pl.weather", "pl.movement"]
+  graphChangesJson String  @default("{}")  // structured mutation description
+  expectedImpact  String?  // "+12% completion"
+  confidenceScore Float    @default(0)     // 0.0 - 1.0
+  mutationId      String?  // link to ExperienceMutationRecord when created
+  // PENDING kept for backward compat; new flow uses the richer lifecycle.
+  status          String   @default("DISCOVERED")  // DISCOVERED | PROPOSED | CREATOR_REVIEW | EXPERIMENTING | APPROVED | REJECTED | ROLLED_BACK | PENDING | APPLIED
   createdAt       DateTime @default(now())
   reviewedAt      DateTime?
+
+  @@index([experienceId])
+  @@index([status])
+}
+
+// ─── Phase 20.3: Graph Mutation System ─────────────────────────────────────
+// The AI never edits experiences directly. It creates graph mutations that
+// must be creator-approved before they touch production.
+model ExperienceMutationRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  proposalId      String?  // originating evolution proposal
+  mutationType    String   // ADD_EXTENSION | REMOVE_EXTENSION | UPDATE_CONFIG | REWIRE_CONNECTION | CHANGE_ECONOMY
+  beforeGraphJson String   // ExperienceBundle snapshot before mutation
+  afterGraphJson  String   // ExperienceBundle snapshot after mutation
+  creatorApproved Boolean  @default(false)
+  status          String   @default("PENDING")  // PENDING | APPROVED | APPLIED | REJECTED | ROLLED_BACK
+  appliedExperienceId String?  // the experience the mutation was applied to
+  createdAt       DateTime @default(now())
+  appliedAt       DateTime?
+
+  @@index([experienceId])
+  @@index([proposalId])
+}
+
+// ─── Phase 20.6: Player Feedback Intelligence ──────────────────────────────
+model ExperienceFeedbackRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  playerId        String?
+  sessionId       String?
+  type            String   // FUN | CONFUSING | TOO_HARD | BUG | SUGGESTION
+  funScore        Float    @default(0)     // 0.0 - 5.0
+  difficultyScore Float    @default(0)     // 0.0 - 5.0
+  emotionScore    Float    @default(0)     // 0.0 - 5.0
+  comment         String?
+  clusterLabel    String?  // assigned by AI clustering ("Players love speed mechanics")
+  createdAt       DateTime @default(now())
+
+  @@index([experienceId])
+  @@index([type])
+}
+
+// ─── Phase 20.4: Evolution Sandbox / A-B runs ──────────────────────────────
+// Records the result of running variantA (control) vs variantB (mutated)
+// through the simulation lab. The winner is selected by the experiment metric.
+model EvolutionRunRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  mutationId      String?  // the mutation being tested
+  simulationId    String?  // link to SimulationRun (variant B)
+  variantA        String   // label, e.g. "Current v1.2"
+  variantB        String   // label, e.g. "Weather v2 (stormChance 0.14)"
+  winner          String?  // "A" | "B" | "TIE" | null
+  metricsJson     String   @default("{}")  // { A: {...}, B: {...}, delta: {...} }
+  status          String   @default("RUNNING")  // RUNNING | COMPLETED | FAILED
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+
+  @@index([experienceId])
+  @@index([mutationId])
 }
 
 model SimulationRun {

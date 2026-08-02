@@ -12,8 +12,9 @@ import { Separator } from '@/components/ui/separator';
 import {
   ArrowLeft, BarChart, Coins, Package, Sparkles, Users, Zap,
   Loader2, TrendingUp, Trophy, Bot, ChevronRight, AlertCircle,
-  CheckCircle2, FlaskConical, Clock, GitFork,
+  CheckCircle2, FlaskConical, Clock, GitBranch,
 } from 'lucide-react';
+import { EvolutionTab } from './EvolutionTab';
 
 const MICRO = 1_000_000;
 
@@ -42,13 +43,14 @@ export function CreatorStudio() {
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-4">
         <Tabs defaultValue="overview">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 max-w-3xl">
             <TabsTrigger value="overview" className="text-xs gap-1.5"><BarChart className="w-3.5 h-3.5" /> Overview</TabsTrigger>
             <TabsTrigger value="content" className="text-xs gap-1.5"><Package className="w-3.5 h-3.5" /> Content</TabsTrigger>
             <TabsTrigger value="economy" className="text-xs gap-1.5"><Coins className="w-3.5 h-3.5" /> Economy</TabsTrigger>
             <TabsTrigger value="extensions" className="text-xs gap-1.5"><Zap className="w-3.5 h-3.5" /> Extensions</TabsTrigger>
             <TabsTrigger value="insights" className="text-xs gap-1.5"><Bot className="w-3.5 h-3.5" /> AI</TabsTrigger>
             <TabsTrigger value="experiments" className="text-xs gap-1.5"><FlaskConical className="w-3.5 h-3.5" /> Experiments</TabsTrigger>
+            <TabsTrigger value="evolution" className="text-xs gap-1.5"><GitBranch className="w-3.5 h-3.5" /> Evolution</TabsTrigger>
             <TabsTrigger value="community" className="text-xs gap-1.5"><Users className="w-3.5 h-3.5" /> Community</TabsTrigger>
           </TabsList>
 
@@ -58,6 +60,7 @@ export function CreatorStudio() {
           <TabsContent value="extensions" className="mt-4"><ExtensionsTab /></TabsContent>
           <TabsContent value="insights" className="mt-4"><InsightsTab /></TabsContent>
           <TabsContent value="experiments" className="mt-4"><ExperimentsTab /></TabsContent>
+          <TabsContent value="evolution" className="mt-4"><EvolutionTab /></TabsContent>
           <TabsContent value="community" className="mt-4"><CommunityTab /></TabsContent>
         </Tabs>
       </main>
@@ -183,7 +186,7 @@ function ContentTab() {
                 </div>
               </div>
               <div className="flex flex-col gap-1 shrink-0">
-                <Button size="sm" variant="outline" className="h-6 text-[10px]"><GitFork className="w-3 h-3" /> Fork</Button>
+                <Button size="sm" variant="outline" className="h-6 text-[10px]"><GitBranch className="w-3 h-3" /> Fork</Button>
               </div>
             </div>
           </CardContent>

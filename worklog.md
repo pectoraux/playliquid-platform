@@ -904,3 +904,76 @@ Phase 19 Verification:
 ✅ Creator revenue comes only from valid sources (competitive play, extension royalties)
 ✅ Creator operates through Experience Graph (extensions visible per experience)
 ✅ AI assists but does not replace creators (insights are recommendations, not autonomous)
+
+---
+Task ID: 20
+Agent: main (Z.ai Code)
+Task: Phase 20 — Experience Evolution Operating System. Turn every experience into a continuously improving AI-assisted product. Build the Evolution Loop: Players → Telemetry → AI Analysis → Hypothesis → Creator Experiment → Graph Variant → Player Testing → Winner Selection → Experience Evolution.
+
+Work Log:
+- Read worklog + existing evolution-agent.ts, creator-os service, simulation-service, metrics-service, leaderboard-service, kernel types to understand current state
+- Upgraded prisma schema:
+  - EvolutionProposal: added problem, evidence, affectedExtensionsJson, graphChangesJson, expectedImpact, confidenceScore, mutationId fields; extended status lifecycle (DISCOVERED → PROPOSED → CREATOR_REVIEW → EXPERIMENTING → APPROVED | REJECTED | ROLLED_BACK)
+  - Added ExperienceMutationRecord (graph mutations: before/after graphs, creatorApproved, appliedExperienceId)
+  - Added ExperienceFeedbackRecord (player feedback: type, funScore, difficultyScore, emotionScore, comment, clusterLabel)
+  - Added EvolutionRunRecord (A/B sandbox runs: variantA, variantB, winner, metricsJson)
+  - Ran `bun run db:push` successfully
+- Created src/lib/evolution/ module:
+  - evolution-types.ts: Phase 20 type definitions (ProposalStatus, MutationType, GraphChangeSpec, EvolutionProposalV2, EvolutionInputs, MutationRecord, EvolutionRunRecordData, EvolutionTimelineEntry, FeedbackCluster)
+  - mutation-service.ts: pure graph mutation engine (applyChange/applyChanges for ADD_EXTENSION, REMOVE_EXTENSION, UPDATE_CONFIG, REWIRE_CONNECTION, CHANGE_ECONOMY) + diffBundles for before/after visualization
+  - mutation-store.ts: persistence layer for ExperienceMutationRecord (create, get, setStatus, markApplied)
+  - evolution-engine.ts: EvolutionEngine — gathers inputs (metrics, replay events, feedback, economy, leaderboard), calls LLM with structured diagnosis prompt (problem → evidence → hypothesis → graphChanges → expectedImpact → confidenceScore), falls back to rule-based diagnosis (low completion → speed up farm, high frustration → reduce weather, weak economy → boost rewards, too-hard feedback → soften physics). Persists proposal + mutation record. Exposes getProposalsV2/getProposalV2.
+  - feedback-store.ts: submitFeedback + getFeedbackSummary + clusterFeedback (LLM clustering into themes like "Players love speed mechanics", falls back to rule-based by-type clustering)
+  - sandbox-service.ts: Evolution Sandbox — runSandbox (fork → apply mutation → compile → simulate → compare metrics, no production impact), runEvolutionExperiment (A/B run with winner selection by completion rate), applyApprovedMutation (replace/publish-new/discard — the ONLY path that touches production, requires creator approval), proposeFork (AI-generated fork helper)
+  - timeline-service.ts: getEvolutionTimeline (version history with impact from versions + mutations + proposals + experiment wins) + getExperienceHealth (5-dimension health score: retention, competition, economy, community, evolution + signals)
+- Created 13 API routes under /api/evolution/:
+  - [experienceId]/analyze (POST — run EvolutionEngine)
+  - [experienceId]/proposals (GET — list proposals)
+  - [experienceId]/timeline (GET — evolution history)
+  - [experienceId]/health (GET — health snapshot)
+  - [experienceId]/feedback (GET/POST — player feedback)
+  - [experienceId]/sandbox (POST — run sandbox/experiment)
+  - [experienceId]/experiments (GET — list A/B runs)
+  - [experienceId]/mutations (GET — list mutations with diff)
+  - [experienceId]/seed (POST — seed demo feedback + run analysis)
+  - [experienceId]/fork (POST — AI-generated fork)
+  - proposals/[id]/approve (POST)
+  - proposals/[id]/reject (POST)
+  - mutations/[id]/apply (POST — replace/publish-new/discard)
+  - mutations/[id]/diff (GET)
+  - creator/experiences (GET — list experiences for picker, demo fallback)
+- Built src/components/creator-os/EvolutionTab.tsx (856 lines) with 5 sections:
+  - Current Health (overall score + 5 dimension progress bars + AI signals)
+  - AI Opportunities (proposal cards with problem/evidence/affectedExtensions/graphChanges/expectedImpact/confidenceScore, expandable AI reasoning, Approve/Run Experiment/Reject actions)
+  - Experiments (A/B run results with winner badge + delta metrics)
+  - Evolution Timeline (versioned history with change type icons + impact badges)
+  - Graph Mutations (pending/applied mutations with before→after config diffs, Replace/Publish-as-new/Discard actions)
+  - Experience picker (Select dropdown) + Seed demo data button + Run AI Analysis button
+  - fetchJSON/postJSON helpers with retry to handle dev cold-start compilation
+- Wired EvolutionTab into CreatorStudio.tsx as the 8th tab ("Evolution" with GitBranch icon), updated TabsList to grid-cols-4 sm:grid-cols-8
+- Browser verification with agent-browser:
+  - Dev server starts on port 3000, home page renders (ConsumerHomeV2)
+  - Navigated to Creator Studio → Evolution tab
+  - All 6 evolution API routes return 200 (experiences, mutations, health, proposals, timeline, experiments)
+  - Clicked "Seed demo data" → POST /api/evolution/{id}/seed 200 in 6.8s (LLM ran diagnosis)
+  - AI generated structured proposals: problem="Players report difficulty spikes and frustration with coin progression", evidence="3/8 feedback entries mention TOO_HARD...", graphChanges=[UPDATE_CONFIG @marketplace exchangeRate 0.5→0.75], expectedImpact="+15% average score and 20% reduction in TOO_HARD feedback", confidenceScore=0.75
+  - Current Health rendered: 72/100 overall, Retention 97 (Strong), Competition 85 (Active), Economy 77 (Healthy), Community 100 (Engaged), Evolution 0 (Static)
+  - Timeline rendered: v1.0 CREATED "Initial publish"
+  - Graph Mutations rendered: 3 PENDING mutations with "marketplace.exchangeRate: 0.5 → 0.75" diffs
+  - Clicked Approve → POST /api/evolution/proposals/{id}/approve 200 → DB confirms proposal.status=APPROVED, mutation.status=APPROVED, creatorApproved=true
+  - 24 feedback records created, 3 proposals, 3 mutations
+  - Sticky footer confirmed at bottom (contentinfo)
+- Lint clean throughout (bun run lint passes after every change)
+
+Stage Summary:
+- Phase 20 complete. The Experience Evolution Loop is fully operational:
+  - AI NEVER modifies production directly — it creates graph Mutations (before/after bundle snapshots)
+  - Creator approval required (Approve/Reject buttons, status lifecycle DISCOVERED→PROPOSED→APPROVED→APPLIED)
+  - Fork lineage preserved (parentExperienceId, ExperienceVersionRecord)
+  - Extensions remain primitives (all mutations are ADD/REMOVE/UPDATE_CONFIG/REWIRE/CHANGE_ECONOMY on extension instances)
+  - No new Liquid creation (experiments run in sandbox DRAFT experiences that are deleted after; only applyApprovedMutation touches production, and it records a version)
+  - Evolution Sandbox reuses Simulation Lab + kernel runtime + telemetry (no production impact until approved)
+  - Player Feedback Intelligence with LLM clustering (FUN/CONFUSING/TOO_HARD/BUG/SUGGESTION + funScore/difficultyScore/emotionScore)
+  - Evolution Timeline with version history + impact measurement
+  - Creator Evolution Dashboard with 5 sections (Health/Opportunities/Experiments/Timeline/Mutations)
+- Architecture verified: "Creators operate living experiences that continuously evolve with AI."
