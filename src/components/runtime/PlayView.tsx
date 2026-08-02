@@ -3,18 +3,21 @@
 import { useState, useEffect } from 'react';
 import { useStudioStore } from '@/stores/studio-store';
 import { ContainmentFrame } from '@/components/consumer-v2/ContainmentFrame';
-import { NativeGamePlayer } from '@/components/runtime/NativeGamePlayer';
+import { GameCanvas } from '@/components/runtime/GameCanvas';
 import { Html5GamePlayer } from '@/components/runtime/Html5GamePlayer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Loader2, Zap, Globe, AlertCircle, Cpu } from 'lucide-react';
+import { ArrowLeft, Loader2, Globe, AlertCircle, Cpu, Zap, Play } from 'lucide-react';
+import { GAMES } from '@/engine/games';
+import { SPARKS } from '@/engine/sparks';
 
 interface ExperienceRuntime {
   experienceId: string;
   title: string;
   description: string;
   creatorId: string;
-  runtimeType: 'native' | 'html5' | 'external';
+  runtimeType: 'native' | 'html5' | 'external' | 'spark';
+  engineGameId?: string;
   bundle: any;
   containment: {
     aspectRatio: string | null;
@@ -38,16 +41,12 @@ async function fetchJSON<T = any>(url: string, retries = 2): Promise<T> {
 }
 
 /**
- * Phase 20.5 — Play View
- * -----------------------
- * The unified play surface for both native and HTML5 experiences.
- * Loads the runtime info, then renders the appropriate player inside
- * the ContainmentFrame.
- *
- *   runtimeType = native → NativeGamePlayer (kernel session + canvas)
- *   runtimeType = html5  → Html5GamePlayer (iframe + postMessage bridges)
- *
- * Both produce telemetry that feeds back into the Evolution System.
+ * Phase 21 — Play View
+ * ---------------------
+ * The unified play surface. Routes to the correct runtime:
+ *   spark → GameCanvas (9:16 vertical, PlayEngine spark game)
+ *   native → GameCanvas (16:9, PlayEngine game)
+ *   html5 → Html5GamePlayer (iframe + postMessage)
  */
 export function PlayView({ experienceId }: { experienceId: string }) {
   const { setView } = useStudioStore();
@@ -80,7 +79,10 @@ export function PlayView({ experienceId }: { experienceId: string }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        <div className="text-center">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground mx-auto mb-2" />
+          <p className="text-xs text-muted-foreground">Loading experience…</p>
+        </div>
       </div>
     );
   }
@@ -95,7 +97,13 @@ export function PlayView({ experienceId }: { experienceId: string }) {
     );
   }
 
-  const aspectRatio = runtime.containment.aspectRatio ?? '16:9';
+  // Resolve the engine game (spark or native)
+  const engineGameId = runtime.engineGameId;
+  const sparkGame = engineGameId ? SPARKS[engineGameId] : undefined;
+  const nativeGame = engineGameId ? GAMES[engineGameId] : undefined;
+  const isSpark = runtime.runtimeType === 'spark' || !!sparkGame;
+  const aspectRatio = isSpark ? '9:16' : (runtime.containment.aspectRatio ?? '16:9');
+  const orientation = isSpark ? 'portrait' : (runtime.containment.orientation as 'portrait' | 'landscape' | 'any');
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -108,94 +116,71 @@ export function PlayView({ experienceId }: { experienceId: string }) {
             <h1 className="text-sm font-semibold truncate">{runtime.title}</h1>
             <p className="text-[10px] text-muted-foreground truncate">{runtime.description}</p>
           </div>
-          <RuntimeBadge type={runtime.runtimeType} />
+          <RuntimeBadge type={runtime.runtimeType} isSpark={isSpark} />
           {finalScore !== null && (
             <Badge className="bg-amber-500 text-white text-[10px]">Score: {finalScore}</Badge>
           )}
         </div>
       </header>
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-4">
-        <div className="w-full" style={{ height: 'min(70vh, 480px)' }}>
-          <ContainmentFrame
-            aspectRatio={aspectRatio}
-            orientation={runtime.containment.orientation as 'portrait' | 'landscape' | 'any'}
-            onPerformanceMetric={(fps) => { /* could emit telemetry */ }}
-          >
-            {runtime.runtimeType === 'native' && runtime.bundle ? (
-              <NativeGamePlayer
-                experienceId={runtime.experienceId}
-                bundle={runtime.bundle}
-                onScore={(s) => setFinalScore(s)}
-              />
-            ) : runtime.runtimeType === 'html5' && runtime.containment.html5BundleUrl ? (
-              <Html5GamePlayer
-                experienceId={runtime.experienceId}
-                gameUrl={runtime.containment.html5BundleUrl}
-                aspectRatio={aspectRatio}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-muted">
-                <p className="text-sm text-muted-foreground">Unsupported runtime: {runtime.runtimeType}</p>
-              </div>
-            )}
-          </ContainmentFrame>
-        </div>
-
-        {/* Runtime info */}
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-lg border border-border p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Cpu className="w-3.5 h-3.5 text-violet-500" />
-              <span className="text-xs font-medium">Runtime</span>
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              {runtime.runtimeType === 'native'
-                ? 'Native PlayLiquid kernel — tick-based extension graph executed server-side.'
-                : runtime.runtimeType === 'html5'
-                ? 'Imported HTML5 game — Canvas API + JavaScript in a sandboxed iframe.'
-                : 'External runtime.'}
-            </p>
-          </div>
-          <div className="rounded-lg border border-border p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span className="text-xs font-medium">Extensions</span>
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              {runtime.bundle?.instances?.length ?? 0} instances
-              {runtime.bundle?.instances?.length > 0 && (
-                <span className="ml-1 text-muted-foreground/70">
-                  ({runtime.bundle.instances.map((i: any) => i.extensionId.replace('pl.', '')).join(', ')})
-                </span>
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-4 flex items-center justify-center">
+        {isSpark ? (
+          /* Spark: vertical 9:16, centered, max height */
+          <div className="h-[calc(100vh-140px)] flex items-center justify-center">
+            <ContainmentFrame aspectRatio="9:16" orientation="portrait" fullscreenEnabled={false}>
+              {sparkGame ? (
+                <GameCanvas
+                  key={sparkGame.id}
+                  game={sparkGame}
+                  onScore={setFinalScore}
+                  onEnd={(score) => setFinalScore(score)}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-muted">
+                  <p className="text-sm text-muted-foreground">Spark game not found: {engineGameId}</p>
+                </div>
               )}
-            </p>
+            </ContainmentFrame>
           </div>
-          <div className="rounded-lg border border-border p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Globe className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="text-xs font-medium">Containment</span>
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              ADR-005 compliant — running inside PlayLiquid Frame.
-              Aspect {aspectRatio}, {runtime.containment.orientation}.
-            </p>
+        ) : (
+          /* Game: 16:9 landscape */
+          <div className="w-full" style={{ height: 'min(70vh, 480px)' }}>
+            <ContainmentFrame aspectRatio={aspectRatio} orientation={orientation}>
+              {runtime.runtimeType === 'html5' && runtime.containment.html5BundleUrl ? (
+                <Html5GamePlayer
+                  experienceId={runtime.experienceId}
+                  gameUrl={runtime.containment.html5BundleUrl}
+                  aspectRatio={aspectRatio}
+                />
+              ) : nativeGame ? (
+                <GameCanvas
+                  key={nativeGame.id}
+                  game={nativeGame}
+                  onScore={setFinalScore}
+                  onEnd={(score) => setFinalScore(score)}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-muted">
+                  <p className="text-sm text-muted-foreground">Game not found: {engineGameId}</p>
+                </div>
+              )}
+            </ContainmentFrame>
           </div>
-        </div>
+        )}
       </main>
 
       <footer className="mt-auto border-t border-border bg-card/50 px-4 py-2 text-xs text-muted-foreground text-center">
-        PlayLiquid ContainmentFrame — {runtime.runtimeType} runtime · telemetry feeds the Evolution System
+        PlayLiquid {isSpark ? 'Spark' : 'Game'} Runtime · {runtime.runtimeType} · telemetry feeds the Evolution System
       </footer>
     </div>
   );
 }
 
-function RuntimeBadge({ type }: { type: string }) {
-  if (type === 'native') {
+function RuntimeBadge({ type, isSpark }: { type: string; isSpark: boolean }) {
+  if (isSpark) {
     return (
-      <Badge className="bg-violet-500 text-white text-[9px] gap-1">
-        <Cpu className="w-2.5 h-2.5" /> Native
+      <Badge className="bg-rose-500 text-white text-[9px] gap-1">
+        <Zap className="w-2.5 h-2.5" /> Spark
       </Badge>
     );
   }
@@ -203,6 +188,13 @@ function RuntimeBadge({ type }: { type: string }) {
     return (
       <Badge className="bg-emerald-500 text-white text-[9px] gap-1">
         <Globe className="w-2.5 h-2.5" /> HTML5
+      </Badge>
+    );
+  }
+  if (type === 'native') {
+    return (
+      <Badge className="bg-violet-500 text-white text-[9px] gap-1">
+        <Cpu className="w-2.5 h-2.5" /> Native
       </Badge>
     );
   }

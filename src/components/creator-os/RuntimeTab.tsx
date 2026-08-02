@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
-  Cpu, Globe, Loader2, CheckCircle2, Play, Upload, Zap, ArrowRight,
-  AlertCircle, FileCode,
+  Cpu, Globe, Loader2, CheckCircle2, Play, Zap, ArrowRight,
+  AlertCircle, Sparkles, Gamepad2,
 } from 'lucide-react';
+import { GAMES } from '@/engine/games';
+import { SPARKS } from '@/engine/sparks';
 
 async function fetchJSON<T = any>(url: string, retries = 2): Promise<T> {
   try {
@@ -42,14 +44,9 @@ async function postJSON<T = any>(url: string, body?: unknown, retries = 2): Prom
 }
 
 /**
- * Phase 20.5 — Runtime Tab
- * -------------------------
- * Validates ADR-005 (Containment): native + HTML5 experiences both run
- * inside the PlayLiquid frame.
- *
- *   - Seed the canonical native "Neon Runner" game
- *   - Import the "Orb Collector" HTML5 game
- *   - Play either one to verify the full runtime path
+ * Phase 21 — Runtime Tab
+ * -----------------------
+ * Shows the engine game catalog + sparks. Seeds all games + sparks.
  */
 export function RuntimeTab() {
   const { playExperience } = useStudioStore();
@@ -57,6 +54,7 @@ export function RuntimeTab() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [engineExps, setEngineExps] = useState<Record<string, string>>({});
   const [reloadToken, setReloadToken] = useState(0);
   const reload = () => setReloadToken((t) => t + 1);
 
@@ -65,23 +63,33 @@ export function RuntimeTab() {
     (async () => {
       setLoading(true);
       try {
+        // Fetch imported HTML5 games
         const d = await fetchJSON<{ games: any[] }>('/api/runtime/import-html5');
         if (!cancelled) setImportedGames(d.games ?? []);
+        // Fetch all published experiences to map game names → experienceIds
+        const home = await fetchJSON<any>('/api/consumer-v2/home?userId=demo-user');
+        if (!cancelled) {
+          const map: Record<string, string> = {};
+          for (const exp of [...(home.home?.experiences ?? []), ...(home.home?.sparks ?? [])]) {
+            map[exp.title] = exp.experienceId;
+          }
+          setEngineExps(map);
+        }
       } catch { /* ignore */ }
       if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [reloadToken]);
 
-  const seedNative = async () => {
-    setBusy('native');
+  const seedAll = async () => {
+    setBusy('seed');
     setMessage(null);
     try {
-      const d = await postJSON<{ experienceId: string; created: boolean; message?: string }>('/api/runtime/import-html5', { mode: 'seed-native' });
-      setMessage(d.message ?? 'Native game ready');
+      const d = await postJSON<{ created: string[] }>('/api/runtime/import-html5', { mode: 'seed-engine' });
+      setMessage(`Seeded ${d.created.length} games + sparks`);
       reload();
     } catch {
-      setMessage('Failed to seed native game');
+      setMessage('Failed to seed games');
     } finally {
       setBusy(null);
     }
@@ -103,81 +111,18 @@ export function RuntimeTab() {
 
   return (
     <div className="space-y-4">
-      {/* Validation header */}
-      <Card className="bg-gradient-to-r from-violet-50 to-fuchsia-50 dark:from-violet-950/30 dark:to-fuchsia-950/30 border-violet-300">
-        <CardContent className="p-3">
-          <div className="flex items-center gap-2 mb-1">
-            <Cpu className="w-4 h-4 text-violet-500" />
-            <span className="text-sm font-medium">ADR-005 Runtime Validation</span>
-          </div>
-          <p className="text-[10px] text-muted-foreground">
-            Every experience must run inside the PlayLiquid ContainmentFrame — regardless of runtime type.
-            Seed a native game and import an HTML5 game, then play both to verify the full path:
-            ExperienceRecord → Bundle → ContainmentFrame → Runtime → Telemetry → Evolution.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Two columns: Native + HTML5 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Native */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-violet-500" /> Native Runtime
-            </CardTitle>
-            <CardDescription className="text-xs">PlayLiquid kernel — tick-based extension graph</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-[10px] text-muted-foreground space-y-1">
-              <div className="flex items-center gap-1.5">
-                <Zap className="w-3 h-3 text-amber-500" />
-                <span>Extensions: Physics + Movement + Score + CoinCollector + Competition</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Globe className="w-3 h-3 text-emerald-500" />
-                <span>Rendered on canvas, driven by kernel sessions API</span>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="default" className="h-7 text-xs gap-1.5" onClick={seedNative} disabled={busy === 'native'}>
-                {busy === 'native' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-                Seed Neon Runner
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* HTML5 */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Globe className="w-4 h-4 text-emerald-500" /> HTML5 Imported
-            </CardTitle>
-            <CardDescription className="text-xs">Standalone game in a sandboxed iframe</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-[10px] text-muted-foreground space-y-1">
-              <div className="flex items-center gap-1.5">
-                <FileCode className="w-3 h-3 text-blue-500" />
-                <span>Pure Canvas API + JavaScript (no frameworks)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <ArrowRight className="w-3 h-3 text-amber-500" />
-                <span>Input bridge (pl:input) + Telemetry bridge (pl:telemetry)</span>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="default" className="h-7 text-xs gap-1.5" onClick={importHtml5} disabled={busy === 'html5'}>
-                {busy === 'html5' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                Import Orb Collector
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Action bar */}
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="default" className="h-7 text-xs gap-1.5" onClick={seedAll} disabled={busy === 'seed'}>
+          {busy === 'seed' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+          Seed All Games + Sparks
+        </Button>
+        <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={importHtml5} disabled={busy === 'html5'}>
+          {busy === 'html5' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Globe className="w-3 h-3" />}
+          Import Orb Collector (HTML5)
+        </Button>
       </div>
 
-      {/* Status message */}
       {message && (
         <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300">
           <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -185,23 +130,100 @@ export function RuntimeTab() {
         </div>
       )}
 
-      {/* Imported games list */}
+      {/* Sparks section */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-rose-500" /> Sparks
+            <Badge variant="outline" className="text-[8px] h-3.5">9:16 · Touch · Instant</Badge>
+          </CardTitle>
+          <CardDescription className="text-xs">Vertical, touch-native mini-experiences — the YouTube Shorts of PlayLiquid</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {Object.values(SPARKS).map((spark) => {
+              const expId = engineExps[spark.name];
+              return (
+                <div key={spark.id} className="rounded-lg border border-border p-2.5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge className="bg-rose-500 text-white text-[7px] h-3">SPARK</Badge>
+                    <span className="text-xs font-medium truncate">{spark.name}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mb-2 line-clamp-2">{spark.description}</p>
+                  <div className="flex gap-1 flex-wrap mb-2">
+                    {spark.tags.slice(0, 2).map((t) => (
+                      <Badge key={t} variant="secondary" className="text-[7px] h-3 px-1">{t}</Badge>
+                    ))}
+                  </div>
+                  {expId ? (
+                    <Button size="sm" variant="default" className="w-full h-6 text-[10px] gap-1" onClick={() => playExperience(expId)}>
+                      <Play className="w-3 h-3" /> Play
+                    </Button>
+                  ) : (
+                    <Badge variant="outline" className="text-[8px] h-5 w-full justify-center">Not seeded</Badge>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Games section */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Gamepad2 className="w-4 h-4 text-violet-500" /> Native Games
+            <Badge variant="outline" className="text-[8px] h-3.5">16:9 · PlayEngine</Badge>
+          </CardTitle>
+          <CardDescription className="text-xs">Long-form interactive games powered by the PlayLiquid Game Engine</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {Object.values(GAMES).map((game) => {
+              const expId = engineExps[game.name];
+              return (
+                <div key={game.id} className="rounded-lg border border-border p-2.5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge className="bg-violet-500 text-white text-[7px] h-3">GAME</Badge>
+                    <span className="text-xs font-medium truncate">{game.name}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mb-2 line-clamp-2">{game.description}</p>
+                  <div className="flex gap-1 flex-wrap mb-2">
+                    {game.tags.slice(0, 2).map((t) => (
+                      <Badge key={t} variant="secondary" className="text-[7px] h-3 px-1">{t}</Badge>
+                    ))}
+                    {game.tags.includes('competitive') && (
+                      <Badge className="text-[7px] h-3 bg-emerald-500 text-white">🏆</Badge>
+                    )}
+                  </div>
+                  {expId ? (
+                    <Button size="sm" variant="default" className="w-full h-6 text-[10px] gap-1" onClick={() => playExperience(expId)}>
+                      <Play className="w-3 h-3" /> Play
+                    </Button>
+                  ) : (
+                    <Badge variant="outline" className="text-[8px] h-5 w-full justify-center">Not seeded</Badge>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Imported HTML5 */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
             <Globe className="w-4 h-4 text-emerald-500" /> Imported HTML5 Games
           </CardTitle>
-          <CardDescription className="text-xs">Games running inside the ContainmentFrame via iframe + postMessage</CardDescription>
+          <CardDescription className="text-xs">Standalone games running inside the ContainmentFrame via iframe</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin" /></div>
           ) : importedGames.length === 0 ? (
-            <div className="py-4 text-center">
-              <Globe className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
-              <p className="text-sm text-muted-foreground">No imported games yet.</p>
-              <p className="text-xs text-muted-foreground mt-1">Click "Import Orb Collector" to create one.</p>
-            </div>
+            <p className="text-sm text-muted-foreground text-center py-4">No imported games yet. Click "Import Orb Collector" above.</p>
           ) : (
             <div className="space-y-2">
               {importedGames.map((g) => (
@@ -211,34 +233,13 @@ export function RuntimeTab() {
                     <div className="text-xs font-medium truncate">{g.experienceName}</div>
                     <div className="text-[9px] text-muted-foreground font-mono truncate">{g.storageUrl}</div>
                   </div>
-                  <Badge variant="outline" className="text-[8px] h-3.5">{g.status}</Badge>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-6 text-[10px] gap-1"
-                    onClick={() => playExperience(g.experienceId)}
-                  >
+                  <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1" onClick={() => playExperience(g.experienceId)}>
                     <Play className="w-3 h-3" /> Play
                   </Button>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Architecture note */}
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
-            <div className="text-[10px] text-muted-foreground">
-              <span className="font-medium">Architecture:</span> Native and HTML5 experiences become
-              indistinguishable after entering PlayLiquid. Both produce telemetry that feeds the
-              Evolution System. Both appear in the Consumer Home. Both participate in the same
-              Experience Graph, Extensions, and Economy.
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

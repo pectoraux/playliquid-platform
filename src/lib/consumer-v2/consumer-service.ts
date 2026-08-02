@@ -63,12 +63,23 @@ export async function getSparks(limit: number): Promise<any[]> {
 }
 
 async function getExperiencesForHome(limit: number): Promise<any[]> {
-  const exps = await db.experienceRecord.findMany({
-    where: { status: 'PUBLISHED' },
+  // Experiences = non-spark published experiences (format !== 'spark')
+  let exps = await db.experienceRecord.findMany({
+    where: { status: 'PUBLISHED', format: { not: 'spark' } },
     orderBy: { playCount: 'desc' },
     take: limit,
     include: { creator: true },
   });
+
+  // Fallback: if no non-spark experiences, include all
+  if (exps.length === 0) {
+    exps = await db.experienceRecord.findMany({
+      where: { status: 'PUBLISHED' },
+      orderBy: { playCount: 'desc' },
+      take: limit,
+      include: { creator: true },
+    });
+  }
 
   return Promise.all(exps.map(async (exp) => {
     const extensions = await getExperienceExtensions(exp.id).catch(() => []);

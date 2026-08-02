@@ -1,20 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { importHtml5Game, seedNativeNeonRunner, seedOrbCollectorHtml5, listImportedGames } from '@/lib/runtime/runtime-service';
+import { importHtml5Game, seedEngineGames, listImportedGames } from '@/lib/runtime/runtime-service';
 
 // POST /api/runtime/import-html5
-//   { mode: "import" | "seed-native" | "seed-html5" | "list", name?, gameUrl?, manifest? }
+//   { mode: "import" | "seed-engine" | "seed-html5" | "list", name?, gameUrl?, manifest? }
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const mode = body.mode ?? 'import';
 
-  if (mode === 'seed-native') {
-    const result = await seedNativeNeonRunner();
-    return NextResponse.json({ ok: true, ...result, message: result.created ? 'Created Neon Runner native experience' : 'Neon Runner already exists' });
+  if (mode === 'seed-engine') {
+    const result = await seedEngineGames();
+    return NextResponse.json({ ok: true, created: result.created });
   }
 
   if (mode === 'seed-html5') {
-    const result = await seedOrbCollectorHtml5();
-    return NextResponse.json({ ok: true, ...result, message: result.created ? 'Imported Orb Collector HTML5 game' : 'Orb Collector already exists' });
+    // Import Orb Collector as the default HTML5 game
+    const result = await importHtml5Game({
+      name: 'Orb Collector (HTML5)',
+      description: 'An imported HTML5 game running inside the PlayLiquid ContainmentFrame. Pure Canvas API + JavaScript.',
+      gameUrl: '/imported-games/orb-collector/',
+      manifest: {
+        name: 'Orb Collector',
+        version: '1.0.0',
+        runtime: { type: 'html5', entry: 'index.html' },
+        viewport: { aspectRatio: '16:9', orientation: 'landscape' },
+        permissions: ['input', 'telemetry'],
+      },
+    });
+    return NextResponse.json({ ok: true, experienceId: result.experienceId, created: true, message: 'Imported Orb Collector HTML5 game' });
   }
 
   if (mode === 'list') {

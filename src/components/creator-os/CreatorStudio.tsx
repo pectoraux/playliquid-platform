@@ -12,15 +12,22 @@ import { Separator } from '@/components/ui/separator';
 import {
   ArrowLeft, BarChart, Coins, Package, Sparkles, Users, Zap,
   Loader2, TrendingUp, Trophy, Bot, ChevronRight, AlertCircle,
-  CheckCircle2, FlaskConical, Clock, GitBranch, Cpu, Globe, Play,
+  CheckCircle2, FlaskConical, Clock, GitBranch, Cpu, Globe, Play, Plus,
 } from 'lucide-react';
 import { EvolutionTab } from './EvolutionTab';
 import { RuntimeTab } from './RuntimeTab';
+import { AICreationStudio } from './AICreationStudio';
+import { UploadModal } from './UploadModal';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const MICRO = 1_000_000;
 
 export function CreatorStudio() {
   const { setView } = useStudioStore();
+  const [aiStudioOpen, setAiStudioOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -39,8 +46,33 @@ export function CreatorStudio() {
               <p className="text-[10px] text-muted-foreground">Operate your interactive business</p>
             </div>
           </div>
+          <div className="ml-auto">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  className="gap-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:opacity-90 text-white"
+                >
+                  <Plus className="w-4 h-4" /> CREATE
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setAiStudioOpen(true)}>
+                  <Sparkles className="w-3.5 h-3.5 mr-2 text-amber-500" />
+                  <span className="text-xs">Create with AI</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setUploadOpen(true)}>
+                  <Globe className="w-3.5 h-3.5 mr-2 text-emerald-500" />
+                  <span className="text-xs">Upload HTML5 Game</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
+
+      <AICreationStudio open={aiStudioOpen} onOpenChange={setAiStudioOpen} />
+      <UploadModal open={uploadOpen} onOpenChange={setUploadOpen} />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-4">
         <Tabs defaultValue="overview">

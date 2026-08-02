@@ -1100,3 +1100,64 @@ Stage Summary:
   - Vercel: https://playliquid.vercel.app
   - Database: Neon PostgreSQL (pooled connection)
 - "If a native game and an imported HTML5 game become indistinguishable after entering PlayLiquid, ADR-005 is complete." ✅
+
+---
+Task ID: 4
+Agent: AI Creation Studio Builder
+Task: Build AI Game Creation Studio (Phase 21.3) — LLM-powered game generator that takes a natural-language prompt and produces a playable game.
+
+Work Log:
+- Read worklog.md to understand prior work (Phases 1–21 + 20.5 runtime interop). Reviewed src/engine/games.ts (3 games: neon-runner, sky-defender, coin-rush), src/engine/sparks.ts (3 sparks: catch-stars, reaction-challenge, tap-pet), src/lib/runtime/runtime-service.ts (createEngineExperience + getExperienceRuntime + importHtml5Game + seedEngineGames), src/lib/ai-composer.ts (existing LLM composer pattern using z-ai-web-dev-sdk), CreatorStudio.tsx (9-tab dashboard), EvolutionTab.tsx (fetchJSON/postJSON retry pattern for dev cold-start), PlayView.tsx (uses GAMES/SPARKS + ContainmentFrame + GameCanvas).
+- Created `src/lib/runtime/ai-game-generator.ts`:
+  - AIGameProposal type (title, description, format, engineGameId, gameName, tags, competitiveEligible, balanceParams, reasoning, source)
+  - buildCatalog() merges GAMES + SPARKS into CatalogEntry[] with configKeys
+  - generateGameProposal(prompt) → tries LLM first, falls back to rule-based keyword matcher
+  - llmProposal(): builds system prompt describing all 6 templates + keyword heuristics + JSON output schema, calls zai.chat.completions.create with thinking disabled, parses JSON (handles markdown fences), sanitizes via sanitizeProposal()
+  - sanitizeProposal(): validates engineGameId against catalog, defaults to template name/description, forces format to match template's actual format, dedupes tags, filters balanceParams to keys that exist on template config
+  - ruleBasedProposal(): scores each template by keyword overlap (KEYWORDS map: runner→neon-runner, shoot/defend→sky-defender, collect/coin→coin-rush, catch/basket→catch-stars, reaction/tap→reaction-challenge, pet/feed→tap-pet), generates simple balance tweaks based on tone words ("fast"→speed=420, "chill"→speed=240)
+  - EXAMPLE_PROMPTS array (6 examples: Endless runner, Tower defense, Reaction game, Virtual pet, Coin collector, Catch falling stars) exported for UI use
+- Created `src/app/api/ai-create/route.ts`:
+  - GET: returns templates catalog (games + sparks with configKeys) + EXAMPLE_PROMPTS
+  - POST default (generate mode): body {prompt} → returns {proposal: AIGameProposal} via generateGameProposal()
+  - POST ?mode=publish: body {proposal} → validates with zod schema → calls createEngineExperience() → returns {experienceId, published: true, proposal}
+  - Zod schemas for both modes (generateSchema, proposalSchema with balanceParams as Record<string, number|string|boolean>)
+  - All LLM work stays server-side (z-ai-web-dev-sdk only imported in ai-game-generator.ts, never in client)
+- Created `src/components/creator-os/AICreationStudio.tsx`:
+  - Dialog modal (sm:max-w-2xl) with header + scrollable content + footer
+  - Large Textarea for prompt with placeholder
+  - Example prompt chips (loaded from /api/ai-create GET, 6 chips: Endless runner, Tower defense, etc.)
+  - Generate button (amber→orange gradient, Wand2 icon, shows Loader2 while generating)
+  - Error card (amber border) for failed generations
+  - Generating skeleton (dashed border card with Loader2)
+  - ProposalCard: gradient amber card showing proposed title, description, format badge (Zap for spark, Cpu for game), AI/rule-based badge, engine template id, tags as Badge pills, competitive eligibility (Trophy icon, green if eligible), balance overrides as monospace pills, AI reasoning with Brain icon
+  - Action buttons: Publish (emerald, Rocket icon), Play Now (amber, appears after publish), Regenerate (RefreshCw), Reset (RotateCcw)
+  - Catalog preview (collapsible details) showing all 6 engine templates
+  - Toast notifications on generate/publish success (sonner)
+  - fetchJSON/postJSON helpers with retry for dev cold-start
+  - Wired to useStudioStore.playExperience() for the Play button (closes dialog, navigates to play view)
+- Modified `src/components/creator-os/CreatorStudio.tsx`:
+  - Added Plus icon import + AICreationStudio import
+  - Added aiStudioOpen state (useState(false))
+  - Added "+ CREATE" button to header (ml-auto, amber→orange gradient matching the studio's accent)
+  - Rendered <AICreationStudio open={aiStudioOpen} onOpenChange={setAiStudioOpen} /> immediately after header
+- Verified end-to-end with curl tests against the dev server:
+  - GET /api/ai-create → returns catalog (3 games + 3 sparks, each with configKeys) + 6 example prompts ✅
+  - POST /api/ai-create {"prompt":"Create a fast-paced cyberpunk endless runner..."} → AI proposal: "Neon Drift: Neo-Tokyo Sprint", game/neon-runner, tags [cyberpunk, endless-runner, competitive, mobile, action, runner], competitiveEligible=true, balanceParams {speed:380, spawnInterval:1.2}, source="ai" ✅
+  - POST pet prompt → "Cuddle Critter" (spark/tap-pet, competitiveEligible=false) ✅
+  - POST reaction prompt → "Green Rush" (spark/reaction-challenge, competitiveEligible=true) ✅
+  - POST tower-defense prompt → "Drone Shield: Urban Defense" (game/sky-defender, competitiveEligible=true) ✅
+  - POST ?mode=publish with the pet proposal → {experienceId: "cmsbgxrme0003u8kjlwq5li5q", published: true} ✅ (experience persisted to Postgres)
+- Lint clean throughout (bun run lint passes with no errors)
+
+Stage Summary:
+- Phase 21.3 complete. The AI Creation Studio is fully operational:
+  - Creators click "+ CREATE" in the Creator Studio header → AI Creation Studio dialog opens
+  - They type a natural-language prompt (or click an example chip) → click Generate
+  - The LLM analyzes the prompt, picks the best engine template (game or spark), generates a creative title/description/tags, decides competitive eligibility, suggests balance overrides, and explains its reasoning
+  - The result card displays everything (title, description, format badge, template id, tags, competitive eligibility, balance overrides, AI reasoning)
+  - Click Publish → createEngineExperience() creates a real ExperienceRecord with bundle + containment config + genome → experience is live and playable
+  - Click Play Now → useStudioStore.playExperience() navigates to PlayView, which renders the game inside ContainmentFrame via GameCanvas (native) or spark renderer
+  - Click Regenerate to try again, Reset to start over
+- Architecture: "AI assists but does not replace creators" — the LLM never generates code; it picks from existing engine templates and overlays creative metadata. The creator approves by clicking Publish. The published experience flows through the same createEngineExperience() path used by the seeder, so it gets a bundle, genome, containment config, and is immediately playable through the standard PlayView.
+- The LLM is invoked server-side only (z-ai-web-dev-sdk imported only in ai-game-generator.ts, which is only called from the API route). Client components use fetch + the typed AIGameProposal interface.
+- Fallback path: if the LLM fails (rate limit, network, invalid JSON), the rule-based keyword matcher kicks in and produces a valid proposal with source="rule" so the creator is never blocked.
