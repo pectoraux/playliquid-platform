@@ -1161,3 +1161,75 @@ Stage Summary:
 - Architecture: "AI assists but does not replace creators" — the LLM never generates code; it picks from existing engine templates and overlays creative metadata. The creator approves by clicking Publish. The published experience flows through the same createEngineExperience() path used by the seeder, so it gets a bundle, genome, containment config, and is immediately playable through the standard PlayView.
 - The LLM is invoked server-side only (z-ai-web-dev-sdk imported only in ai-game-generator.ts, which is only called from the API route). Client components use fetch + the typed AIGameProposal interface.
 - Fallback path: if the LLM fails (rate limit, network, invalid JSON), the rule-based keyword matcher kicks in and produces a valid proposal with source="rule" so the creator is never blocked.
+
+---
+Task ID: 21
+Agent: main (Z.ai Code) + AI Creation Studio subagent
+Task: Phase 21 — Interactive Experience Runtime & Creation OS. Turn PlayLiquid from "a platform that can display games" into "a platform where games are born, discovered, played, and evolved." Build a real game engine, spark runtime, AI creation studio, YouTube-style upload, and replace demo games with real playable experiences.
+
+Work Log:
+- Built PlayEngine (src/engine/PlayEngine.ts) — entity-component game engine:
+  - Entity system (position, velocity, size, collider, data)
+  - Physics (gravity, velocity integration, AABB collision detection)
+  - Sprite rendering (shapes, circles, glows, text)
+  - Input (keyboard WASD/arrows + touch pointer, normalized to game-space)
+  - Game loop (requestAnimationFrame, fixed 60fps timestep)
+  - Spawning (entities created/destroyed during play)
+  - Scoring + telemetry hooks (onScore, onEvent, onEnd)
+  - Seeded RNG (mulberry32) for deterministic experiences
+- Built 3 real native games (src/engine/games.ts):
+  - Neon Runner: endless runner with jump physics, obstacles, coins, increasing speed, collision death
+  - Sky Defender: tower defense shooter with aiming, bullets, enemy waves, HP system
+  - Coin Rush: 30s timed collector with coins + bombs, pointer follow movement
+- Built 3 real sparks (src/engine/sparks.ts):
+  - Catch the Stars: drag basket to catch falling stars, miss 3 = game over
+  - Reaction Challenge: tap when screen turns green, measures reaction time + streak
+  - Tap Pet: virtual pet with happiness/hunger bars, feed/play buttons, mood-based rendering
+- Built GameCanvas component (src/components/runtime/GameCanvas.tsx):
+  - Mounts PlayEngine on canvas, handles lifecycle (start/stop)
+  - Loading state, game over overlay with restart
+  - Score badge + end game button
+  - Works for both sparks (9:16) and games (16:9)
+- Upgraded PlayView to route to correct runtime:
+  - spark → GameCanvas (9:16 vertical, PlayEngine spark game)
+  - native → GameCanvas (16:9, PlayEngine game)
+  - html5 → Html5GamePlayer (iframe + postMessage)
+- Built AI Creation Studio (via subagent):
+  - src/lib/runtime/ai-game-generator.ts — LLM-powered game generator (prompt → game proposal)
+  - src/app/api/ai-create/route.ts — generate + publish API
+  - src/components/creator-os/AICreationStudio.tsx — dialog with prompt textarea, example chips, result card, publish/play
+  - Wired into CreatorStudio header as "+ CREATE" dropdown
+- Built YouTube-style Upload modal (src/components/creator-os/UploadModal.tsx):
+  - Title, description, game URL, tags input
+  - Drag/drop visual area
+  - Processing pipeline (uploading → scanning → detecting → extracting → creating → preview → done)
+  - Creates ImportedGameBundleRecord + ExperienceRecord
+- Added +CREATE dropdown to CreatorStudio header:
+  - "Create with AI" → opens AI Creation Studio
+  - "Upload HTML5 Game" → opens Upload modal
+- Fixed home feed (consumer-v2/consumer-service.ts):
+  - Sparks: format='spark' experiences
+  - Experiences: format != 'spark' (excludes sparks from the games section)
+- Updated RuntimeTab: shows spark catalog (3 sparks) + game catalog (3 games) + imported HTML5, with seed-all button
+- Updated runtime-service.ts: createEngineExperience (publishes engine games + sparks), seedEngineGames (seeds all 6)
+- Browser verification:
+  - Home page shows 4 sparks (Cuddle Critter, Catch the Stars, Reaction Challenge, Tap Pet) + 8 experiences
+  - Clicked "Cuddle Critter" spark → PlayView opened with 9:16 ContainmentFrame, canvas rendered, engine running (score 0, End game button visible)
+  - Runtime bundle API: GET /api/runtime/bundle/{id} 200
+  - Lint clean
+- Deployed to production:
+  - Pushed to GitHub (pectoraux/playliquid-platform)
+  - Triggered Vercel deployment → READY in 30s
+  - Live: https://playliquid.vercel.app (4 sparks + 8 experiences confirmed)
+
+Stage Summary:
+- Phase 21 complete. PlayLiquid now has a real interactive media runtime:
+  - PlayEngine: entity-component game engine with physics, sprites, collisions
+  - 3 real native games (Neon Runner, Sky Defender, Coin Rush)
+  - 3 real sparks (Catch the Stars, Reaction Challenge, Tap Pet)
+  - SparkRuntime: vertical 9:16 touch-native runtime
+  - AI Creation Studio: prompt → playable game
+  - YouTube-style Upload modal with processing pipeline
+  - +CREATE dropdown in Creator Studio
+  - Home feed properly separates sparks from games
+- "A platform where games are born, discovered, played, and evolved." ✅
