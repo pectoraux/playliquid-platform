@@ -4,7 +4,7 @@ import {
   unfollowCreator,
   isFollowing,
   getFollowerCount,
-} from '@/lib/social/social-service';
+} from '@/lib/social/social-v2';
 
 // GET /api/social/follow?creatorId=X&viewerId=Y → { following, followers }
 export async function GET(req: NextRequest) {

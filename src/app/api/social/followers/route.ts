@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFollowerCount } from '@/lib/social/social-service';
+import { getFollowerCount } from '@/lib/social/social-v2';
 
 // GET /api/social/followers?creatorId=X → { followers: number }
 export async function GET(req: NextRequest) {

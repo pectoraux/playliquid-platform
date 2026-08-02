@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { likeComment } from '@/lib/social/social-service';
+import { likeComment } from '@/lib/social/social-v2';
 
 // POST /api/social/comments/[id]/like → { likes: number }
 export async function POST(

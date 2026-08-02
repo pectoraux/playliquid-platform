@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchExperiences } from '@/lib/social/social-service';
+import { searchExperiences } from '@/lib/social/social-v2';
 
 // GET /api/search?q=query → { results: SearchResult[] }
 export async function GET(req: NextRequest) {

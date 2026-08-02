@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getComments, postComment } from '@/lib/social/social-service';
+import { getComments, postComment } from '@/lib/social/social-v2';
 
 // GET /api/social/comments?experienceId=X → { comments: Comment[] }
 export async function GET(req: NextRequest) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCreatorChannel } from '@/lib/social/social-service';
+import { getCreatorChannel } from '@/lib/social/social-v2';
 
 // GET /api/creator-channel?creatorId=X&viewerId=Y → { channel: CreatorChannel }
 export async function GET(req: NextRequest) {
