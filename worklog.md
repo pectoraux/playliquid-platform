@@ -1276,3 +1276,43 @@ Stage Summary:
   - Prompt can be copied externally OR generated internally
   - Internal generation uses the matched engine template
 - "This turns PlayLiquid from a game upload platform into an AI-native game creation operating system." ✅
+
+---
+Task ID: 23
+Agent: main (Z.ai Code)
+Task: Phase 23 — Creator Publishing Pipeline. Replace URL-based upload with real YouTube-style file upload (drag/drop ZIP, multipart/form-data, extraction, validation, draft/publish lifecycle).
+
+Work Log:
+- Created src/lib/upload/ module:
+  - bundle-validator.ts: validates HTML5 game bundles (checks index.html, detects engine: canvas/phaser/three.js/unity-webgl, scans for pl:input + pl:telemetry bridges, detects extensions from content, generates manifest if missing)
+  - upload-service.ts: processUpload() — accepts File object, extracts ZIP (zero external deps using zlib.inflateRawSync for raw deflate), validates bundle, stores in /public/uploaded-games/{slug}/, creates ExperienceRecord (DRAFT status), creates containment config (html5), creates ImportedGameBundleRecord. publishExperience() — changes DRAFT to PUBLISHED
+- Created /api/experiences/upload API route:
+  - multipart/form-data mode: accepts file + title + description + tags + format + orientation
+  - JSON mode: { action: "publish", experienceId } for publishing drafts
+- Rewrote UploadModal as 4-step wizard:
+  - Step 1 (Upload): real <input type=file> with ref + hidden + click forwarding, drag/drop with e.preventDefault(), supported formats list
+  - Step 2 (Details): title, description, tags, category (Spark/Game), orientation (Portrait/Landscape)
+  - Step 3 (Processing): upload progress bar + processing pipeline checklist (extracting → checking manifest → detecting runtime → compatibility → creating experience)
+  - Step 4 (Result): validation report (engine, bridges, detected extensions, warnings) + Preview + Publish buttons
+- Fixed ZIP extraction: changed zlib.inflateSync to zlib.inflateRawSync (ZIP uses raw deflate without zlib headers)
+- Fixed home feed limit: getExperiencesForHome(8) → (12), getSparks(6) → (10) so all published experiences appear
+- Draft/publish lifecycle: uploaded experiences start as DRAFT, creator must click Publish to make them visible
+- Verified end-to-end (local):
+  - Created test ZIP (pixel-quest.zip with index.html + game.js + manifest.json)
+  - Upload: POST /api/experiences/upload 200 — extracted, validated (canvas engine, input+telemetry bridges detected, score+collection extensions)
+  - Publish: POST /api/experiences/upload (JSON publish action) → PUBLISHED
+  - Home feed: "Pixel Quest Adventure" appears in the experiences list
+  - Files served: /uploaded-games/pixel-quest-adventure-*/index.html returns 200
+- Deployed to Vercel: https://playliquid.vercel.app (READY)
+  - Home feed shows 4 sparks + 6 experiences (including Pixel Quest Adventure uploaded via local dev)
+  - Note: Vercel serverless filesystem is read-only, so the upload API can't extract ZIPs on Vercel. Uploaded games must be committed to the repo (they're in /public/uploaded-games/). For production, this would use S3/blob storage.
+
+Stage Summary:
+- Phase 23 complete. PlayLiquid now has a real creator publishing pipeline:
+  - YouTube-style upload wizard with drag/drop + file input
+  - Real ZIP extraction + bundle validation
+  - Runtime detection (canvas/phaser/three.js)
+  - Bridge scanning (pl:input + pl:telemetry)
+  - Draft/publish lifecycle
+  - Uploaded games appear on the home feed after publishing
+- "That would complete the missing bridge between 'a game exists' and 'a creator can actually publish a game on PlayLiquid.'" ✅
