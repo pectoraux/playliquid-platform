@@ -98,10 +98,21 @@ export function PlayView({ experienceId }: { experienceId: string }) {
   }
 
   // Resolve the engine game (spark or native)
-  const engineGameId = runtime.engineGameId;
+  // Fall back to title-based matching for experiences seeded before Phase 21
+  const engineGameId = runtime.engineGameId
+    ?? ((): string | undefined => {
+      const title = runtime.title.toLowerCase();
+      if (title.includes('neon runner') || title.includes('runner')) return 'neon-runner';
+      if (title.includes('sky defender') || title.includes('defend') || title.includes('shoot')) return 'sky-defender';
+      if (title.includes('coin rush') || title.includes('collect')) return 'coin-rush';
+      if (title.includes('catch the stars') || title.includes('star')) return 'catch-stars';
+      if (title.includes('reaction')) return 'reaction-challenge';
+      if (title.includes('pet') || title.includes('cuddle')) return 'tap-pet';
+      return undefined;
+    })();
   const sparkGame = engineGameId ? SPARKS[engineGameId] : undefined;
   const nativeGame = engineGameId ? GAMES[engineGameId] : undefined;
-  const isSpark = runtime.runtimeType === 'spark' || !!sparkGame;
+  const isSpark = runtime.runtimeType === 'spark' || runtime.title.toLowerCase().includes('pet') || runtime.title.toLowerCase().includes('reaction') || runtime.title.toLowerCase().includes('catch') || !!sparkGame;
   const aspectRatio = isSpark ? '9:16' : (runtime.containment.aspectRatio ?? '16:9');
   const orientation = isSpark ? 'portrait' : (runtime.containment.orientation as 'portrait' | 'landscape' | 'any');
 
