@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { V3ShellWrapper } from '@/components/consumer-v2/V3ShellWrapper';
 import {
   ArrowLeft, Heart, Share2, Zap, Trophy, Users, MessageCircle,
   Gamepad2, Globe, Cpu, Maximize2, Minimize2, Send, ThumbsUp, ThumbsDown,
@@ -141,14 +142,14 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
   const isHtml5 = runtime.runtimeType === 'html5' && runtime.containment.html5BundleUrl;
 
   return (
-    <div className={`min-h-screen flex flex-col bg-background ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
-      <header className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => setView('home-v3')} className="h-8"><ArrowLeft className="w-4 h-4" /> Back</Button>
-          <div className="flex-1" />
-          {runtime.runtimeType === 'html5' ? <Badge className="bg-emerald-500 text-white text-[9px] gap-1"><Globe className="w-2.5 h-2.5" /> HTML5</Badge> : <Badge className="bg-violet-500 text-white text-[9px] gap-1"><Cpu className="w-2.5 h-2.5" /> Native</Badge>}
-        </div>
-      </header>
+    <V3ShellWrapper title={runtime.title} showSearch={!isFullscreen}>
+      <div className={`flex flex-col bg-background ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : 'min-h-[calc(100vh-3.5rem)]'}`}>
+        {/* Runtime badge (floating, above content) */}
+        {!isFullscreen && (
+          <div className="max-w-6xl mx-auto w-full px-4 pt-3">
+            {runtime.runtimeType === 'html5' ? <Badge className="bg-emerald-500 text-white text-[9px] gap-1"><Globe className="w-2.5 h-2.5" /> HTML5</Badge> : <Badge className="bg-violet-500 text-white text-[9px] gap-1"><Cpu className="w-2.5 h-2.5" /> Native</Badge>}
+          </div>
+        )}
 
       <main className={`flex-1 max-w-6xl w-full mx-auto px-4 py-4 ${isFullscreen ? 'max-w-none flex items-center justify-center' : ''}`}>
         {isFullscreen ? (
@@ -256,7 +257,8 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
       </Dialog>
 
       {!isFullscreen && <footer className="mt-auto border-t border-border bg-card/50 px-4 py-2 text-xs text-muted-foreground text-center">PlayLiquid · Free to play · Challenge mode is optional</footer>}
-    </div>
+      </div>
+    </V3ShellWrapper>
   );
 }
 

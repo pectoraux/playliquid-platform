@@ -13,7 +13,9 @@ import {
   ArrowLeft, BarChart, Coins, Package, Sparkles, Users, Zap,
   Loader2, TrendingUp, Trophy, Bot, ChevronRight, AlertCircle,
   CheckCircle2, FlaskConical, Clock, GitBranch, Cpu, Globe, Play, Plus,
+  Search, Bell, Upload, Settings,
 } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { EvolutionTab } from './EvolutionTab';
 import { RuntimeTab } from './RuntimeTab';
 import { AICreationStudio } from './AICreationStudio';
@@ -31,27 +33,34 @@ export function CreatorStudio() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={() => setView('home-v3')} className="flex items-center gap-2 hover:opacity-80">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold">PL</div>
-            <span className="text-sm font-bold hidden sm:inline">PlayLiquid</span>
+      {/* V3 Header — same as home page */}
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
+        <div className="flex items-center gap-2 px-3 md:px-4 h-14">
+          {/* Left: logo */}
+          <button onClick={() => setView('home-v3')} className="flex items-center gap-1.5 shrink-0 cursor-pointer hover:opacity-80">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white text-[11px] font-bold shadow-sm">PL</div>
+            <span className="text-base font-bold tracking-tight hidden sm:inline">PlayLiquid</span>
           </button>
-          <Separator orientation="vertical" className="h-6" />
-          <div className="flex items-center gap-2">
-            <div>
-              <h1 className="text-sm font-semibold">Creator Studio</h1>
-              <p className="text-[10px] text-muted-foreground">Operate your interactive business</p>
+          <div className="hidden sm:flex items-center gap-2 ml-2">
+            <div className="h-4 w-px bg-border" />
+            <span className="text-xs text-muted-foreground font-medium">Creator Studio</span>
+          </div>
+
+          {/* Center: search (desktop) */}
+          <div className="hidden md:flex flex-1 max-w-2xl mx-auto px-4">
+            <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-muted/50 focus-within:border-amber-400 transition-colors">
+              <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+              <input placeholder="Search..." className="flex-1 h-6 bg-transparent text-sm focus:outline-none" />
             </div>
           </div>
-          <div className="ml-auto">
+          <div className="flex-1 md:hidden" />
+
+          {/* Right: Create + Notifications + Profile */}
+          <div className="flex items-center gap-1 shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  size="sm"
-                  className="gap-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:opacity-90 text-white"
-                >
-                  <Plus className="w-4 h-4" /> CREATE
+                <Button size="sm" className="gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:opacity-90 h-9 px-3">
+                  <Plus className="w-4 h-4" /><span className="hidden sm:inline text-xs font-medium">Create</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -63,6 +72,40 @@ export function CreatorStudio() {
                   <Globe className="w-3.5 h-3.5 mr-2 text-emerald-500" />
                   <span className="text-xs">Upload HTML5 Game</span>
                 </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Notifications */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors" aria-label="Notifications">
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72">
+                <div className="px-3 py-2 text-sm font-medium border-b border-border">Notifications</div>
+                <DropdownMenuItem className="gap-3 p-2.5"><Upload className="w-4 h-4 text-violet-500" /><div className="text-xs">Alex Rivers uploaded a new game<div className="text-[10px] text-muted-foreground">2h ago</div></div></DropdownMenuItem>
+                <DropdownMenuItem className="gap-3 p-2.5"><Trophy className="w-4 h-4 text-amber-500" /><div className="text-xs">Tournament starts in 30 min<div className="text-[10px] text-muted-foreground">30m ago</div></div></DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Profile */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="w-9 h-9 rounded-full overflow-hidden hover:ring-2 hover:ring-amber-400 transition-all" aria-label="Open profile menu">
+                  <Avatar className="w-9 h-9"><AvatarFallback className="text-[10px] bg-gradient-to-br from-amber-400 to-orange-600 text-white">SD</AvatarFallback></Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-3 py-2.5 border-b border-border flex items-center gap-2.5">
+                  <Avatar className="w-9 h-9"><AvatarFallback className="text-[10px] bg-gradient-to-br from-amber-400 to-orange-600 text-white">SD</AvatarFallback></Avatar>
+                  <div><div className="text-sm font-medium">Studio Demo Creator</div><div className="text-[10px] text-muted-foreground">demo@playliquid.io</div></div>
+                </div>
+                <DropdownMenuItem className="gap-3 cursor-pointer" onSelect={() => setView('home-v3')}><BarChart className="w-4 h-4" /> My Channel</DropdownMenuItem>
+                <DropdownMenuItem className="gap-3 cursor-pointer" onSelect={() => setView('adr-economy')}><Coins className="w-4 h-4" /> Wallet</DropdownMenuItem>
+                <DropdownMenuItem className="gap-3 cursor-pointer" onSelect={() => setView('home-v3')}><Package className="w-4 h-4" /> Library</DropdownMenuItem>
+                <DropdownMenuItem className="gap-3 cursor-pointer" onSelect={() => setView('creator-studio')}><Settings className="w-4 h-4" /> Settings</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
