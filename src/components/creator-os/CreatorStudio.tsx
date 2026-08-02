@@ -12,9 +12,10 @@ import { Separator } from '@/components/ui/separator';
 import {
   ArrowLeft, BarChart, Coins, Package, Sparkles, Users, Zap,
   Loader2, TrendingUp, Trophy, Bot, ChevronRight, AlertCircle,
-  CheckCircle2, FlaskConical, Clock, GitBranch,
+  CheckCircle2, FlaskConical, Clock, GitBranch, Cpu, Globe, Play,
 } from 'lucide-react';
 import { EvolutionTab } from './EvolutionTab';
+import { RuntimeTab } from './RuntimeTab';
 
 const MICRO = 1_000_000;
 
@@ -43,7 +44,7 @@ export function CreatorStudio() {
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-4">
         <Tabs defaultValue="overview">
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-9 max-w-3xl">
             <TabsTrigger value="overview" className="text-xs gap-1.5"><BarChart className="w-3.5 h-3.5" /> Overview</TabsTrigger>
             <TabsTrigger value="content" className="text-xs gap-1.5"><Package className="w-3.5 h-3.5" /> Content</TabsTrigger>
             <TabsTrigger value="economy" className="text-xs gap-1.5"><Coins className="w-3.5 h-3.5" /> Economy</TabsTrigger>
@@ -51,6 +52,7 @@ export function CreatorStudio() {
             <TabsTrigger value="insights" className="text-xs gap-1.5"><Bot className="w-3.5 h-3.5" /> AI</TabsTrigger>
             <TabsTrigger value="experiments" className="text-xs gap-1.5"><FlaskConical className="w-3.5 h-3.5" /> Experiments</TabsTrigger>
             <TabsTrigger value="evolution" className="text-xs gap-1.5"><GitBranch className="w-3.5 h-3.5" /> Evolution</TabsTrigger>
+            <TabsTrigger value="runtime" className="text-xs gap-1.5"><Cpu className="w-3.5 h-3.5" /> Runtime</TabsTrigger>
             <TabsTrigger value="community" className="text-xs gap-1.5"><Users className="w-3.5 h-3.5" /> Community</TabsTrigger>
           </TabsList>
 
@@ -61,6 +63,7 @@ export function CreatorStudio() {
           <TabsContent value="insights" className="mt-4"><InsightsTab /></TabsContent>
           <TabsContent value="experiments" className="mt-4"><ExperimentsTab /></TabsContent>
           <TabsContent value="evolution" className="mt-4"><EvolutionTab /></TabsContent>
+          <TabsContent value="runtime" className="mt-4"><RuntimeTab /></TabsContent>
           <TabsContent value="community" className="mt-4"><CommunityTab /></TabsContent>
         </Tabs>
       </main>

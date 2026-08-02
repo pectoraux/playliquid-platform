@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Orb Collector</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game" width="640" height="360"></canvas>
+    <div id="hud">
+      <span id="score">Score: 0</span>
+      <span id="timer">Time: 30</span>
+    </div>
+    <div id="overlay" class="hidden">
+      <h1 id="overlay-title">Orb Collector</h1>
+      <p id="overlay-text">Collect falling orbs!</p>
+      <button id="start-btn">Start</button>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

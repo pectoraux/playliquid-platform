@@ -76,6 +76,7 @@ const defaultIntent: ExperienceIntent = {
 
 export interface StudioStore {
   view: StudioView;
+  playExperienceId: string | null;
   draftId: string | null;
   draftTitle: string;
   draftDescription: string;
@@ -106,6 +107,8 @@ export interface StudioStore {
 
   // ── Actions ────────────────────────────────────────────────────────────
   setView: (v: StudioView) => void;
+  playExperience: (experienceId: string) => void;
+  setPlayExperienceId: (id: string | null) => void;
   setDraft: (params: { id: string; title: string; description: string; bundle: ExperienceBundle; intent: ExperienceIntent; parentExperienceId?: string }) => void;
   setBundle: (b: ExperienceBundle) => void;
   setTitle: (t: string) => void;
@@ -143,6 +146,7 @@ const emptyBundle: ExperienceBundle = {
 
 export const useStudioStore = create<StudioStore>((set) => ({
   view: 'home-v2',  // front door is the YouTube-style consumer home
+  playExperienceId: null,
   draftId: null,
   draftTitle: 'Untitled Experience',
   draftDescription: '',
@@ -165,6 +169,8 @@ export const useStudioStore = create<StudioStore>((set) => ({
   isAutoTicking: false,
 
   setView: (v) => set({ view: v }),
+  playExperience: (experienceId) => set({ playExperienceId: experienceId, view: 'play' }),
+  setPlayExperienceId: (id) => set({ playExperienceId: id }),
   setDraft: (params) =>
     set({
       draftId: params.id,

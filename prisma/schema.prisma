@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -1732,5 +1732,24 @@ model CreatorAgentInsightRecord {
 
   @@index([creatorId])
   @@index([agentType])
+  @@index([status])
+}
+
+// ─── Phase 20.5: Runtime Interoperability Validation ───────────────────────
+// Imported HTML5 game bundles — first-class citizens alongside native experiences.
+
+model ImportedGameBundleRecord {
+  id              String   @id @default(cuid())
+  experienceId    String   @unique
+  filename        String
+  storageUrl      String   // public URL serving the HTML5 game (e.g. /imported-games/orb-collector/)
+  manifestJson    String   // { name, version, runtime, viewport, permissions }
+  runtimeType     String   @default("html5")
+  checksum        String?  // content hash for integrity
+  uploadedBy      String   @default("creator_demo")
+  status          String   @default("UPLOADED")  // UPLOADED | VALIDATED | PUBLISHED | REJECTED
+  createdAt       DateTime @default(now())
+
+  @@index([uploadedBy])
   @@index([status])
 }

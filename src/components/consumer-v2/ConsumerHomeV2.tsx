@@ -19,7 +19,7 @@ import {
 const MICRO = 1_000_000;
 
 export function ConsumerHomeV2() {
-  const { setView } = useStudioStore();
+  const { setView, playExperience } = useStudioStore();
   const [home, setHome] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sparkIndex, setSparkIndex] = useState(0);
@@ -79,7 +79,7 @@ export function ConsumerHomeV2() {
           {/* Spark Feed — horizontal scroll of vertical cards */}
           <div className="flex gap-3 overflow-x-auto pb-3">
             {sparks.map((spark: any, i: number) => (
-              <SparkCard key={spark.experienceId} spark={spark} onClick={() => setSparkIndex(i)} />
+              <SparkCard key={spark.experienceId} spark={spark} onClick={() => playExperience(spark.experienceId)} />
             ))}
             {sparks.length === 0 && <p className="text-sm text-muted-foreground">No Sparks yet</p>}
           </div>
@@ -94,7 +94,7 @@ export function ConsumerHomeV2() {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {experiences.map((exp: any) => <ExperienceCard key={exp.experienceId} exp={exp} />)}
+            {experiences.map((exp: any) => <ExperienceCard key={exp.experienceId} exp={exp} onPlay={() => playExperience(exp.experienceId)} />)}
           </div>
         </section>
 
@@ -195,9 +195,9 @@ function SparkCard({ spark, onClick }: { spark: any; onClick?: () => void }) {
 
 // ─── Experience Card (YouTube long-form) ───────────────────────────────────
 
-function ExperienceCard({ exp }: { exp: any }) {
+function ExperienceCard({ exp, onPlay }: { exp: any; onPlay?: () => void }) {
   return (
-    <div className="rounded-xl border border-border overflow-hidden hover:shadow-md transition-all cursor-pointer group">
+    <div className="rounded-xl border border-border overflow-hidden hover:shadow-md transition-all cursor-pointer group" onClick={onPlay}>
       {/* Thumbnail (16:9) */}
       <div className="relative aspect-video bg-gradient-to-br from-amber-200 via-rose-200 to-purple-200 dark:from-amber-900 dark:via-rose-900 dark:to-purple-900 flex items-center justify-center">
         <Play className="w-8 h-8 text-white/80 group-hover:scale-110 transition-transform" />

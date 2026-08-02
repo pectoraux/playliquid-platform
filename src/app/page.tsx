@@ -24,12 +24,13 @@ import { ExtensionUniverse } from '@/components/extensions/ExtensionUniverse';
 import { ConsumerHomeV2 } from '@/components/consumer-v2/ConsumerHomeV2';
 import { CreatorStudio } from '@/components/creator-os/CreatorStudio';
 import { NetworkIntelligence } from '@/components/intelligence/NetworkIntelligence';
+import { PlayView } from '@/components/runtime/PlayView';
 import { useEffect, useMemo } from 'react';
 import type { ExtensionManifest } from '@/kernel/types';
 import { Playground } from '@/components/playground/Playground';
 
 export default function Home() {
-  const { view, draftId, bundle, setNodes, setEdges } = useStudioStore();
+  const { view, playExperienceId, draftId, bundle, setNodes, setEdges } = useStudioStore();
   const { data: extData } = useExtensions();
 
   // Build manifest lookup map
@@ -95,6 +96,8 @@ export default function Home() {
       return <CreatorStudio />;
     case 'network-intelligence':
       return <NetworkIntelligence />;
+    case 'play':
+      return playExperienceId ? <PlayView experienceId={playExperienceId} /> : <ConsumerHomeV2 />;
     case 'wizard':
       return <CreationWizard />;
     case 'editor':

@@ -1,0 +1,16 @@
+{
+  "name": "Orb Collector",
+  "version": "1.0.0",
+  "runtime": {
+    "type": "html5",
+    "entry": "index.html"
+  },
+  "viewport": {
+    "aspectRatio": "16:9",
+    "orientation": "landscape"
+  },
+  "permissions": [
+    "input",
+    "telemetry"
+  ]
+}
