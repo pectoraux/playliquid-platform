@@ -56,7 +56,7 @@ async function postJSON<T = any>(url: string, body?: unknown): Promise<T> {
 }
 
 export function GamePlayer({ experienceId }: { experienceId: string }) {
-  const { setView, playExperience } = useStudioStore();
+  const { setView, playExperience, viewCreatorChannel } = useStudioStore();
   const [runtime, setRuntime] = useState<ExperienceRuntime | null>(null);
   const [recommended, setRecommended] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,8 +195,8 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
               {/* Action bar */}
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-2 mr-auto">
-                  <Avatar className="w-9 h-9 cursor-pointer" onClick={() => setView('home-v3')}><AvatarFallback className="text-[10px] bg-gradient-to-br from-amber-400 to-orange-600 text-white">SD</AvatarFallback></Avatar>
-                  <div className="cursor-pointer" onClick={() => setView('home-v3')}>
+                  <Avatar className="w-9 h-9 cursor-pointer" onClick={() => runtime?.creatorId && viewCreatorChannel(runtime.creatorId)}><AvatarFallback className="text-[10px] bg-gradient-to-br from-amber-400 to-orange-600 text-white">SD</AvatarFallback></Avatar>
+                  <div className="cursor-pointer" onClick={() => runtime?.creatorId && viewCreatorChannel(runtime.creatorId)}>
                     <div className="text-sm font-medium">Studio Demo Creator</div>
                     <div className="text-[10px] text-muted-foreground">{subscriberCount.toLocaleString()} subscribers</div>
                   </div>

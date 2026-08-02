@@ -14,6 +14,7 @@ import { CreatorStudio } from '@/components/creator-os/CreatorStudio';
 import { NetworkIntelligence } from '@/components/intelligence/NetworkIntelligence';
 import { SparkPlayer } from '@/components/runtime/SparkPlayer';
 import { GamePlayer } from '@/components/runtime/GamePlayer';
+import { CreatorChannel } from '@/components/runtime/CreatorChannel';
 import { useEffect, useMemo } from 'react';
 import type { ExtensionManifest } from '@/kernel/types';
 import { Playground } from '@/components/playground/Playground';
@@ -75,6 +76,8 @@ export default function Home() {
     // ── Creator ──
     case 'creator-studio':
       return <CreatorStudio />;
+    case 'creator-channel':
+      return playExperienceId ? <CreatorChannel creatorId={playExperienceId} /> : <ConsumerHomeV3 />;
     case 'wizard':
       return <CreationWizard />;
     case 'editor':

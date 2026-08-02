@@ -35,6 +35,7 @@ export type StudioView =
   | 'home-v3'
   | 'play'
   | 'creator-studio'
+  | 'creator-channel'
   | 'extensions'
   | 'adr-economy'
   | 'competitive'
@@ -104,6 +105,7 @@ export interface StudioStore {
   playExperience: (experienceId: string) => void;
   setPlayExperienceId: (id: string | null) => void;
   playSparkQueue: (sparks: any[], startIndex?: number) => void;
+  viewCreatorChannel: (creatorId: string) => void;
   setDraft: (params: { id: string; title: string; description: string; bundle: ExperienceBundle; intent: ExperienceIntent; parentExperienceId?: string }) => void;
   setBundle: (b: ExperienceBundle) => void;
   setTitle: (t: string) => void;
@@ -168,6 +170,7 @@ export const useStudioStore = create<StudioStore>((set) => ({
   playExperience: (experienceId) => set({ playExperienceId: experienceId, sparkQueue: [], view: 'play' }),
   setPlayExperienceId: (id) => set({ playExperienceId: id }),
   playSparkQueue: (sparks, startIndex = 0) => set({ sparkQueue: sparks, playExperienceId: sparks[startIndex]?.experienceId ?? null, view: 'play' }),
+  viewCreatorChannel: (creatorId: string) => set({ playExperienceId: creatorId, view: 'creator-channel' }),
   setDraft: (params) =>
     set({
       draftId: params.id,
