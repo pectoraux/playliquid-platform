@@ -16,7 +16,7 @@ import { V3ShellWrapper } from '@/components/consumer-v2/V3ShellWrapper';
 import {
   ArrowLeft, Heart, Share2, Zap, Trophy, Users, MessageCircle,
   Gamepad2, Globe, Cpu, Maximize2, Minimize2, Send, ThumbsUp, ThumbsDown,
-  Copy, Check, Link2,
+  Copy, Check, Link2, Pause, Play as PlayIcon,
 } from 'lucide-react';
 import { GAMES } from '@/engine/games';
 
@@ -69,6 +69,7 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showChallenge, setShowChallenge] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -115,11 +116,7 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
   }, []);
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement && frameRef.current) {
-      frameRef.current.requestFullscreen?.();
-    } else {
-      document.exitFullscreen?.();
-    }
+    setIsFullscreen(!isFullscreen);
   };
 
   const handleSubscribe = async () => {
@@ -171,13 +168,30 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
 
       <main className={`flex-1 max-w-6xl w-full mx-auto px-4 py-4 ${isFullscreen ? 'max-w-none flex items-center justify-center' : ''}`}>
         {isFullscreen ? (
-          <div ref={frameRef} className="w-full h-full flex items-center justify-center bg-black">
-            <div className="relative w-full h-full max-w-[1600px] max-h-[900px]" style={{ aspectRatio: '16/9' }}>
-              <ContainmentFrame aspectRatio="16:9" orientation="landscape" fullscreenEnabled={false}>
-                {nativeGame ? <GameCanvas key={nativeGame.id} game={nativeGame} /> : isHtml5 ? <Html5GamePlayer experienceId={runtime.experienceId} gameUrl={runtime.containment.html5BundleUrl!} aspectRatio="16:9" /> : null}
-              </ContainmentFrame>
+          <div className="fixed inset-0 z-50 bg-black flex flex-col">
+            <div className="flex items-center justify-between px-4 py-2 bg-black/80">
+              <span className="text-white text-sm font-medium">{runtime.title}</span>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setIsPaused(!isPaused)} className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20">
+                  {isPaused ? <PlayIcon className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                </button>
+                <button onClick={toggleFullscreen} className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20"><Minimize2 className="w-4 h-4" /></button>
+              </div>
             </div>
-            <button onClick={toggleFullscreen} className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center"><Minimize2 className="w-5 h-5" /></button>
+            <div ref={frameRef} className="flex-1 flex items-center justify-center bg-black relative">
+              <div className="relative w-full h-full" style={{ maxWidth: '100%', maxHeight: '100%' }}>
+                <ContainmentFrame aspectRatio="16:9" orientation="landscape" fullscreenEnabled={false}>
+                  {nativeGame ? <GameCanvas key={nativeGame.id} game={nativeGame} /> : isHtml5 ? <Html5GamePlayer experienceId={runtime.experienceId} gameUrl={runtime.containment.html5BundleUrl!} aspectRatio="16:9" /> : null}
+                </ContainmentFrame>
+              </div>
+              {isPaused && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-30">
+                  <button onClick={() => setIsPaused(false)} className="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center hover:bg-white/30">
+                    <PlayIcon className="w-8 h-8 text-white fill-white" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
@@ -187,7 +201,18 @@ export function GamePlayer({ experienceId }: { experienceId: string }) {
                 <ContainmentFrame aspectRatio="16:9" orientation="landscape" fullscreenEnabled={false}>
                   {nativeGame ? <GameCanvas key={nativeGame.id} game={nativeGame} /> : isHtml5 ? <Html5GamePlayer experienceId={runtime.experienceId} gameUrl={runtime.containment.html5BundleUrl!} aspectRatio="16:9" /> : <div className="w-full h-full flex items-center justify-center bg-muted"><p className="text-sm text-muted-foreground">Game not available</p></div>}
                 </ContainmentFrame>
+                {/* Pause/Resume + Fullscreen buttons */}
+                <button onClick={() => setIsPaused(!isPaused)} className="absolute bottom-2 right-20 z-40 w-7 h-7 rounded bg-black/60 text-white flex items-center justify-center hover:bg-black/80" title={isPaused ? 'Resume' : 'Pause'}>
+                  {isPaused ? <PlayIcon className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                </button>
                 <button onClick={toggleFullscreen} className="absolute bottom-2 right-10 z-40 w-7 h-7 rounded bg-black/60 text-white flex items-center justify-center hover:bg-black/80"><Maximize2 className="w-3.5 h-3.5" /></button>
+                {isPaused && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-30">
+                    <button onClick={() => setIsPaused(false)} className="w-12 h-12 rounded-full bg-white/20 backdrop-blur flex items-center justify-center hover:bg-white/30">
+                      <PlayIcon className="w-6 h-6 text-white fill-white" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <h1 className="text-lg font-bold leading-tight">{runtime.title}</h1>

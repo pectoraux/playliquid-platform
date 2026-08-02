@@ -54,6 +54,7 @@ export function SparkPlayer({ sparks, initialIndex = 0 }: { sparks: Spark[]; ini
   const [liked, setLiked] = useState<Set<string>>(new Set());
   const [showComments, setShowComments] = useState(false);
   const [swipeDir, setSwipeDir] = useState<'up' | 'down' | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef<number | null>(null);
 
@@ -61,20 +62,24 @@ export function SparkPlayer({ sparks, initialIndex = 0 }: { sparks: Spark[]; ini
 
   const goNext = useCallback(() => {
     if (currentIndex < sparks.length - 1) {
+      setIsPaused(true); // pause current spark
       setSwipeDir('up');
       setTimeout(() => {
         setCurrentIndex((i) => Math.min(i + 1, sparks.length - 1));
         setSwipeDir(null);
+        setIsPaused(false); // resume new spark
       }, 200);
     }
   }, [currentIndex, sparks.length]);
 
   const goPrev = useCallback(() => {
     if (currentIndex > 0) {
+      setIsPaused(true); // pause current spark
       setSwipeDir('down');
       setTimeout(() => {
         setCurrentIndex((i) => Math.max(i - 1, 0));
         setSwipeDir(null);
+        setIsPaused(false); // resume new spark
       }, 200);
     }
   }, [currentIndex]);
@@ -149,7 +154,7 @@ export function SparkPlayer({ sparks, initialIndex = 0 }: { sparks: Spark[]; ini
       <div
         className={`relative h-full w-full max-w-[420px] flex items-center justify-center transition-transform duration-200 ${swipeDir === 'up' ? '-translate-y-full' : swipeDir === 'down' ? 'translate-y-full' : ''}`}
       >
-        <SparkContent spark={current} />
+        <SparkContent spark={current} paused={isPaused} />
       </div>
 
       {/* Side action rail (right side, vertical) */}
@@ -258,7 +263,7 @@ function CommentItem({ avatar, name, text, time }: { avatar: string; name: strin
 
 // ─── Spark content (auto-starting game) ────────────────────────────────────
 
-function SparkContent({ spark }: { spark: Spark }) {
+function SparkContent({ spark, paused = false }: { spark: Spark; paused?: boolean }) {
   const [runtime, setRuntime] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -314,6 +319,12 @@ function SparkContent({ spark }: { spark: Spark }) {
             <p className="text-white text-sm font-medium">{spark.title}</p>
             <p className="text-white/40 text-[10px] mt-1">Spark runtime not available</p>
           </div>
+        </div>
+      )}
+      {/* Paused overlay */}
+      {paused && (
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-30 pointer-events-none">
+          <div className="text-white/60 text-xs">Paused</div>
         </div>
       )}
     </div>
