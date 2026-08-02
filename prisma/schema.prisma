@@ -1617,3 +1617,120 @@ model ExperienceVersionRecord {
 
   @@index([experienceId])
 }
+
+// ─── Phase 21: Network & Marketplace Intelligence ──────────────────────────
+
+// 21.1: Enriched Experience Genome — the "crown jewel" structured profile
+// computed from bundle + telemetry + feedback. Complements the existing
+// ExperienceGenomeRecord (which is bundle-derived) with audience/economy
+// dimensions that only emerge after players interact with the experience.
+model ExperienceIntelligenceRecord {
+  id              String   @id @default(cuid())
+  experienceId    String   @unique
+  experienceName  String
+  // ── mechanics (from bundle) ──
+  mechanicsJson   String   @default("[]")  // ["pl.physics","pl.movement","pl.competition"]
+  compositionDepth Int     @default(0)     // number of extensions
+  hasEconomy      Boolean  @default(false)
+  hasCompetition  Boolean  @default(false)
+  hasAI           Boolean  @default(false)
+  // ── emotional profile (from feedback + telemetry) ──
+  emotionalProfileJson String @default("{}")  // { mastery: 0.7, excitement: 0.5, creativity: 0.3 }
+  dominantEmotion String?  // mastery | excitement | creativity | relaxation | competition
+  // ── economy profile ──
+  economyProfileJson String @default("{}")  // { entryPriceXof: 0, monetization: "competitive", retention: 0.6 }
+  // ── audience profile ──
+  audienceProfileJson String @default("{}")  // { avgSkill: 45, socialBehavior: "competitive", segment: "hardcore" }
+  // ── intelligence scores ──
+  noveltyScore    Float    @default(0)     // 0-100, how unique the composition is
+  qualityScore    Float    @default(0)     // 0-100, derived from reputation + retention
+  maturityScore   Float    @default(0)     // 0-100, how much telemetry has been collected
+  computedAt      DateTime @default(now())
+
+  @@index([dominantEmotion])
+  @@index([hasCompetition])
+}
+
+// 21.2: Experience Discovery Graph — co-play collaborative filtering edges.
+// "Players who played experience A also played experience B."
+// Computed from session co-occurrence (same userId played both).
+model CoPlayEdgeRecord {
+  id              String   @id @default(cuid())
+  experienceA     String   // the source experience
+  experienceB     String   // the related experience
+  sharedPlayers   Int      @default(0)   // how many users played both
+  coPlayScore     Float    @default(0)   // normalized 0-1 similarity
+  sharedExtensionsJson String @default("[]")  // extensions both experiences use
+  sharedMechanicsJson   String @default("[]")  // mechanic categories both use
+  computedAt      DateTime @default(now())
+
+  @@unique([experienceA, experienceB])
+  @@index([experienceA])
+  @@index([coPlayScore])
+}
+
+// 21.3: Creator Intelligence Score — multi-signal reputation graph.
+// Unifies the scattered creator signals into one score with 6 dimensions.
+model CreatorIntelligenceRecord {
+  id              String   @id @default(cuid())
+  creatorId       String   @unique
+  creatorName     String
+  // ── 6 intelligence dimensions (0-100) ──
+  retentionQuality   Float  @default(0)  // avg completion rate across published experiences
+  evolutionVelocity  Float  @default(0)  // how fast the creator iterates (mutations/month)
+  extensionAdoption  Float  @default(0)  // diversity of extensions used + market extensions
+  fairness           Float  @default(0)  // economy fairness + competitive balance
+  communityHealth    Float  @default(0)  // followers, feedback sentiment, engagement
+  economicSustainability Float @default(0) // revenue stability + prize pool health
+  // ── aggregate ──
+  overallIntelligence Float @default(0)   // weighted 0-100
+  tier            String   @default("emerging")  // emerging | growing | established | leading
+  signalsJson     String   @default("[]")  // human-readable strength signals
+  computedAt      DateTime @default(now())
+
+  @@index([overallIntelligence])
+  @@index([tier])
+}
+
+// 21.4: Extension Ecosystem Intelligence — mined composition patterns.
+// "Experiences with composition {Physics, Score, Competition} have 72% avg
+// completion in competitive contexts."
+model ExtensionCompositionPatternRecord {
+  id              String   @id @default(cuid())
+  patternSignature String  @unique  // sorted, joined extension ids: "pl.physics,pl.score,pl.competition"
+  extensionsJson  String   @default("[]")  // the extension set
+  occurrenceCount Int      @default(0)   // how many experiences use this (exact or superset)
+  avgCompletion   Float    @default(0)   // mean completion rate
+  avgRetention    Float    @default(0)   // mean retention prediction
+  avgReputation   Float    @default(0)   // mean reputation score
+  context         String   @default("any")  // any | competitive | economy | social
+  recommendation  String?  // AI-generated: "Strong competitive foundation"
+  computedAt      DateTime @default(now())
+
+  @@index([context])
+  @@index([occurrenceCount])
+}
+
+// 21.5: Autonomous Creator Agents — proactive insights surfaced by the
+// Design / Economy / Growth / Community agents. These are NOT reactive
+// (the creator doesn't ask); the agents monitor and post insights.
+model CreatorAgentInsightRecord {
+  id              String   @id @default(cuid())
+  creatorId       String
+  experienceId    String?
+  experienceName  String?
+  agentType       String   // design | economy | growth | community
+  insightType     String   // observation | suggestion | alert | opportunity | prediction
+  title           String
+  body            String
+  actionSuggestion String?
+  expectedImpact  String?
+  confidence      Float    @default(0.5)  // 0-1
+  severity        String   @default("info")  // info | suggestion | warning | critical
+  status          String   @default("NEW")  // NEW | SEEN | ACTED | DISMISSED
+  surfacedAt      DateTime @default(now())
+
+  @@index([creatorId])
+  @@index([agentType])
+  @@index([status])
+}

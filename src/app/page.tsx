@@ -23,6 +23,7 @@ import { CompetitivePlay } from '@/components/economy/CompetitivePlay';
 import { ExtensionUniverse } from '@/components/extensions/ExtensionUniverse';
 import { ConsumerHomeV2 } from '@/components/consumer-v2/ConsumerHomeV2';
 import { CreatorStudio } from '@/components/creator-os/CreatorStudio';
+import { NetworkIntelligence } from '@/components/intelligence/NetworkIntelligence';
 import { useEffect, useMemo } from 'react';
 import type { ExtensionManifest } from '@/kernel/types';
 import { Playground } from '@/components/playground/Playground';
@@ -92,6 +93,8 @@ export default function Home() {
       return <ExtensionUniverse />;
     case 'creator-studio':
       return <CreatorStudio />;
+    case 'network-intelligence':
+      return <NetworkIntelligence />;
     case 'wizard':
       return <CreationWizard />;
     case 'editor':

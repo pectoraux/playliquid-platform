@@ -44,6 +44,7 @@ export type StudioView =
   | 'extensions'
   | 'home-v2'
   | 'creator-studio'
+  | 'network-intelligence'
   | 'wizard'
   | 'editor'
   | 'experiences'

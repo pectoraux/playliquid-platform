@@ -977,3 +977,56 @@ Stage Summary:
   - Evolution Timeline with version history + impact measurement
   - Creator Evolution Dashboard with 5 sections (Health/Opportunities/Experiments/Timeline/Mutations)
 - Architecture verified: "Creators operate living experiences that continuously evolve with AI."
+
+---
+Task ID: 21
+Agent: main (Z.ai Code)
+Task: Phase 21 — PlayLiquid Network & Marketplace Intelligence. Build the intelligence layer that coordinates experiences, creators, extensions, and players across the network: Experience Genome, Discovery Graph (co-play), Creator Intelligence Score, Extension Ecosystem Intelligence (composition patterns), and Autonomous Creator Agents.
+
+Work Log:
+- Reviewed existing intelligence services: discovery-service (content-based cosine similarity), curator-service (LLM reasoning), ai-team-service (6 reactive agents), rating-service (reputation), ExperienceGenomeRecord (bundle-derived). Identified gaps: no collaborative co-play graph, no unified creator intelligence score, no composition pattern mining, no enriched genome with audience/economy dimensions, no proactive autonomous agents.
+- Added 5 Prisma models for Phase 21:
+  - ExperienceIntelligenceRecord (enriched genome: mechanics, emotionalProfile, economyProfile, audienceProfile, novelty/quality/maturity scores)
+  - CoPlayEdgeRecord (collaborative filtering edges: experienceA, experienceB, sharedPlayers, coPlayScore, sharedExtensions)
+  - CreatorIntelligenceRecord (6 dimensions: retentionQuality, evolutionVelocity, extensionAdoption, fairness, communityHealth, economicSustainability + overallIntelligence + tier)
+  - ExtensionCompositionPatternRecord (mined patterns: patternSignature, extensionsJson, occurrenceCount, avgCompletion, avgRetention, avgReputation, context, recommendation)
+  - CreatorAgentInsightRecord (proactive agent insights: agentType, insightType, title, body, actionSuggestion, expectedImpact, confidence, severity, status)
+  - Ran `bun run db:push` successfully
+- Created src/lib/intelligence/ module with 5 services:
+  - intelligence-types.ts: type definitions (ExperienceIntelligence, CoPlayEdge, DiscoveryGraph, CreatorIntelligence, CreatorTier, CompositionPattern, AgentInsight, AgentType, AGENT_META)
+  - genome-service.ts (21.1): computeExperienceIntelligence — computes enriched genome from bundle (mechanics) + feedback (emotional profile via keyword matching + type mapping) + sessions (audience profile: avgSkill, socialBehavior, segment) + metrics (economy profile) + reputation (quality score). Computes novelty (rare extension combinations), maturity (data volume). Persists to ExperienceIntelligenceRecord. Exposes get/getAll.
+  - discovery-graph-service.ts (21.2): recomputeDiscoveryGraph — walks all play sessions, groups by userId, builds co-occurrence edges between every pair of experiences a user played. Computes Jaccard-like coPlayScore. Derives sharedExtensions + sharedMechanics. getDiscoveryGraph returns related experiences sorted by score. getGlobalDiscoveryGraph returns top pairs network-wide.
+  - creator-intelligence-service.ts (21.3): computeCreatorIntelligence — aggregates 6 dimensions from existing data: retentionQuality (avg completion), evolutionVelocity (mutations in 30d), extensionAdoption (unique extensions used), fairness (frustration rate + competitive balance), communityHealth (followers + feedback + sentiment), economicSustainability (revenue + competitive prize pool). Weighted overall → tier (emerging/growing/established/leading). Human-readable signals. recomputeAllCreatorIntelligence + leaderboard.
+  - extension-genome-service.ts (21.4): recomputeCompositionPatterns — scans all published experiences, builds all extension pairs + triples, aggregates avgCompletion/avgRetention/avgReputation per pattern. generateRecommendation produces labels ("Strong competitive foundation", "High-quality composition", "Underperforming composition"). recommendComposition — given a partial extension set, suggests additions from successful patterns (with LLM-generated suggestion sentence).
+  - autonomous-agents-service.ts (21.5): runAutonomousAgents — 4 proactive agents (Design/Economy/Growth/Community) that read telemetry + feedback + marketplace context and surface insights WITHOUT being asked. Each agent has rule-based triggers: Design (low completion, too-hard feedback, high frustration), Economy (free competitive, priced above market, empty leaderboard), Growth (low discovery velocity, no forks, low like conversion), Community (suggestions, bugs, fun feedback). Dedupes against last 24h. Persisted to CreatorAgentInsightRecord with Act/Dismiss status lifecycle.
+- Created 16 API routes under /api/intelligence/:
+  - genome/[experienceId] (GET/POST), genome/all (GET)
+  - discovery-graph/[experienceId] (GET), discovery-graph/recompute (POST), discovery-graph/global (GET)
+  - creator-intelligence/[creatorId] (GET/POST), creator-intelligence/leaderboard (GET), creator-intelligence/recompute-all (POST)
+  - extension-patterns (GET), extension-patterns/recompute (POST), extension-patterns/recommend (POST)
+  - agents/[creatorId] (GET), agents/[creatorId]/run (POST), agents/insight/[id] (POST status)
+  - seed (POST — bootstraps all 4 layers in one call), overview (GET — network summary)
+- Built src/components/intelligence/NetworkIntelligence.tsx (new view) with:
+  - Header with Recompute All button (calls /seed)
+  - Totals row (Experiences, Creators, Patterns, Co-Play Edges, Avg Quality)
+  - 5-tab dashboard: Genomes (enriched genome cards with mechanics/emotional profile/audience+economy), Discovery (co-play edges with shared extensions), Creators (leaderboard with 6 dimension bars + signals), Patterns (mined compositions with AI recommendations), Agents (proactive insight feed with Act/Dismiss)
+  - fetchJSON/postJSON helpers with retry for dev cold-start
+- Wired network-intelligence view into studio-store + page.tsx + ConsumerHomeV2 nav (Network icon button)
+- Browser verification with agent-browser:
+  - Network Intelligence dashboard renders with totals: 20 experiences, 5 creators, 20 patterns, 180 co-play edges, avg quality 79
+  - Genomes tab: "Garden Grow" genome with "mastery" dominant emotion, Novelty 90, all 20 genomes computed
+  - Creators tab: leaderboard with Kenji Sato #1 (established, 73/100) showing all 6 dimensions (Retention 100, Evolution 65, Extensions 100, Fairness 86, Community 100, Economy 0) + signals ("Strong retention", "Fast iterator (3 mutations in 30d)", "Diverse toolkit (9 extensions)")
+  - Patterns tab: mined compositions "Competition + Cooking + Marketplace (20 uses, 100% completion)" with AI recommendation "Reliable engagement pattern"
+  - Agents tab: 3 Growth Agent insights surfaced — "Cooking Master has traction but no forks (24 plays, 0 forks)" with action "Mark as forkable" + impact "+10% discovery" + Act/Dismiss buttons
+  - Sticky footer confirmed at bottom (contentinfo)
+- Lint clean throughout
+
+Stage Summary:
+- Phase 21 complete. PlayLiquid now has a Network Intelligence layer:
+  - Experience Genome: enriched structured profile (mechanics + emotional + economy + audience) for every experience
+  - Discovery Graph: collaborative co-play filtering ("players who played X also played Y") with shared extension analysis
+  - Creator Intelligence Score: 6-dimension reputation graph (retention, evolution velocity, extension adoption, fairness, community, economy) with tier classification
+  - Extension Ecosystem Intelligence: mined composition patterns ("experiences with {Physics, Score, Competition} have 72% avg completion") + AI composition recommendations
+  - Autonomous Creator Agents: 4 proactive agents (Design/Economy/Growth/Community) that monitor and surface insights without being asked
+- Architecture: "How does PlayLiquid become the intelligence layer that coordinates millions of experiences, creators, extensions, and players?" — answered with 5 services + 16 API routes + 1 dashboard view.
+- No new currencies, no new reward systems, no new social primitives (per ADR freeze). The intelligence layer reads existing telemetry + economy + feedback data and surfaces intelligence.
