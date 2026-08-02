@@ -41,6 +41,7 @@ export type StudioView =
   | 'living'
   | 'adr-economy'
   | 'competitive'
+  | 'extensions'
   | 'wizard'
   | 'editor'
   | 'experiences'

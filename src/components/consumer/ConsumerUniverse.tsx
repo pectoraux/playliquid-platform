@@ -62,6 +62,9 @@ export function ConsumerUniverse() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('extensions')}>
+              <Package className="w-3.5 h-3.5" /> Extensions
+            </Button>
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setView('adr-economy')}>
               <Coins className="w-3.5 h-3.5" /> Economy
             </Button>

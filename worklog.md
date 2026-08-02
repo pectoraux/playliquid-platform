@@ -755,3 +755,49 @@ ECONOMIC INVARIANTS VERIFIED:
 ✅ Prize pool distributes only to top 3
 ✅ Double-entry ledger balanced at every step
 ✅ No code path mints Liquid as gameplay reward
+
+---
+Task ID: 17
+Agent: main (Z.ai Code)
+Task: Phase 17 — Extension Operating System Unification (ADR-001 full implementation)
+
+Work Log:
+- Enhanced ExtensionRecord with 15 new fields: creatorId, creatorName, version, parentExtensionId, icon, tagsJson, priceXof, royaltyBps, qualityScore, performanceScore, innovationScore, fairnessScore, adoptionScore, installCount, forkCount, rating, ratingCount, totalRevenueXof, status, updatedAt
+- Added ExtensionInstallationRecord model: tracks which experiences use which extensions, with revenue generated per installation
+- Built Extension Service (src/lib/extensions/extension-service.ts):
+  - seedExtensionRecords: syncs kernel extensions into DB as canonical entities
+  - publishExtension: creator-uploaded extension publishing flow
+  - getExtensionFeed: trending, newest, top rated, most installed
+  - getExtensions: filtered/sorted marketplace listing
+  - getExtension: detail with usedBy experiences
+  - recordInstallation: track extension→experience relationships
+  - getExperienceExtensions: get extension graph for an experience
+  - getUsedTogether: co-occurrence recommendations ("if you install X, also try Y")
+  - getExtensionAnalytics: creator dashboard (installs, revenue, royalties, top extensions)
+  - updateExtensionReputation: recalculate scores from stats
+- Built 5 API routes: marketplace, [id] detail, install, feed, analytics
+- Built Extension Universe UI:
+  - Feed with 4 sections (Trending, Most Installed, Top Rated, Latest)
+  - Extension cards with icon, name, category, description, installs, rating, reputation bars (Q/P/A/I)
+  - Extension detail page with full reputation, Used By experiences, Used Together recommendations
+  - Category-colored borders (PHYSICS=sky, MECHANIC=violet, ECONOMY=amber, etc.)
+- Added "Extensions" button to ConsumerUniverse navigation
+
+Browser Verification:
+- 9 extensions seeded as canonical entities (Physics, Movement, Score, CoinCollector, Farm, Cooking, Weather, Marketplace, Competition)
+- Trending feed shows all 9 with reputation bars and stats
+- Extension detail (Physics): Quality 84, Performance 89, Adoption 38, Fairness 50, Innovation 77
+- Used By: Neon Runner
+- Used Together: Movement (100%), Score (100%), Coin Collector (100%), Farm (100%), Cooking (100%)
+- No console errors, lint clean
+
+ADR-001 Verification:
+✅ One canonical extension entity (ExtensionRecord with all fields)
+✅ Extensions discoverable (marketplace with 4 sort modes)
+✅ Extensions installable (ExtensionInstallationRecord)
+✅ Extensions have reputation (5-dimensional: Quality/Performance/Adoption/Fairness/Innovation)
+✅ Extension royalties connected to creator share (royaltyBps field)
+✅ Users can see what powers experiences (usedBy on detail page)
+✅ Used Together recommendations work (co-occurrence analysis)
+✅ Existing native extensions still compile (kernel unchanged)
+✅ Existing experiences still run (runtime unchanged)

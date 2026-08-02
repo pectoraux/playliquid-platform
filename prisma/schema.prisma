@@ -14,19 +14,45 @@ datasource db {
 // ─── Extensions & Bundles ───────────────────────────────────────────────────
 
 model ExtensionRecord {
-  id           String   @id // matches manifest.id, e.g. "pl.physics"
-  slug         String   @unique
-  name         String
-  description  String
-  author       String
-  category     String
-  kind         String
-  trustLevel   String
-  determinism  String
-  manifestJson String   // full manifest as JSON
-  createdAt    DateTime @default(now())
+  id              String   @id // matches manifest.id, e.g. "pl.physics"
+  slug            String   @unique
+  name            String
+  description     String
+  creatorId       String   @default("platform")
+  creatorName     String   @default("PlayLiquid")
+  author          String   // legacy field, same as creatorName
+  category        String   // PHYSICS | MECHANIC | ECONOMY | SOCIAL | AI | RENDER
+  kind            String   // native-dsl | html5 | external | ai-agent
+  trustLevel      String
+  determinism     String
+  manifestJson    String   // full manifest as JSON
+  // ── ADR-001: Canonical extension entity ─────────────────────────────
+  version         Int      @default(1)
+  parentExtensionId String? // fork lineage
+  icon            String   @default("📦")
+  tagsJson        String   @default("[]")
+  // Pricing & royalties
+  priceXof        Int      @default(0)  // 0 = free
+  royaltyBps      Int      @default(0)  // BPS of creator's revenue share
+  // Reputation
+  qualityScore    Int      @default(50)
+  performanceScore Int     @default(50)
+  innovationScore Int      @default(50)
+  fairnessScore   Int      @default(50)
+  adoptionScore   Int      @default(0)
+  // Stats
+  installCount    Int      @default(0)
+  forkCount       Int      @default(0)
+  rating          Float    @default(5.0)
+  ratingCount     Int      @default(0)
+  totalRevenueXof Int      @default(0)
+  // Lifecycle
+  status          String   @default("PUBLISHED") // DRAFT | PUBLISHED | DEPRECATED | REMOVED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  instances BundleInstance[]
+  instances       BundleInstance[]
+  installations   ExtensionInstallationRecord[]
 }
 
 model BundleRecord {
@@ -1421,4 +1447,22 @@ model GameContainmentConfigRecord {
   sandboxLevel    String   @default("strict")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+// ─── Phase 17: Extension Operating System Unification ─────────────────────
+
+model ExtensionInstallationRecord {
+  id              String   @id @default(cuid())
+  extensionId     String
+  experienceId    String
+  experienceName  String
+  installedVersion Int     @default(1)
+  installedBy     String
+  revenueGenerated Int     @default(0)  // micro-XOF generated through this installation
+  installedAt     DateTime @default(now())
+
+  extension       ExtensionRecord @relation(fields: [extensionId], references: [id])
+
+  @@unique([extensionId, experienceId])
+  @@index([experienceId])
 }
