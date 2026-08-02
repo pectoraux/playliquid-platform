@@ -1753,3 +1753,22 @@ model ImportedGameBundleRecord {
   @@index([uploadedBy])
   @@index([status])
 }
+
+// ─── Phase 22: AI Game Design Compiler ─────────────────────────────────────
+// Tracks the multi-step creation flow: description → spec → prompt → generate
+model GameCreationSession {
+  id              String   @id @default(cuid())
+  userId          String?
+  rawDescription  String   @default("")
+  format          String   @default("game")  // spark | game
+  generatedSpecJson String @default("{}")    // GameSpecification
+  compatibilityJson String @default("{}")    // compatibility check result
+  compiledPrompt  String?                    // LLM-ready generation prompt
+  status          String   @default("describing") // describing | designing | ready | generating | completed | failed
+  resultExperienceId String?                 // the created experience
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
