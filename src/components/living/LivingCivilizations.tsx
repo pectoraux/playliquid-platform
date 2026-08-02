@@ -5,6 +5,7 @@ import { useStudioStore } from '@/stores/studio-store';
 import {
   useAdvanceTime, useCivFeed, useTimeline, useMissions, useSeason, useWhatChanged, useGlobalFeed,
 } from '@/hooks/use-living';
+import { useResources, useBuildings, useTradeRoutes, useMarketHistory, usePlayerRoles } from '@/hooks/use-economy';
 import { useCivilizations } from '@/hooks/use-multiverse';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import {
   ArrowLeft, Globe, Clock, Loader2, Sparkles, Play, Newspaper,
-  Target, TrendingUp, Users, Zap, ChevronRight, Sunrise,
+  Target, TrendingUp, Users, Zap, ChevronRight, Sunrise, Coins, Package,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -84,9 +85,10 @@ export function LivingCivilizations() {
 
         {selectedWorld ? (
           <Tabs defaultValue="changed">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 max-w-2xl">
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 max-w-2xl">
               <TabsTrigger value="changed" className="text-xs gap-1.5"><Sunrise className="w-3.5 h-3.5" /> What Changed</TabsTrigger>
               <TabsTrigger value="feed" className="text-xs gap-1.5"><Newspaper className="w-3.5 h-3.5" /> Feed</TabsTrigger>
+              <TabsTrigger value="economy" className="text-xs gap-1.5"><Coins className="w-3.5 h-3.5" /> Economy</TabsTrigger>
               <TabsTrigger value="timeline" className="text-xs gap-1.5"><Clock className="w-3.5 h-3.5" /> Timeline</TabsTrigger>
               <TabsTrigger value="missions" className="text-xs gap-1.5"><Target className="w-3.5 h-3.5" /> Missions</TabsTrigger>
               <TabsTrigger value="season" className="text-xs gap-1.5"><Globe className="w-3.5 h-3.5" /> Season</TabsTrigger>
@@ -94,6 +96,7 @@ export function LivingCivilizations() {
 
             <TabsContent value="changed" className="mt-4"><WhatChangedTab worldId={selectedWorld} /></TabsContent>
             <TabsContent value="feed" className="mt-4"><FeedTab worldId={selectedWorld} /></TabsContent>
+            <TabsContent value="economy" className="mt-4"><EconomyTab worldId={selectedWorld} /></TabsContent>
             <TabsContent value="timeline" className="mt-4"><TimelineTab worldId={selectedWorld} /></TabsContent>
             <TabsContent value="missions" className="mt-4"><MissionsTab worldId={selectedWorld} /></TabsContent>
             <TabsContent value="season" className="mt-4"><SeasonTab worldId={selectedWorld} /></TabsContent>
@@ -365,5 +368,130 @@ function SeasonTab({ worldId }: { worldId: string }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ─── Economy Tab ───────────────────────────────────────────────────────────
+
+function EconomyTab({ worldId }: { worldId: string }) {
+  const { data: resData } = useResources(worldId);
+  const { data: buildingData } = useBuildings(worldId);
+  const { data: routeData } = useTradeRoutes(worldId);
+  const { data: rolesData } = usePlayerRoles('demo-user');
+  const resources = resData?.resources ?? [];
+  const buildings = buildingData?.buildings ?? [];
+  const routes = routeData?.routes ?? [];
+  const roles = rolesData?.roles ?? [];
+
+  return (
+    <div className="space-y-4">
+      {/* Resources */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2"><Coins className="w-4 h-4 text-amber-500" /> Resources & Markets</CardTitle>
+          <CardDescription className="text-xs">Supply, demand, and prices shift with population and season</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {resources.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-2">Advance time to initialize resources</p>
+            ) : (
+              resources.map((r: any) => (
+                <div key={r.id} className="flex items-center gap-3 p-2 rounded border border-border">
+                  <span className="text-lg">{r.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium">{r.label}</span>
+                      <span className="font-mono text-amber-600 dark:text-amber-400">{(r.price / 1_000_000).toFixed(2)}L</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex-1">
+                        <div className="flex justify-between text-[9px] text-muted-foreground">
+                          <span>Supply: {r.supply}</span>
+                          <span>Demand: {r.demand}</span>
+                        </div>
+                        <Progress value={Math.min(100, (r.supply / Math.max(r.demand * 2, 1)) * 100)} className="h-1" />
+                      </div>
+                      <Badge variant="outline" className="text-[8px] h-3.5">
+                        {r.supplyDemandRatio > 1.5 ? '▼' : r.supplyDemandRatio < 0.8 ? '▲' : '●'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Buildings */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">🏗️ Buildings</CardTitle>
+          <CardDescription className="text-xs">Visible civilization growth — buildings unlock as population increases</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {buildings.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No buildings yet</p>
+            ) : (
+              buildings.map((b: any) => (
+                <div key={b.id} className="flex items-center gap-2 p-2 rounded-lg border border-border">
+                  <span className="text-xl">{b.icon}</span>
+                  <div>
+                    <div className="text-xs font-medium">{b.name}</div>
+                    <div className="text-[9px] text-muted-foreground">Lv {b.level} · Built Day {b.builtAtTick}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Trade Routes */}
+      {routes.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2"><Package className="w-4 h-4" /> Trade Routes</CardTitle>
+            <CardDescription className="text-xs">Active routes generate value every tick</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              {routes.map((r: any) => (
+                <div key={r.id} className="flex items-center gap-2 p-2 rounded border border-border text-xs">
+                  <span className="flex-1">{r.fromWorldName} → {r.toWorldName}</span>
+                  <Badge variant="outline" className="text-[8px] h-3.5">{r.resourceType}</Badge>
+                  <span className="text-[9px] text-muted-foreground">{r.quantity}/tick</span>
+                  <span className="font-mono text-amber-600 dark:text-amber-400">{(r.totalGenerated / 1_000_000).toFixed(1)}L total</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Player Roles */}
+      {roles.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2"><Users className="w-4 h-4" /> Your Roles</CardTitle>
+            <CardDescription className="text-xs">Your standing in civilizations</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              {roles.map((r: any) => (
+                <div key={r.id} className="flex items-center gap-2 p-2 rounded border border-border text-xs">
+                  <span className="flex-1">{r.worldName}</span>
+                  <Badge variant="outline" className="text-[8px] h-3.5 capitalize">{r.role}</Badge>
+                  {r.specialty && <Badge className="text-[8px] h-3.5 bg-amber-500 text-white capitalize">{r.specialty}</Badge>}
+                  <span className="text-[9px] text-muted-foreground">{(r.contribution / 1_000_000).toFixed(1)}L contributed</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

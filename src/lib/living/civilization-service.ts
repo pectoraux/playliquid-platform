@@ -146,6 +146,53 @@ export async function advanceTime(worldId: string, ticks: number = 1): Promise<{
       },
     });
 
+    // ── v0.52: Update living economy ──────────────────────────────────
+    const { updateResourcesOnTick, initializeResources, initializeBuildings, checkBuildingUnlocks } = await import('./economy-service');
+
+    // Ensure resources + buildings exist
+    await initializeResources(worldId, identity.worldName).catch(() => {});
+    await initializeBuildings(worldId, identity.worldName).catch(() => {});
+
+    // Update resources (supply, demand, prices) based on new population
+    const { priceChanges } = await updateResourcesOnTick(worldId, identity.worldName, currentTick, popAfter).catch(() => ({ priceChanges: [] }));
+
+    // Check for building unlocks based on new population
+    const unlockedBuildings = await checkBuildingUnlocks(worldId, identity.worldName, popAfter, currentTick).catch(() => []);
+    const buildingConfigModule = await import('./economy-service');
+    const BT = (buildingConfigModule as any).BUILDING_TYPES ?? {};
+    for (const buildingType of unlockedBuildings) {
+      const config = BT[buildingType];
+      if (config) {
+        await generateFeedItem({
+          worldId, worldName: identity.worldName, type: 'economy',
+          title: `🏗️ New Building: ${config.name}`,
+          body: `A ${config.name} has been constructed! Population reached ${popAfter}, unlocking this building.`,
+          icon: config.icon,
+          impact: JSON.stringify({ economy: +5 }),
+          isGlobal: false,
+          tickNumber: currentTick,
+        });
+      }
+    }
+
+    // Generate economy events for significant price changes
+    const { RESOURCE_TYPES } = await import('./economy-service');
+    for (const change of priceChanges) {
+      if (Math.abs(change.change) > 15) {
+        const direction = change.change > 0 ? 'surge' : 'drop';
+        const resourceConfig = RESOURCE_TYPES[change.resource as keyof typeof RESOURCE_TYPES];
+        await generateFeedItem({
+          worldId, worldName: identity.worldName, type: 'economy',
+          title: `${resourceConfig?.icon ?? '📊'} ${resourceConfig?.label ?? change.resource} price ${direction}`,
+          body: `${resourceConfig?.label ?? change.resource} price ${change.change > 0 ? 'rose' : 'fell'} ${Math.abs(change.change)}% to ${(change.newPrice / 1_000_000).toFixed(2)}L per unit.`,
+          icon: change.change > 0 ? '📈' : '📉',
+          impact: JSON.stringify({ economy: change.change }),
+          isGlobal: false,
+          tickNumber: currentTick,
+        });
+      }
+    }
+
     // Generate events based on state
     const tickEvents = await generateStateEvents(worldId, identity.worldName, {
       tick: currentTick,

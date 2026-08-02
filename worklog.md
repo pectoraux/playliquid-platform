@@ -621,3 +621,39 @@ Stage Summary:
   6. "What Changed" works ✓ (the key retention feature — "something changed while you were away")
 
 - The question v0.51 answers: "I entered Farm Kingdom yesterday, and something changed when I came back today." ✓
+
+---
+Task ID: 14
+Agent: main (Z.ai Code)
+Task: Build PlayLiquid v0.52 Living Economies — Resources, Dynamic Markets, Trade Routes, Buildings, Player Roles
+
+Work Log:
+- Added 5 Prisma models: CivilizationResourceRecord, CivilizationMarketRecord, TradeRouteRecord, CivilizationBuildingRecord, PlayerRoleRecord
+- Built Resource System: 7 resource types (food, wood, metal, knowledge, culture, energy, technology) with supply, demand, production/consumption rates, price, and price history
+- Built Dynamic Market: supply/demand-driven pricing (oversupply → cheap, shortage → expensive), buy/sell transactions with price impact, market history
+- Built Living Trade Routes: active routes that generate value per tick, automatically transfer resources between worlds, track total generated value
+- Built Civilization Buildings: 10 building types (Town Hall, Farm, Market, Mine, Library, Temple, Barracks, Trade Port, Monument, District) with population-based unlocking and economic modifiers
+- Built Player Roles: progression from visitor → citizen → specialist → guild_member → leader, based on economic contribution, with specialty assignment (trading/farming/combat/building/exploration/governance)
+- Integrated with Time Engine: every tick now updates resources (supply/demand/prices), processes trade routes, checks building unlocks, generates economy feed events (price surges/drops, new buildings)
+- The causal chain works: migration wave → population increase → resource demand rises → prices change → trade routes become profitable → buildings unlock → civilization visibly grows
+- Built 5 API routes: resources, market (GET+POST), routes (GET+POST), buildings, roles
+- Added Economy tab to Living Civilizations dashboard with: Resources & Markets (supply/demand/price/trend), Buildings (visible growth), Trade Routes (per-tick value), Player Roles (contribution/standing)
+
+Browser Verification:
+- Advanced 3 days: 7 resources initialized with supply/demand/prices, 9 buildings auto-constructed (Town Hall + Farm + Market + Mine + Library + Temple + Barracks + Trade Port + Monument)
+- Economy tab shows: 🎭 Culture (supply 242, demand 200), ⚡ Energy (supply 139, demand 247, ▲ shortage), 🌾 Food (supply 169, demand 253, ▲ shortage)
+- Trend indicators work: ▲ for shortage (demand > supply), ● for balanced
+- No console errors, lint clean
+
+Stage Summary:
+- The causal chain that makes civilizations feel alive:
+  1. Time passes ✓ (v0.51)
+  2. Population changes ✓ (v0.51)
+  3. Resource demand shifts ✓ (v0.52)
+  4. Market prices change ✓ (v0.52)
+  5. Buildings unlock and grow ✓ (v0.52)
+  6. Trade routes generate value ✓ (v0.52)
+  7. Player roles evolve with contribution ✓ (v0.52)
+  8. Economy events appear in feed ✓ (v0.52)
+
+- "Things that happen in the civilization should have economic consequences." ✓

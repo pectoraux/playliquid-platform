@@ -1139,3 +1139,98 @@ model CivilizationSeasonRecord {
   @@index([worldId])
   @@index([isActive])
 }
+
+// ─── v0.52 Living Economies — Resources, Markets, Trade Routes, Buildings ──
+
+model CivilizationResourceRecord {
+  id              String   @id @default(cuid())
+  worldId         String
+  worldName       String
+  resourceType    String   // food | wood | metal | knowledge | culture | energy | technology
+  supply          Int      @default(100)
+  demand          Int      @default(50)
+  productionRate  Int      @default(10)  // per tick
+  consumptionRate Int      @default(5)   // per tick
+  price           Int      @default(100)  // micro-Liquid per unit
+  priceHistory    String   @default("[]")  // [{tick, price}]
+  lastTickUpdated Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([worldId, resourceType])
+  @@index([worldId])
+}
+
+model CivilizationMarketRecord {
+  id              String   @id @default(cuid())
+  worldId         String
+  worldName       String
+  resourceType    String
+  action          String   // buy | sell
+  quantity        Int
+  pricePerUnit    Int      // micro-Liquid
+  totalValue      Int      // micro-Liquid
+  buyerId         String?  // userId or worldId
+  sellerId        String?
+  tickNumber      Int?
+  createdAt       DateTime @default(now())
+
+  @@index([worldId])
+  @@index([resourceType])
+}
+
+model TradeRouteRecord {
+  id              String   @id @default(cuid())
+  fromWorldId     String
+  fromWorldName   String
+  toWorldId       String
+  toWorldName     String
+  resourceType    String   // what's being traded
+  quantity        Int      @default(10)  // per tick
+  pricePerUnit    Int      @default(100)
+  totalGenerated  Int      @default(0)  // total micro-Liquid generated
+  ticksActive     Int      @default(0)
+  status          String   @default("ACTIVE")  // ACTIVE | SUSPENDED | ENDED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([fromWorldId])
+  @@index([toWorldId])
+}
+
+model CivilizationBuildingRecord {
+  id              String   @id @default(cuid())
+  worldId         String
+  worldName       String
+  name            String
+  type            String   // townhall | market | farm | mine | library | temple | barracks | port | monument | district
+  icon            String   @default("🏛️")
+  level           Int      @default(1)
+  economicModifier String  @default("{}")  // { foodProduction: +10, tradeBonus: +5 }
+  builtAtTick     Int
+  builtBy         String   @default("system")
+  status          String   @default("ACTIVE")  // ACTIVE | UPGRADING | DEMOLISHED
+  createdAt       DateTime @default(now())
+
+  @@index([worldId])
+  @@index([type])
+}
+
+model PlayerRoleRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  displayName     String
+  worldId         String
+  worldName       String
+  role            String   @default("visitor")  // visitor | citizen | specialist | guild_member | leader
+  specialty       String?  // trading | farming | combat | building | exploration | governance
+  guildId         String?  // guild membership
+  contribution    Int      @default(0)  // economic contribution to civilization
+  influenceInWorld Int     @default(0)  // political influence
+  joinedAt        DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, worldId])
+  @@index([worldId])
+  @@index([userId])
+}
