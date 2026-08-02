@@ -1,0 +1,13 @@
+{
+  "name": "PlayLiquid",
+  "short_name": "PlayLiquid",
+  "description": "YouTube + TikTok, but every piece of content is playable.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#f59e0b",
+  "icons": [
+    { "src": "/icon.png", "sizes": "1024x1024", "type": "image/png" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

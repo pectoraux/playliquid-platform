@@ -20,6 +20,7 @@ import { LivingCivilizations } from '@/components/living/LivingCivilizations';
 import { AdrEconomy } from '@/components/economy/AdrEconomy';
 import { CompetitivePlay } from '@/components/economy/CompetitivePlay';
 import { ExtensionUniverse } from '@/components/extensions/ExtensionUniverse';
+import { V3ShellWrapper } from '@/components/consumer-v2/V3ShellWrapper';
 import { ConsumerHomeV3 } from '@/components/consumer-v2/ConsumerHomeV3';
 import { CreatorStudio } from '@/components/creator-os/CreatorStudio';
 import { NetworkIntelligence } from '@/components/intelligence/NetworkIntelligence';
@@ -90,15 +91,15 @@ export default function Home() {
     case 'living':
       return <LivingCivilizations />;
     case 'adr-economy':
-      return <AdrEconomy />;
+      return <V3ShellWrapper title="Wallet"><AdrEconomy /></V3ShellWrapper>;
     case 'competitive':
-      return <CompetitivePlay />;
+      return <V3ShellWrapper title="Compete"><CompetitivePlay /></V3ShellWrapper>;
     case 'extensions':
-      return <ExtensionUniverse />;
+      return <V3ShellWrapper title="Extensions"><ExtensionUniverse /></V3ShellWrapper>;
     case 'creator-studio':
       return <CreatorStudio />;
     case 'network-intelligence':
-      return <NetworkIntelligence />;
+      return <V3ShellWrapper title="Network Intelligence"><NetworkIntelligence /></V3ShellWrapper>;
     case 'play':
       if (sparkQueue.length > 0) {
         return <SparkPlayer sparks={sparkQueue} initialIndex={Math.max(0, sparkQueue.findIndex((s) => s.experienceId === playExperienceId))} />;

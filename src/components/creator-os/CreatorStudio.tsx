@@ -33,14 +33,12 @@ export function CreatorStudio() {
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => setView('home-v3')} className="h-8">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </Button>
+          <button onClick={() => setView('home-v3')} className="flex items-center gap-2 hover:opacity-80">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold">PL</div>
+            <span className="text-sm font-bold hidden sm:inline">PlayLiquid</span>
+          </button>
           <Separator orientation="vertical" className="h-6" />
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white">
-              <BarChart className="w-4 h-4" />
-            </div>
             <div>
               <h1 className="text-sm font-semibold">Creator Studio</h1>
               <p className="text-[10px] text-muted-foreground">Operate your interactive business</p>
