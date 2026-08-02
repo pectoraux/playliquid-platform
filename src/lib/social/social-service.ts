@@ -296,13 +296,10 @@ export async function submitChallengeEntry(challengeId: string, userId: string, 
       data: { status: 'COMPLETED', winnerId: userId },
     });
 
-    // Reward the winner
-    if (challenge.rewardLiquid > 0) {
-      await ledger.post([
-        { account: ACCOUNTS.REWARD_POOL, debit: 0, credit: challenge.rewardLiquid, memo: 'challenge reward' },
-        { account: `entity:${userId}:wallet`, debit: challenge.rewardLiquid, credit: 0, memo: 'challenge won' },
-      ], `challenge: ${challenge.experienceName}`);
-    }
+    // ADR-006: Liquid is NOT minted as rewards. Challenge rewards are
+    // recorded but NOT credited as Liquid. In the ADR model, player
+    // earnings come ONLY from leaderboard payouts (ADR-007).
+    // The challenge reward field is kept for XP/reputation tracking.
 
     await createNotification({
       userId,

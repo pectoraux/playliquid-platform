@@ -211,7 +211,8 @@ async function gatherPlayerStats(userId: string): Promise<PlayerStats> {
     worldsVisited: worldVisits,
     sparksForked: 0, // would need to track forks
     creatorsFollowed: following,
-    liquidEarned: profile?.liquidBalance ?? 0,
+    // ADR-006: liquidBalance is deprecated. Use LiquidWalletRecord instead.
+    liquidEarned: 0,
     skills,
   };
 }

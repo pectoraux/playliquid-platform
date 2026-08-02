@@ -18,6 +18,7 @@ import { CreatorIntel } from '@/components/creator-intel/CreatorIntel';
 import { AssetEconomy } from '@/components/asset-economy/AssetEconomy';
 import { Multiverse } from '@/components/multiverse/Multiverse';
 import { LivingCivilizations } from '@/components/living/LivingCivilizations';
+import { AdrEconomy } from '@/components/economy/AdrEconomy';
 import { useEffect, useMemo } from 'react';
 import type { ExtensionManifest } from '@/kernel/types';
 import { Playground } from '@/components/playground/Playground';
@@ -77,6 +78,8 @@ export default function Home() {
       return <Multiverse />;
     case 'living':
       return <LivingCivilizations />;
+    case 'adr-economy':
+      return <AdrEconomy />;
     case 'wizard':
       return <CreationWizard />;
     case 'editor':

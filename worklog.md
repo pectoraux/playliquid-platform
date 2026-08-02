@@ -657,3 +657,48 @@ Stage Summary:
   8. Economy events appear in feed ✓ (v0.52)
 
 - "Things that happen in the civilization should have economic consequences." ✓
+
+---
+Task ID: 15
+Agent: main (Z.ai Code)
+Task: ADR Freeze Implementation — Align existing platform with frozen architectural decisions (ADR-001 through ADR-012)
+
+Work Log:
+- Added 11 new Prisma models: LiquidWalletRecord, LiquidPurchaseRecord, MinutePurchaseRecord, PrizePoolRecord, LeaderboardPayoutRecord, ExtensionRoyaltyConfigRecord, ExtensionRoyaltyDistributionRecord, TournamentRecord, TournamentTeamRecord, HighlightRecord, GameContainmentConfigRecord
+- Modified ExperienceRecord: added format (spark/standard), pricePerMinuteXof, minMinutesPurchase, maxMinutesPurchase, competitiveEligible
+- Modified PlaySession: added competitiveMode, minutePurchaseId, timerStartedAt, timerElapsedMs, attempts, highestScore
+- Built 5 economy services:
+  - liquid-wallet-service.ts: getWallet, purchaseLiquid (PaySwap), debitWallet, creditWalletFromPayout (ONLY for leaderboard payouts)
+  - revenue-split-service.ts: processRevenueSplit (Platform 20% / Creator 30% / Prize Pool 50%), extension royalty calculation from creator share, prize pool management
+  - leaderboard-payout-service.ts: processPayoutCycle (distributes prize pool to top 3: 25%/15%/10%), payout history, player winnings
+  - minutes-service.ts: purchaseMinutes, getActiveMinutes, consumeMinutes (triggers revenue split), purchase history
+  - tournament-service.ts: createTournament, createTeam, joinTeam, getTournaments, getTournamentTeams
+  - highlight-service.ts: generateHighlight (6 trigger types), getHighlights, shouldGenerateHighlight, viewHighlight
+  - containment-service.ts: getContainmentConfig, updateContainmentConfig, RUNTIME_TYPES (native/html5/external)
+- Built 8 API routes: wallet, purchase, prize-pool, leaderboard-payout, revenue-split, minutes, tournaments, highlights, containment
+- Built ADR Economy Dashboard with 5 tabs: Wallet, Minutes, Prizes, Tournaments, Highlights
+- REMOVED all Liquid minting code paths:
+  - rewardEngagement() → no-op (returns { totalReward: 0 })
+  - play-service.ts → removed rewardEngagement call + liquidBalance increment
+  - simulation-service.ts → removed rewardEngagement call
+  - achievement-service.ts → removed liquidBalance reference
+  - social-service.ts → removed challenge reward Liquid crediting
+- Added "Economy" button to ConsumerUniverse navigation
+
+ADR VERIFICATION (all passed):
+✅ No code path can mint Liquid (rewardEngagement is no-op, no liquidBalance increments, no reward pool credits)
+✅ Liquid only enters through purchases (purchaseLiquid via PaySwap)
+✅ Player earnings only from leaderboard payouts (creditWalletFromPayout)
+✅ Extension royalties from creator share (ExtensionRoyaltyDistributionRecord)
+✅ Spark format field exists (format: spark | standard)
+✅ Game containment config exists (GameContainmentConfigRecord)
+✅ Tournament models exist (TournamentRecord, TournamentTeamRecord)
+✅ Highlight model exists (HighlightRecord)
+✅ Minute purchase model exists (MinutePurchaseRecord)
+✅ Prize pool model exists (PrizePoolRecord with configurable BPS splits)
+
+Browser Verification:
+- Wallet: 0L → purchased 50L via PaySwap → balance shows 50.00L
+- "This is the ONLY way Liquid enters circulation" message displayed
+- Prize Pools: all experiences show 0L pool with 25%/15%/10% payout structure
+- No console errors, lint clean

@@ -39,6 +39,7 @@ export type StudioView =
   | 'asset-economy'
   | 'multiverse'
   | 'living'
+  | 'adr-economy'
   | 'wizard'
   | 'editor'
   | 'experiences'

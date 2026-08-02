@@ -156,20 +156,10 @@ export async function runSimulation(params: {
       // End session — this captures telemetry + settles tokens
       await endSession(sessionId, 'completed');
 
-      // Reward engagement (creator economy)
-      const session = await db.playSession.findUnique({ where: { id: sessionId } });
-      if (session) {
-        try {
-          await rewardEngagement({
-            experienceId,
-            userId: player.userId,
-            sessionDurationMs: Date.now() - session.startedAt.getTime(),
-            score: session.score,
-          });
-        } catch (err) {
-          console.error(`Reward engagement failed for ${player.userId}:`, (err as Error).message);
-        }
-      }
+      // ADR-006: rewardEngagement is deprecated (no-op). Simulated sessions
+      // no longer mint Liquid. In production, only competitive sessions with
+      // purchased minutes would generate revenue via the revenue split service.
+      // The import is kept for backward compatibility but returns { totalReward: 0 }.
 
       sessionsRun++;
     } catch (err) {

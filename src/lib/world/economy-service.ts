@@ -26,85 +26,23 @@ const DEFAULT_FORK_SHARE_BPS = 9000;   // fork creator gets 90%
 const DEFAULT_PARENT_SHARE_BPS = 1000; // parent gets 10%
 
 /**
- * Reward a creator for player engagement.
- * Called when a session ends — distributes Liquid from the reward pool.
+ * ADR-006: DEPRECATED — Liquid is NOT a reward currency.
+ *
+ * This function previously minted Liquid as engagement rewards.
+ * Under ADR-006, Liquid only enters circulation through purchases.
+ * Creator earnings now come from competitive session revenue splits
+ * (see src/lib/economy/revenue-split-service.ts).
+ *
+ * This function is kept as a no-op for backward compatibility but
+ * does NOT mint any Liquid.
  */
-export async function rewardEngagement(params: {
+export async function rewardEngagement(_params: {
   experienceId: string;
   userId: string;
   sessionDurationMs: number;
   score: number;
 }): Promise<{ totalReward: number; shares: RoyaltyShare[] }> {
-  const { experienceId, sessionDurationMs, score } = params;
-
-  // Calculate engagement reward (micro-Liquid)
-  // Base: 1 Liquid per minute of play + 0.1 Liquid per score point
-  const minutesPlayed = sessionDurationMs / 60000;
-  const baseReward = Math.round((minutesPlayed * 1_000_000 + score * 100_000));
-
-  if (baseReward <= 0) return { totalReward: 0, shares: [] };
-
-  // Get the experience + creator
-  const exp = await db.experienceRecord.findUnique({
-    where: { id: experienceId },
-    include: { creator: true },
-  });
-  if (!exp) return { totalReward: 0, shares: [] };
-
-  const shares = await computeRoyaltyShares(experienceId);
-  const totalReward = baseReward;
-
-  // Distribute via ledger
-  const lines: Array<{ account: string; debit: number; credit: number; memo?: string }> = [
-    // Debit reward pool (credit = total reward out)
-    { account: ACCOUNTS.REWARD_POOL, debit: 0, credit: totalReward, memo: `engagement reward for ${exp.title}` },
-  ];
-
-  // Platform share
-  const platformAmount = Math.round(totalReward * PLATFORM_SHARE_BPS / 10000);
-  if (platformAmount > 0) {
-    lines.push({ account: ACCOUNTS.PLATFORM_REVENUE, debit: platformAmount, credit: 0, memo: 'platform share' });
-  }
-
-  // Creator engagement share
-  const creatorAmount = Math.round(totalReward * CREATOR_ENGAGEMENT_BPS / 10000);
-  if (creatorAmount > 0) {
-    lines.push({ account: ACCOUNTS.CREATOR_WALLET(exp.creatorId), debit: creatorAmount, credit: 0, memo: 'creator engagement reward' });
-  }
-
-  // Lineage share — split among fork ancestors. The remaining amount is
-  // calculated as a residual so debits always sum to exactly totalReward.
-  const lineageAmount = totalReward - platformAmount - creatorAmount;
-  if (lineageAmount > 0 && shares.length > 0) {
-    let distributed = 0;
-    for (let i = 0; i < shares.length; i++) {
-      const share = shares[i];
-      if (i === shares.length - 1) {
-        // Last share gets the residual to ensure exact balance
-        const shareAmount = lineageAmount - distributed;
-        if (shareAmount > 0) {
-          lines.push({ account: ACCOUNTS.CREATOR_WALLET(share.creatorId), debit: shareAmount, credit: 0, memo: `lineage: ${share.role}` });
-          distributed += shareAmount;
-        }
-      } else {
-        const shareAmount = Math.round(lineageAmount * share.shareBps / 10000);
-        if (shareAmount > 0) {
-          lines.push({ account: ACCOUNTS.CREATOR_WALLET(share.creatorId), debit: shareAmount, credit: 0, memo: `lineage: ${share.role}` });
-          distributed += shareAmount;
-        }
-      }
-    }
-  }
-
-  await ledger.post(lines, `engagement: ${exp.title}`);
-
-  // Update creator's totalLiquid
-  await db.creatorRecord.update({
-    where: { id: exp.creatorId },
-    data: { totalLiquid: { increment: creatorAmount } },
-  }).catch(() => {});
-
-  return { totalReward, shares };
+  return { totalReward: 0, shares: [] };
 }
 
 /**

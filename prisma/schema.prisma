@@ -69,6 +69,13 @@ model PlaySession {
   score         Int      @default(0)
   startedAt     DateTime @default(now())
   endedAt       DateTime?
+  // ── ADR-008: Competitive session fields ──────────────────────────────
+  competitiveMode  Boolean  @default(false)
+  minutePurchaseId String?  // links to MinutePurchaseRecord
+  timerStartedAt   DateTime?
+  timerElapsedMs   Int      @default(0)
+  attempts         Int      @default(1)  // restarts within purchased time
+  highestScore     Int      @default(0)  // highest across attempts
 
   bundle        BundleRecord? @relation(fields: [bundleHash], references: [contentHash])
   tokenEvents   TokenEventRecord[]
@@ -209,6 +216,13 @@ model ExperienceRecord {
   playCount           Int      @default(0)
   forkCount           Int      @default(0)
   likeCount           Int      @default(0)
+  // ── ADR-003: Spark format (presentation, not content type) ──────────
+  format              String   @default("standard")  // spark | standard
+  // ── ADR-008: Competitive pricing configuration ──────────────────────
+  pricePerMinuteXof   Int      @default(0)  // 0 = free casual play
+  minMinutesPurchase  Int      @default(1)
+  maxMinutesPurchase  Int      @default(60)
+  competitiveEligible Boolean  @default(false)
   createdAt           DateTime @default(now())
   publishedAt         DateTime?
 
@@ -1233,4 +1247,178 @@ model PlayerRoleRecord {
   @@unique([userId, worldId])
   @@index([worldId])
   @@index([userId])
+}
+
+// ─── ADR Freeze: Economic & Architectural Alignment ────────────────────────
+
+// ADR-006: Liquid as purchased value (1 Liquid = 1 XOF)
+model LiquidWalletRecord {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  balanceXof      Int      @default(0)  // micro-XOF (1 XOF = 1,000,000 micro)
+  totalPurchased  Int      @default(0)
+  totalSpent      Int      @default(0)
+  totalWon        Int      @default(0)  // from leaderboard payouts only
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model LiquidPurchaseRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  amountXof       Int      // micro-XOF purchased
+  paymentProvider String   @default("payswap")  // payswap | stripe | future
+  paymentRef      String?  // provider transaction reference
+  status          String   @default("PENDING")  // PENDING | COMPLETED | FAILED
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+}
+
+// ADR-008: Purchased Minutes for competitive play
+model MinutePurchaseRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  experienceId    String
+  experienceName  String
+  minutesPurchased Int
+  pricePerMinuteXof Int    // micro-XOF per minute
+  totalPaidXof    Int
+  minutesUsed     Int      @default(0)
+  status          String   @default("ACTIVE")  // ACTIVE | EXHAUSTED | REFUNDED
+  createdAt       DateTime @default(now())
+}
+
+// ADR-007: Prize Pool & Leaderboard Payouts
+model PrizePoolRecord {
+  id              String   @id @default(cuid())
+  experienceId    String   @unique
+  experienceName  String
+  totalAccumulated Int     @default(0)  // micro-XOF from competitive sessions
+  totalDistributed Int     @default(0)
+  currentBalance  Int      @default(0)
+  // Revenue split config (BPS — basis points, 10000 = 100%)
+  platformShareBps Int     @default(2000)  // 20%
+  creatorShareBps  Int     @default(3000)  // 30%
+  prizePoolShareBps Int    @default(5000)  // 50%
+  // Leaderboard payout config (BPS of prize pool)
+  firstPlaceBps    Int     @default(2500)  // 25% of prize pool
+  secondPlaceBps   Int     @default(1500)  // 15%
+  thirdPlaceBps    Int     @default(1000)  // 10%
+  // Remaining 50% stays in pool for next cycle
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model LeaderboardPayoutRecord {
+  id              String   @id @default(cuid())
+  prizePoolId     String
+  experienceId    String
+  userId          String
+  displayName     String
+  rank            Int
+  payoutXof       Int
+  txId            String?  // ledger transaction ID
+  payoutCycle     String   // e.g., "2026-08-W1"
+  createdAt       DateTime @default(now())
+}
+
+// ADR-009: Extension Royalties from Creator Share
+model ExtensionRoyaltyConfigRecord {
+  id              String   @id @default(cuid())
+  extensionId     String   // references extension manifest ID
+  extensionName   String
+  royaltyBps      Int      @default(500)  // BPS of creator's share (500 = 5%)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([extensionId])
+}
+
+model ExtensionRoyaltyDistributionRecord {
+  id              String   @id @default(cuid())
+  experienceId    String
+  extensionId     String
+  extensionName   String
+  extensionCreatorId String
+  gameCreatorId   String
+  grossRevenueXof Int      // total revenue from this game's session
+  creatorShareXof Int      // creator's 30% portion
+  extensionRoyaltyXof Int  // what the extension creator receives
+  gameCreatorNetXof Int    // what the game creator keeps after extension royalties
+  txId            String?
+  createdAt       DateTime @default(now())
+}
+
+// ADR-010: Tournaments (separate from games)
+model TournamentRecord {
+  id              String   @id @default(cuid())
+  name            String
+  description     String
+  organizerId     String
+  organizerName   String
+  status          String   @default("UPCOMING")  // UPCOMING | ACTIVE | COMPLETED | CANCELLED
+  startsAt        DateTime
+  endsAt          DateTime
+  prizePoolXof    Int      @default(0)
+  entryFeeXof     Int      @default(0)
+  experiencesJson String   @default("[]")  // array of experience IDs in this tournament
+  teamDistributionPolicy String @default("equal")  // equal | weighted | leader | custom
+  maxTeams        Int?
+  maxTeamSize     Int      @default(5)
+  admissionType   String   @default("open")  // open | application | invite
+  createdAt       DateTime @default(now())
+}
+
+model TournamentTeamRecord {
+  id              String   @id @default(cuid())
+  tournamentId    String
+  name            String
+  captainId       String
+  captainName     String
+  membersJson     String   @default("[]")  // [{userId, displayName}]
+  status          String   @default("ACTIVE")
+  totalScore      Int      @default(0)
+  rank            Int?
+  createdAt       DateTime @default(now())
+}
+
+// ADR-011: Highlights & AI Clips
+model HighlightRecord {
+  id              String   @id @default(cuid())
+  replayId        String
+  experienceId    String
+  experienceName  String
+  userId          String
+  displayName     String
+  triggerType     String   // leaderboard_first | podium | world_record | comeback | exceptional | high_score
+  title           String
+  description     String
+  durationMs      Int
+  scoreAtHighlight Int
+  thumbnailUrl    String?
+  viewCount       Int      @default(0)
+  likeCount       Int      @default(0)
+  isAiGenerated   Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@index([experienceId])
+  @@index([triggerType])
+}
+
+// ADR-005: Game Containment Configuration
+model GameContainmentConfigRecord {
+  id              String   @id @default(cuid())
+  experienceId    String   @unique
+  runtimeType     String   @default("native")  // native | html5 | external
+  viewportMode    String   @default("responsive")  // responsive | fixed | fullscreen
+  aspectRatio     String?  // "16:9" | "9:16" | "1:1" | null = fluid
+  minViewportW    Int      @default(320)
+  minViewportH    Int      @default(240)
+  inputSchemes    String   @default("[\"touch\",\"keyboard\"]")
+  orientation     String   @default("any")  // portrait | landscape | any
+  externalUrl     String?
+  html5BundleUrl  String?
+  sandboxLevel    String   @default("strict")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

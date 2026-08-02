@@ -17,7 +17,7 @@ import { startSession, tick, endSession } from '@/lib/session-registry';
 import { recordActivity } from './social-service';
 import { ensurePlayerProfile } from '@/lib/world/player-service';
 import { recomputeMetrics } from '@/lib/world/metrics-service';
-import { rewardEngagement } from '@/lib/world/economy-service';
+// ADR-006: rewardEngagement removed — Liquid is purchased value, not minted
 import type { ExperienceBundle } from '@/kernel/types';
 
 export interface PlayResult {
@@ -103,23 +103,16 @@ export async function quickPlay(params: {
 
   if (!session) return { result: null, error: 'Session not found after end' };
 
-  // Reward the creator
+  // ── ADR-006: Liquid is NOT a reward currency ────────────────────────
+  // The old rewardEngagement() that minted Liquid has been REMOVED.
+  // Liquid only enters through purchases (ADR-006) and exits through
+  // leaderboard payouts (ADR-007). Casual play generates no Liquid flow.
+  //
+  // XP, skills, achievements, and reputation are still awarded (non-Liquid).
   const durationMs = Date.now() - startTime;
-  const rewardResult = await rewardEngagement({
-    experienceId,
-    userId,
-    sessionDurationMs: durationMs,
-    score: session.score,
-  }).catch(() => ({ totalReward: 0, shares: [] }));
 
   // Recompute metrics
   await recomputeMetrics(experienceId).catch(() => {});
-
-  // Update player's liquid balance
-  await db.playerProfile.update({
-    where: { userId },
-    data: { liquidBalance: { increment: rewardResult.totalReward } },
-  }).catch(() => {});
 
   // Record activity
   await recordActivity({
@@ -199,7 +192,7 @@ export async function quickPlay(params: {
       tokensEarned,
       durationMs,
       completed: true,
-      rewardLiquid: rewardResult.totalReward,
+      rewardLiquid: 0, // ADR-006: No Liquid rewards for casual play
     },
   };
 }
