@@ -165,7 +165,7 @@ export const useStudioStore = create<StudioStore>((set) => ({
   isAutoTicking: false,
 
   setView: (v) => set({ view: v }),
-  playExperience: (experienceId) => set({ playExperienceId: experienceId, view: 'play' }),
+  playExperience: (experienceId) => set({ playExperienceId: experienceId, sparkQueue: [], view: 'play' }),
   setPlayExperienceId: (id) => set({ playExperienceId: id }),
   playSparkQueue: (sparks, startIndex = 0) => set({ sparkQueue: sparks, playExperienceId: sparks[startIndex]?.experienceId ?? null, view: 'play' }),
   setDraft: (params) =>

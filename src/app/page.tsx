@@ -62,11 +62,15 @@ export default function Home() {
       return <ConsumerHomeV3 />;
 
     // ── Play views ──
-    case 'play':
-      if (sparkQueue.length > 0) {
-        return <SparkPlayer sparks={sparkQueue} initialIndex={Math.max(0, sparkQueue.findIndex((s) => s.experienceId === playExperienceId))} />;
+    case 'play': {
+      // Check if the requested experience is a spark (in the spark queue)
+      const sparkIndex = sparkQueue.findIndex((s) => s.experienceId === playExperienceId);
+      if (sparkQueue.length > 0 && sparkIndex >= 0) {
+        return <SparkPlayer sparks={sparkQueue} initialIndex={sparkIndex} />;
       }
+      // Otherwise it's a game — use the GamePlayer
       return playExperienceId ? <GamePlayer experienceId={playExperienceId} /> : <ConsumerHomeV3 />;
+    }
 
     // ── Creator ──
     case 'creator-studio':
