@@ -35,6 +35,9 @@ export function AdrEconomy() {
               <h1 className="text-sm font-semibold">Liquid Economy</h1>
               <p className="text-[10px] text-muted-foreground">ADR-006/007/008/009 aligned</p>
             </div>
+            <Button size="sm" onClick={() => setView('competitive')} className="ml-auto h-8 bg-emerald-500 hover:bg-emerald-600 text-white">
+              <Trophy className="w-3.5 h-3.5" /> Competitive Play
+            </Button>
           </div>
         </div>
       </header>

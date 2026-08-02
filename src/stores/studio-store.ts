@@ -40,6 +40,7 @@ export type StudioView =
   | 'multiverse'
   | 'living'
   | 'adr-economy'
+  | 'competitive'
   | 'wizard'
   | 'editor'
   | 'experiences'
